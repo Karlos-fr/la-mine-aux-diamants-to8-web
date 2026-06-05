@@ -120,6 +120,8 @@ const PLAYER_SPAWN_BLINK_REPETITIONS = 4;
 const PLAYER_SPAWN_BLINK_STEP_DURATION = 0.25;
 /** Duree moderne du mouvement joueur fluide d'une cellule. */
 const PLAYER_GRID_MOVE_DURATION = 0.21;
+/** Delai moderne avant de relancer le cycle idle confirme par `KIT.BIN:$CED9`. */
+const PLAYER_IDLE_DELAY = 0.8;
 /** Duree d'une frame de marche pendant un pas joueur. */
 const PLAYER_WALK_FRAME_DURATION = PLAYER_GRID_MOVE_DURATION / 3;
 /** Maintien court de la derniere frame de marche apres l'arrivee. */
@@ -269,6 +271,8 @@ export class GameplayScene implements Scene {
   private playerHeldMoveFrameId: number | null = null;
   /** Temps de maintien de la frame de marche finale. */
   private playerHeldMoveFrameElapsed = 0;
+  /** Temps ecoule sans mouvement joueur avant le cycle idle. */
+  private playerIdleElapsed = 0;
   /** Mouvement camera actuellement interpole. */
   private cameraMove: CameraMoveState | null = null;
   /** Direction visuelle courante du joueur. */
@@ -364,11 +368,13 @@ export class GameplayScene implements Scene {
     }
 
     if (this.playerMove) {
+      this.resetPlayerIdleDelay();
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       this.advancePlayerHeldMoveFrame(dt);
       const { x: moveX, y: moveY } = resolvePressedPlayerMove(input.pressed);
       if (moveX !== 0 || moveY !== 0) {
+        this.resetPlayerIdleDelay();
         const playerCell = this.getPlayerLogicalCell();
         const fromX = playerCell.x;
         const fromY = playerCell.y;
@@ -415,6 +421,8 @@ export class GameplayScene implements Scene {
             duration: PLAYER_GRID_MOVE_DURATION
           };
         }
+      } else {
+        this.advancePlayerIdleDelay(dt);
       }
     }
   }
@@ -574,6 +582,38 @@ export class GameplayScene implements Scene {
   private clearPlayerHeldMoveFrame(): void {
     this.playerHeldMoveFrameId = null;
     this.playerHeldMoveFrameElapsed = 0;
+  }
+
+  /** Resets the inactivity timer while the player is moving or pressing a direction. */
+  private resetPlayerIdleDelay(): void {
+    this.playerIdleElapsed = 0;
+  }
+
+  /** Advances the inactivity timer and switches to the proven ASM idle cycle after a delay. */
+  private advancePlayerIdleDelay(dt: number): void {
+    if (this.playerFacing === "idle") {
+      return;
+    }
+
+    this.playerIdleElapsed += dt;
+    if (this.playerIdleElapsed < PLAYER_IDLE_DELAY) {
+      return;
+    }
+
+    this.playerFacing = "idle";
+    this.clearPlayerHeldMoveFrame();
+    this.resetPlayerAnimationClock("player");
+  }
+
+  /** Restarts an animation clock from its first frame. */
+  private resetPlayerAnimationClock(animationKey: string): void {
+    const clock = this.animationState.get(animationKey);
+    if (!clock) {
+      return;
+    }
+
+    clock.frameIndex = 0;
+    clock.accumulator = 0;
   }
 
   /** Starts a smooth camera scroll when the player crosses the ASM viewport margin. */
