@@ -133,6 +133,11 @@ export class RuntimeMutations {
     this.setTile(gridX, gridY, tileId);
   }
 
+  /** Nettoie une trace `0x80` de monstre une fois le pas runtime termine. */
+  clearMonsterTrailTile(gridX: number, gridY: number): void {
+    this.setTile(gridX, gridY, this.emptyTileId);
+  }
+
   /** Enregistre une mutation evenementielle et retourne si elle est nouvelle pour ce tick. */
   private markRuntimeTileMutation(gridX: number, gridY: number): boolean {
     const key = `${gridX}:${gridY}`;

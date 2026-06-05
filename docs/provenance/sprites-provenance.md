@@ -29,10 +29,10 @@
 - Explosion:
   - `0x14` -> `0x15` -> `0x16` -> `0x05` confirme par `KIT.BIN:$CCC6` + zone 3x3 via `CCFE`.
 - Objets:
-  - `0x02` monstre standard confirme, animation blink via `KIT.BIN:$D1BB`.
+  - `0x02` monstre standard confirme, animation blink via `KIT.BIN:$D1BB`, deplacement via `KIT.BIN:$CA04`.
   - `0x04` bloc sortie / bloc protege confirme.
   - `0x05` vide confirme (`CB3B` + comportement terrain).
-  - `0x17` creature speciale bleue a quatre carres jaunes, suivie separement du monstre `0x02` via `BC07`, `BB24`, `CC4F`.
+  - `0x17` creature speciale bleue a quatre carres jaunes, suivie separement du monstre `0x02` via `BC07`, `BB24`, `CC4F`, deplacement via `BC84`.
   - `0x18` bloc transformateur spirale, utilise par `CB3B` pour convertir rocher <-> diamant.
 
 ### Suspects

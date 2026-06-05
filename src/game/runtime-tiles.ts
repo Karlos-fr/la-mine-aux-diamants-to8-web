@@ -68,7 +68,7 @@ export type RuntimeTileId = (typeof RUNTIME_TILE)[keyof typeof RUNTIME_TILE];
 /** Tile utilisee pour remplir les lectures hors grille utile. */
 export const RUNTIME_GRID_FILL_TILE_ID = RUNTIME_TILE.border;
 
-/** Indique si une tuile est traversable par la routine moderne des monstres. */
+/** Indique si une tuile est traversable par les routines ASM `CA04`/`BC84` des monstres. */
 export function isMonsterWalkableRuntimeTile(tileId: number): boolean {
-  return tileId === RUNTIME_TILE.empty || tileId === RUNTIME_TILE.monsterTrail;
+  return tileId === RUNTIME_TILE.empty;
 }

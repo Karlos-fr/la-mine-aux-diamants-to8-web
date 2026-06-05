@@ -13,11 +13,11 @@
 ### Elements confirmes
 
 - `tileId 0x00` rocher statique, confirme par diff visuel contre l'oracle et par les routines de physique.
-- `tileId 0x02` monstre standard, confirme via `DA10`, `CC5B`, `D1BB`.
+- `tileId 0x02` monstre standard, confirme via `DA10`, `CC5B`, `D1BB`; deplacement dedie par `CA04`.
 - `tileId 0x03` diamant, confirme via `CB17`, `D1E0` et presence coherente dans les niveaux.
 - `tileId 0x04` bloc sortie / bloc protege, confirme via `DA10`, `BEA7`, `BFB6`, `BFE2`.
 - `tileId 0x05` vide, confirme par routines de chute/collision (`CB3B`, `CBA7`, `BD03`...).
-- `tileId 0x17` creature speciale bleue a quatre carres jaunes, confirmee via `BC07`, table dediee `$DB4F`, `BB24` et `CC4F`.
+- `tileId 0x17` creature speciale bleue a quatre carres jaunes, confirmee via `BC07`, table dediee `$DB4F`, `BB24`, `CC4F` et deplacement dedie par `BC84`.
 - `tileId 0x18` bloc transformateur spirale, confirme via `CB3B`: un rocher traversant devient diamant et un diamant traversant devient rocher.
 
 ### Suspects

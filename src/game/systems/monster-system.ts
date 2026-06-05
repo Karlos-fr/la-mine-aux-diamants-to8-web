@@ -1,7 +1,7 @@
 /**
  * Role: Gere le pas runtime d'un monstre.
  * Scope: Deplace un monstre sur la grille, pose les marqueurs runtime et met a jour son pointeur.
- * ISO: Les directions conservent le codage historique 1..4 et les traces runtime `0x80`.
+ * ISO: Les routines `CA04`/`BC84` utilisent l'ordre 1=bas, 2=gauche, 3=haut, 4=droite.
  * Notes: L'interpolation visuelle est stockee dans l'etat mais consommee par la scene/rendu.
  */
 
@@ -56,42 +56,42 @@ export function advanceSingleMonsterRuntime(
       return;
     }
 
-    direction = decrementMonsterDirection(direction);
+    direction = incrementMonsterDirection(direction);
   }
 
   monster.direction = direction;
 }
 
-/** Convertit la direction historique 1..4 en delta de grille. */
+/** Convertit la direction historique 1..4 en delta de grille selon `CA04`/`BC84`. */
 function monsterDirectionToDelta(direction: MonsterRuntimeState["direction"]): { readonly x: number; readonly y: number } {
   if (direction === 1) {
+    return { x: 0, y: 1 };
+  }
+
+  if (direction === 2) {
     return { x: -1, y: 0 };
   }
 
-  if (direction === 2) {
+  if (direction === 3) {
     return { x: 0, y: -1 };
   }
 
-  if (direction === 3) {
-    return { x: 1, y: 0 };
-  }
-
-  return { x: 0, y: 1 };
+  return { x: 1, y: 0 };
 }
 
 /** Tourne la direction dans l'ordre original quand la voie courante est bloquee. */
-function decrementMonsterDirection(direction: MonsterRuntimeState["direction"]): MonsterRuntimeState["direction"] {
+function incrementMonsterDirection(direction: MonsterRuntimeState["direction"]): MonsterRuntimeState["direction"] {
   if (direction === 1) {
-    return 4;
-  }
-
-  if (direction === 2) {
-    return 1;
-  }
-
-  if (direction === 3) {
     return 2;
   }
 
-  return 3;
+  if (direction === 2) {
+    return 3;
+  }
+
+  if (direction === 3) {
+    return 4;
+  }
+
+  return 1;
 }

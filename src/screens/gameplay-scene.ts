@@ -140,7 +140,7 @@ const FALLING_OBJECT_GRID_MOVE_DURATION = 0.18;
 const PUSHED_ROCK_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 /** Tile runtime temporaire du monstre actif. */
 const MONSTER_RUNTIME_ACTIVE_TILE_ID = RUNTIME_TILE.monsterActive;
-/** Trace runtime de monstre, traitee comme vide par plusieurs systems. */
+/** Trace runtime temporaire de monstre, nettoyee a la fin du pas fluide. */
 const MONSTER_RUNTIME_TRAIL_TILE_ID = RUNTIME_TILE.monsterTrail;
 /** Tuile creusable par le joueur. */
 const PLAYER_DIGGABLE_TILE_ID = RUNTIME_TILE.earth;
@@ -1486,8 +1486,21 @@ export class GameplayScene implements Scene {
 
       monster.movement.elapsed += dt;
       if (monster.movement.elapsed >= monster.movement.duration) {
+        this.clearCompletedMonsterTrail(monster);
         monster.movement = null;
       }
+    }
+  }
+
+  /** Restaure la case quittee par un monstre quand la trace `0x80` n'est plus necessaire. */
+  private clearCompletedMonsterTrail(monster: GameState["monsters"][number]): void {
+    const movement = monster.movement;
+    if (!movement) {
+      return;
+    }
+
+    if (this.runtimeGrid.getTile(movement.fromX, movement.fromY) === MONSTER_RUNTIME_TRAIL_TILE_ID) {
+      this.runtimeMutations.clearMonsterTrailTile(movement.fromX, movement.fromY);
     }
   }
 
