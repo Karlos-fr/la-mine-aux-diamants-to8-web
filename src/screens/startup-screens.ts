@@ -1,21 +1,11 @@
 import { mineTitleMetadata } from "../assets/generated/mine-title";
 import type { InputState } from "../engine/input";
-import { TO8_PALETTE } from "../assets/palette";
 import { loadImage } from "../engine/image-loader";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
+import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createGameplayScene } from "./scene-factory";
-
-interface DecodedFrame {
-  readonly path: string;
-  readonly x?: number;
-  readonly y?: number;
-}
-
-function pick<T>(value: ReadonlyArray<T> | undefined, index: number): T | undefined {
-  return value?.[index];
-}
 
 export class StartupInfogramScene implements Scene {
   private context: SceneContext | undefined;
@@ -49,18 +39,7 @@ export class StartupInfogramScene implements Scene {
   }
 
   render(renderer: Renderer): void {
-    if (!this.backgroundImage) {
-      renderer.clear(TO8_PALETTE.black);
-      if (this.backgroundError) {
-        renderer.drawPixelText("ERREUR INFOGRAMES", 72, 92, TO8_PALETTE.yellow, 2);
-        renderer.drawPixelText(this.backgroundError.slice(0, 40), 40, 112, TO8_PALETTE.white);
-      } else {
-        renderer.drawPixelText("CHARGEMENT...", 112, 92, TO8_PALETTE.yellow, 1);
-      }
-      return;
-    }
-    renderer.clear(TO8_PALETTE.black);
-    renderer.drawImage(this.backgroundImage, 0, 0);
+    renderStartupInfogram(renderer, this.backgroundImage, this.backgroundError);
   }
 }
 
@@ -74,9 +53,9 @@ export class StartupTitleScene implements Scene {
   private feetIndex = 0;
 
   private baseImage: HTMLImageElement | undefined;
-  private readonly faceFrames: DecodedFrame[];
-  private readonly sparkleFrames: DecodedFrame[];
-  private readonly feetFrames: DecodedFrame[];
+  private readonly faceFrames: StartupTitleFrame[];
+  private readonly sparkleFrames: StartupTitleFrame[];
+  private readonly feetFrames: StartupTitleFrame[];
   private readonly baseImagePath = RUNTIME_ASSET_URLS.startupTitleBase;
 
   private readonly faceImageCache = new Map<string, HTMLImageElement>();
@@ -148,35 +127,23 @@ export class StartupTitleScene implements Scene {
   }
 
   render(renderer: Renderer): void {
-    if (!this.baseImage) {
-      renderer.clear("#000000");
-      return;
-    }
-
-    renderer.clear("#000000");
-    renderer.drawImage(this.baseImage, 0, 0);
-
     const currentSparkle = this.sparkleFrames[this.sparkleIndex];
-    const sparkleImage = this.sparkleImageCache.get(currentSparkle.path);
-    if (sparkleImage) {
-      renderer.drawImage(sparkleImage, 0, 0);
-    }
-
     const currentFace = this.faceFrames[this.faceIndex];
     const currentFeet = pick(this.feetFrames, this.feetIndex) ?? this.feetFrames[0];
-    const faceImage = this.faceImageCache.get(currentFace.path);
-    const feetImage = this.feetImageCache.get(currentFeet.path);
-    if (faceImage) {
-      renderer.drawImage(faceImage, currentFace.x ?? 192, currentFace.y ?? 24);
-    }
-    if (feetImage) {
-      renderer.drawImage(feetImage, currentFeet.x ?? 144, currentFeet.y ?? 162);
-    }
 
+    renderStartupTitle(renderer, {
+      baseImage: this.baseImage,
+      currentSparkle,
+      currentFace,
+      currentFeet,
+      sparkleImage: this.sparkleImageCache.get(currentSparkle.path),
+      faceImage: this.faceImageCache.get(currentFace.path),
+      feetImage: this.feetImageCache.get(currentFeet.path)
+    });
   }
 
   private queueLoading(
-    frames: DecodedFrame[],
+    frames: StartupTitleFrame[],
     cache: Map<string, HTMLImageElement>
   ): void {
     frames.forEach((frame) => {
@@ -190,4 +157,8 @@ export class StartupTitleScene implements Scene {
       }).catch(() => undefined);
     });
   }
+}
+
+function pick<T>(value: ReadonlyArray<T> | undefined, index: number): T | undefined {
+  return value?.[index];
 }

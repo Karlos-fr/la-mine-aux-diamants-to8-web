@@ -39,6 +39,7 @@ import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible }
 import { drawHudSmallCounter, drawHudTextFields } from "../rendering/hud-renderer";
 import { getGridCellScreenPosition } from "../rendering/level-renderer";
 import { RUNTIME_ASSET_URLS } from "../assets/runtime-assets";
+import { TileFrameCache } from "../rendering/tile-frame-cache";
 
 interface AnimationClock {
   frameIndex: number;
@@ -171,9 +172,10 @@ export class GameplayScene implements Scene {
   private readonly levelNumber: number;
   private readonly runtimeGrid: LevelRuntimeGrid;
   private readonly createNextLevelScene: (currentLevelNumber: number) => Scene;
-  private readonly tileFrames = new Map<number, TileFrame>();
-  private readonly diamondFrames = new Map<number, TileFrame>();
-  private readonly monsterFrames = new Map<number, TileFrame>();
+  private readonly tileFrameCache = new TileFrameCache({
+    sourceSize: RENDER_TILE_SIZE,
+    renderSize: RENDER_TILE_SIZE
+  });
   private readonly tileSourceSize = RENDER_TILE_SIZE;
   private readonly tileSize = RENDER_TILE_SIZE;
   private readonly boardOffsetX = 0;
@@ -1163,27 +1165,7 @@ export class GameplayScene implements Scene {
   }
 
   private getTileFrame(tileId: number): TileFrame {
-    const existing = this.tileFrames.get(tileId);
-    if (existing) {
-      return existing;
-    }
-
-    const frame: TileFrame = {
-      id: `tile-${tileId}`,
-      source: this.getTileAtlasImage(),
-      sourceRect: {
-        x: tileId * this.tileSourceSize,
-        y: 0,
-        width: this.tileSourceSize,
-        height: this.tileSourceSize
-      },
-      size: {
-        width: this.tileSize,
-        height: this.tileSize
-      }
-    };
-    this.tileFrames.set(tileId, frame);
-    return frame;
+    return this.tileFrameCache.getTileFrame(this.getTileAtlasImage(), tileId);
   }
 
   private getDiamondTileFrame(): TileFrame {
@@ -1191,31 +1173,11 @@ export class GameplayScene implements Scene {
     const frameIndex = diamondAnimation
       ? diamondAnimation.frameIndex % this.diamondAnimationFrames.length
       : 0;
-    const existing = this.diamondFrames.get(frameIndex);
-    if (existing) {
-      return existing;
-    }
-
     if (!this.diamondAtlasImage) {
       return this.getTileFrame(DIAMOND_TILE_ID);
     }
 
-    const frame: TileFrame = {
-      id: `diamond-${frameIndex}`,
-      source: this.diamondAtlasImage,
-      sourceRect: {
-        x: frameIndex * this.tileSourceSize,
-        y: 0,
-        width: this.tileSourceSize,
-        height: this.tileSourceSize
-      },
-      size: {
-        width: this.tileSize,
-        height: this.tileSize
-      }
-    };
-    this.diamondFrames.set(frameIndex, frame);
-    return frame;
+    return this.tileFrameCache.getAtlasFrame(this.diamondAtlasImage, `diamond-${frameIndex}`, frameIndex);
   }
 
   private getMonsterTileFrame(): TileFrame {
@@ -1223,31 +1185,11 @@ export class GameplayScene implements Scene {
     const frameIndex = monsterAnimation
       ? monsterAnimation.frameIndex % this.monsterAnimationFrames.length
       : 0;
-    const existing = this.monsterFrames.get(frameIndex);
-    if (existing) {
-      return existing;
-    }
-
     if (!this.monsterAtlasImage) {
       return this.getTileFrame(MONSTER_TILE_ID);
     }
 
-    const frame: TileFrame = {
-      id: `monster-${frameIndex}`,
-      source: this.monsterAtlasImage,
-      sourceRect: {
-        x: frameIndex * this.tileSourceSize,
-        y: 0,
-        width: this.tileSourceSize,
-        height: this.tileSourceSize
-      },
-      size: {
-        width: this.tileSize,
-        height: this.tileSize
-      }
-    };
-    this.monsterFrames.set(frameIndex, frame);
-    return frame;
+    return this.tileFrameCache.getAtlasFrame(this.monsterAtlasImage, `monster-${frameIndex}`, frameIndex);
   }
 
   private drawHud(renderer: Renderer): void {

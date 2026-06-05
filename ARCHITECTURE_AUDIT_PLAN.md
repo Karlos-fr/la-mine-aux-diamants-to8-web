@@ -178,10 +178,10 @@ Dette connue:
 - [x] Extraire un `EntityRenderer` pour joueur, monstres, diamants et objets tombants.
 - [x] Extraire un `HudRenderer` pour panneaux bois, compteurs et diamant HUD.
 - [x] Extraire un `FontRenderer` TO8 pour les fontes generees.
-- [ ] Extraire un `StartupRenderer` ou simplifier les scenes startup.
+- [x] Extraire un `StartupRenderer` ou simplifier les scenes startup.
 - [x] Garder la couche rendu sans mutation de grille.
-- [ ] Remplacer les constructions de `TileFrame` en scene par un cache d'assets dedie.
-- [ ] Centraliser les URLs d'assets runtime.
+- [x] Remplacer les constructions de `TileFrame` en scene par un cache d'assets dedie.
+- [x] Centraliser les URLs d'assets runtime.
 
 ### Notes Phase 5
 
@@ -189,10 +189,11 @@ Dette connue:
 - `src/rendering/hud-renderer.ts` porte le rendu texte HUD et les petits compteurs.
 - `src/rendering/level-renderer.ts` porte les calculs viewport -> ecran et culling de grille.
 - `src/rendering/entity-renderer.ts` porte le culling entite et l'interpolation visuelle des objets tombants.
+- `src/rendering/startup-renderer.ts` porte le rendu des deux scenes startup sans changer leurs timings ni leurs assets.
+- `src/rendering/tile-frame-cache.ts` porte le cache des `TileFrame` issus des atlas gameplay.
 - `GameplayScene` reste l'orchestrateur du rendu pour conserver l'ordre ISO actuel: grille, objets/entites, HUD.
 - Le rendu extrait ne mute pas la grille runtime.
-- Le cache `TileFrame` reste temporairement dans `GameplayScene`; une extraction d'asset cache dediee est repoussee a la phase 6 pour eviter de melanger rendu et chemins d'assets.
-- Les URLs d'assets runtime restent a centraliser en phase 6, qui est explicitement dediee aux assets.
+- Les URLs d'assets runtime ont ete centralisees dans `src/assets/runtime-assets.ts` pendant la phase 6, ce qui clot aussi l'item correspondant de la phase 5.
 
 ## Phase 6 - Assets runtime et extraction
 
