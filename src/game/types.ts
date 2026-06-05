@@ -1,5 +1,3 @@
-import type { TileFrame } from "../engine/render-types";
-
 export type TileCollision = "empty" | "solid" | "ladder" | "hazard" | "exit";
 
 export type EntityKind =
@@ -19,10 +17,7 @@ export interface TileDefinition {
     readonly score: number;
     readonly counter: "diamonds";
   };
-  readonly render: {
-    readonly tileFrameId: string;
-    readonly frame?: TileFrame;
-  };
+  readonly tileFrameId: string;
 }
 
 export interface EntityState {

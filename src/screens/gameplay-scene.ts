@@ -4,6 +4,14 @@ import type { Renderer } from "../engine/renderer";
 import type { EntityState, FallingObjectRuntimeState, GameState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
 import { createGameLevelState } from "../game/state";
+import { LevelRuntimeGrid } from "../game/runtime-grid";
+import {
+  RUNTIME_GRID_BASE_ADDRESS,
+  RUNTIME_GRID_FILL_TILE_ID,
+  RUNTIME_GRID_STRIDE,
+  RUNTIME_TILE,
+  isMonsterWalkableRuntimeTile
+} from "../game/runtime-tiles";
 import { loadImage } from "../engine/image-loader";
 import type { TileFrame } from "../engine/render-types";
 import { mineFontMetadata } from "../assets/generated/mine-fonts";
@@ -44,8 +52,6 @@ const PLAYFIELD_HEIGHT = 160;
 const RENDER_TILE_SIZE = 16;
 const VIEWPORT_COLUMNS = 20;
 const VIEWPORT_ROWS = 10;
-const RUNTIME_GRID_STRIDE = 40;
-const RUNTIME_GRID_FILL_TILE_ID = 0x04;
 const INITIAL_VIEWPORT_X = 0;
 const INITIAL_VIEWPORT_Y = 0;
 const CAMERA_LEFT_MARGIN = 0x04;
@@ -60,20 +66,19 @@ const PLAYER_GRID_MOVE_DURATION = 0.21;
 const PLAYER_WALK_FRAME_DURATION = PLAYER_GRID_MOVE_DURATION / 3;
 const PLAYER_WALK_FINAL_FRAME_HOLD_DURATION = PLAYER_WALK_FRAME_DURATION;
 const CAMERA_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
-const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
 const MONSTER_MOVE_INTERVAL = 0.28;
 const MONSTER_GRID_MOVE_DURATION = 0.18;
 const FALLING_OBJECT_SCAN_INTERVAL = 0.16;
 const FALLING_OBJECT_GRID_MOVE_DURATION = 0.18;
-const MONSTER_RUNTIME_ACTIVE_TILE_ID = 0x17;
-const MONSTER_RUNTIME_TRAIL_TILE_ID = 0x80;
-const PLAYER_DIGGABLE_TILE_ID = 0x01;
-const ROCK_TILE_ID = 0x00;
-const DIAMOND_TILE_ID = 0x03;
-const FALLING_ROCK_TILE_ID = 0x12;
-const FALLING_DIAMOND_TILE_ID = 0x13;
-const RUNTIME_EMPTY_TILE_ID = 0x05;
-const PLATFORM_TILE_ID = 0x06;
+const MONSTER_RUNTIME_ACTIVE_TILE_ID = RUNTIME_TILE.monsterActive;
+const MONSTER_RUNTIME_TRAIL_TILE_ID = RUNTIME_TILE.monsterTrail;
+const PLAYER_DIGGABLE_TILE_ID = RUNTIME_TILE.earth;
+const ROCK_TILE_ID = RUNTIME_TILE.rock;
+const DIAMOND_TILE_ID = RUNTIME_TILE.diamond;
+const FALLING_ROCK_TILE_ID = RUNTIME_TILE.fallingRock;
+const FALLING_DIAMOND_TILE_ID = RUNTIME_TILE.fallingDiamond;
+const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
+const PLATFORM_TILE_ID = RUNTIME_TILE.platform;
 const HUD_TIMER_TICK_SECONDS = 1;
 const HUD_PANEL_ORANGE = "#ef9300";
 const HUD_RIGHT_PANEL_X = 256;
@@ -360,7 +365,7 @@ export class GameplayScene implements Scene {
         const levelY = baseLevelY + y;
         const screenX = Math.round(this.boardOffsetX + (levelX - renderViewportX) * this.tileSize);
         const screenY = Math.round(this.boardOffsetY + (levelY - renderViewportY) * this.tileSize);
-        const tileId = this.runtimeGrid.getRuntimeTile(levelX, levelY);
+        const tileId = this.runtimeGrid.getTile(levelX, levelY);
         const isDynamicTile =
           tileId === 2 ||
           tileId === 3 ||
@@ -666,7 +671,7 @@ export class GameplayScene implements Scene {
       };
     }
 
-    const tileId = this.runtimeGrid.getRuntimeTile(gridX, gridY);
+    const tileId = this.runtimeGrid.getTile(gridX, gridY);
     if (this.isOpenExitCell(gridX, gridY)) {
       return {
         canEnter: true,
@@ -740,12 +745,12 @@ export class GameplayScene implements Scene {
     }
   }
 
-  private setRuntimeTile(gridX: number, gridY: number, tileId: number): void {
-    this.runtimeGrid.setRuntimeTile(gridX, gridY, tileId);
+  private setTile(gridX: number, gridY: number, tileId: number): void {
+    this.runtimeGrid.setTile(gridX, gridY, tileId);
   }
 
   private clearRuntimeTile(gridX: number, gridY: number): void {
-    this.setRuntimeTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
+    this.setTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
   }
 
   private digRuntimeTile(gridX: number, gridY: number): void {
@@ -790,7 +795,7 @@ export class GameplayScene implements Scene {
   private startReadyFallingObjects(): void {
     for (let y = this.levelHeight - 2; y >= 0; y -= 1) {
       for (let x = 0; x < this.levelWidth; x += 1) {
-        const tileId = this.runtimeGrid.getRuntimeTile(x, y);
+        const tileId = this.runtimeGrid.getTile(x, y);
         if (!this.isPhysicalFallingTile(tileId)) {
           continue;
         }
@@ -831,7 +836,7 @@ export class GameplayScene implements Scene {
 
   private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {
     return (
-      this.runtimeGrid.getRuntimeTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
+      this.runtimeGrid.getTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
       !this.hasFallingObjectAtGrid(gridX, gridY) &&
       !this.isPlayerRenderedAtGrid(gridX, gridY)
     );
@@ -856,12 +861,12 @@ export class GameplayScene implements Scene {
     };
 
     this.clearRuntimeTile(fromX, fromY);
-    this.setRuntimeTile(toX, toY, movingTileId);
+    this.setTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
   }
 
   private completeFallingObject(fallingObject: FallingObjectRuntimeState): void {
-    this.setRuntimeTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
+    this.setTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
 
     if (fallingObject.entityId) {
       const entity = this.state.entities.find((item) => item.id === fallingObject.entityId);
@@ -1007,9 +1012,9 @@ export class GameplayScene implements Scene {
       const targetX = monster.gridX + delta.x;
       const targetY = monster.gridY + delta.y;
 
-      if (isMonsterWalkableRuntimeTile(this.runtimeGrid.getRuntimeTile(targetX, targetY))) {
-        this.setRuntimeTile(monster.gridX, monster.gridY, MONSTER_RUNTIME_TRAIL_TILE_ID);
-        this.setRuntimeTile(targetX, targetY, MONSTER_RUNTIME_ACTIVE_TILE_ID);
+      if (isMonsterWalkableRuntimeTile(this.runtimeGrid.getTile(targetX, targetY))) {
+        this.setTile(monster.gridX, monster.gridY, MONSTER_RUNTIME_TRAIL_TILE_ID);
+        this.setTile(targetX, targetY, MONSTER_RUNTIME_ACTIVE_TILE_ID);
         monster.movement = {
           fromX: monster.gridX,
           fromY: monster.gridY,
@@ -1365,40 +1370,6 @@ export class GameplayScene implements Scene {
   }
 }
 
-class LevelRuntimeGrid {
-  private readonly runtimeTiles: number[];
-
-  constructor(
-    tiles: readonly number[],
-    private readonly usefulWidth: number,
-    private readonly usefulHeight: number,
-    readonly stride: number,
-    private readonly fillTileId: number
-  ) {
-    this.runtimeTiles = [...tiles];
-  }
-
-  getRuntimeTile(x: number, y: number): number {
-    if (x < 0 || y < 0 || y >= this.usefulHeight || x >= this.stride) {
-      return this.fillTileId;
-    }
-
-    if (x >= this.usefulWidth) {
-      return this.fillTileId;
-    }
-
-    return this.runtimeTiles[y * this.usefulWidth + x] ?? this.fillTileId;
-  }
-
-  setRuntimeTile(x: number, y: number, tileId: number): void {
-    if (x < 0 || y < 0 || y >= this.usefulHeight || x >= this.usefulWidth) {
-      return;
-    }
-
-    this.runtimeTiles[y * this.usefulWidth + x] = tileId;
-  }
-}
-
 function extractFrameIdsFromMetadata(
   groupId: string,
   animationId: string,
@@ -1459,10 +1430,6 @@ function monsterDirectionToDelta(direction: 1 | 2 | 3 | 4): { readonly x: number
   }
 
   return { x: 0, y: 1 };
-}
-
-function isMonsterWalkableRuntimeTile(tileId: number): boolean {
-  return tileId === 0x05 || tileId === MONSTER_RUNTIME_TRAIL_TILE_ID;
 }
 
 function incrementBcdCounter(value: number, amount: number, digits: number): number {

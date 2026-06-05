@@ -1,4 +1,5 @@
 import type { EntityState, GameState, LevelDefinition, MonsterRuntimeState, TileDefinition } from "./types";
+import { RUNTIME_GRID_BASE_ADDRESS, RUNTIME_GRID_STRIDE, RUNTIME_TILE } from "./runtime-tiles";
 import level01Json from "../assets/levels/level-01.json";
 import level02Json from "../assets/levels/level-02.json";
 import level03Json from "../assets/levels/level-03.json";
@@ -67,25 +68,23 @@ const LEVEL_SOURCES = [
   level16Json
 ] as ReadonlyArray<ModernLevelJson>;
 
-const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
-const RUNTIME_GRID_STRIDE = 40;
 const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
-  empty: 0x05,
-  earth: 0x01,
-  rock: 0x00,
-  diamond: 0x03,
-  monster: 0x02,
-  border: 0x04,
-  platform: 0x06,
-  exit: 0x04
+  empty: RUNTIME_TILE.empty,
+  earth: RUNTIME_TILE.earth,
+  rock: RUNTIME_TILE.rock,
+  diamond: RUNTIME_TILE.diamond,
+  monster: RUNTIME_TILE.monster,
+  border: RUNTIME_TILE.border,
+  platform: RUNTIME_TILE.platform,
+  exit: RUNTIME_TILE.border
 };
 
-const ROCK_TILE_IDS = [0x00];
-const WALL_TILE_IDS = [0x01, 0x06];
-const DIAMOND_TILE_IDS = [0x03];
-const EXIT_TILE_IDS = [0x04];
-const MONSTER_TILE_IDS = [0x02];
-const EMPTY_TILE_IDS = [0x05];
+const ROCK_TILE_IDS = [RUNTIME_TILE.rock];
+const WALL_TILE_IDS = [RUNTIME_TILE.earth, RUNTIME_TILE.platform];
+const DIAMOND_TILE_IDS = [RUNTIME_TILE.diamond];
+const EXIT_TILE_IDS = [RUNTIME_TILE.border];
+const MONSTER_TILE_IDS = [RUNTIME_TILE.monster];
+const EMPTY_TILE_IDS = [RUNTIME_TILE.empty];
 
 export const LEVEL1_DEFINITION: LevelDefinition = buildLevelDefinition(LEVEL_SOURCES[0], 1);
 
@@ -225,7 +224,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
       id: tileId,
       name: "rock",
       collision: "solid",
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -234,7 +233,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
       id: tileId,
       name: "wall",
       collision: "solid",
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -247,7 +246,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
         score: scoreStep,
         counter: "diamonds"
       },
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -256,7 +255,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
       id: tileId,
       name: "exit",
       collision: "exit",
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -265,7 +264,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
       id: tileId,
       name: "monster",
       collision: "hazard",
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -274,7 +273,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
       id: tileId,
       name: "empty",
       collision: "empty",
-      render: { tileFrameId: `tile:${tileId}` }
+      tileFrameId: `tile:${tileId}`
     };
   }
 
@@ -282,7 +281,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
     id: tileId,
     name: "tile",
     collision: "empty",
-    render: { tileFrameId: `tile:${tileId}` }
+    tileFrameId: `tile:${tileId}`
   };
 }
 

@@ -1,0 +1,244 @@
+# Plan d'audit architecture - Portage moderne ISO
+
+Objectif: auditer puis moderniser progressivement le portage web de `La Mine aux Diamants` sans perdre la cible principale: reproduire le comportement et le rendu TO8 de facon ISO, avec une architecture TypeScript maintenable.
+
+Ce document est un plan de realisation. Il ne remplace pas les plans gameplay existants; il organise le nettoyage architectural transversal.
+
+## Constat actuel
+
+- `src/screens/gameplay-scene.ts` concentre rendu, input joueur, camera, HUD, grille runtime, monstres, objets physiques, spawn, transitions de niveau et chargement d'assets.
+- `src/game/state.ts` charge les 16 JSON, convertit le format moderne vers tiles runtime, cree les entites et expose l'etat initial.
+- `LevelRuntimeGrid` est defini dans `gameplay-scene.ts`, alors que c'est une brique de domaine runtime.
+- Les systemes joueur, monstres, objets tombants, HUD et camera commencent a avoir des frontieres naturelles.
+- Les assets extraits/provenance et les assets runtime modernes sont mieux separes qu'avant, mais les references directes a `docs/extraction` restent nombreuses dans les scenes.
+- `src/screens/title-scene.ts` semble etre une ancienne scene de titre non utilisee par le flux moderne, a confirmer avant suppression.
+- `animation-gallery.ts` embarque a la fois un viewer d'assets et un montage du jeu, ce qui est utile mais separe du runtime principal.
+- Les interpolations visuelles sont melangees avec la logique discrete dans certains endroits; il faut les isoler sans changer le comportement.
+- Les constantes ASM/runtime sont actuellement dispersees dans `gameplay-scene.ts`.
+
+## Principes de refactor
+
+- [ ] Ne jamais remplacer une regle gameplay par une hypothese non prouvee.
+- [ ] Garder les preuves ASM/extraction dans `docs/extraction`, `docs/provenance` et les metadata generees.
+- [ ] Garder les JSON modernes comme format runtime editable.
+- [ ] Garder la grille runtime comme source logique d'autorite.
+- [ ] Garder le gameplay discret case par case.
+- [ ] Garder les interpolations comme couche de rendu uniquement.
+- [ ] Decouper par responsabilite, pas par confort esthetique.
+- [ ] Faire des migrations courtes et reversibles.
+
+## Phase 0 - Inventaire et garde-fous
+
+- [x] Lister les modules runtime modernes reellement utilises.
+- [x] Lister les modules historiques ou temporaires potentiellement morts.
+- [x] Identifier les imports directs vers `docs/extraction` utilises au runtime.
+- [x] Identifier les constantes ASM/runtime actuellement dans `gameplay-scene.ts`.
+- [x] Identifier les zones ou le rendu modifie implicitement la logique.
+- [x] Definir une convention de nommage pour les fichiers runtime.
+- [x] Definir une convention de nommage pour les fichiers de rendu.
+- [x] Definir une convention de nommage pour les outils d'extraction.
+- [x] Ajouter une section "Dette connue" dans ce plan si une dette est conservee volontairement.
+
+### Inventaire Phase 0
+
+Modules runtime modernes utilises:
+
+- `src/main.ts`: point d'entree app, choisit jeu ou viewer via `?mode=gallery`.
+- `src/engine/*`: boucle, input, scene router, renderer canvas, loader image.
+- `src/screens/startup-screens.ts`: flux startup ISO actuel, Infogrames puis ecran titre.
+- `src/screens/gameplay-scene.ts`: scene gameplay principale, actuellement trop chargee.
+- `src/game/state.ts`: factory de niveaux et etat initial.
+- `src/game/types.ts`: types runtime, encore couples a des types de rendu.
+- `src/assets/generated/*`: metadata runtime generees utilisees par scenes et rendu.
+- `src/assets/levels/level-XX.json`: niveaux modernes runtime.
+
+Modules historiques, temporaires ou suspects:
+
+- `src/screens/title-scene.ts`: ancienne scene titre non referencee par `main.ts`, `startup-screens.ts` ou `animation-gallery.ts`; candidate a suppression apres confirmation finale.
+- `src/animation-gallery.ts`: viewer dev utile, mais a separer plus nettement du runtime jeu.
+- `src/game/index.ts` et `src/engine/index.ts`: facades exports, a conserver seulement si elles restent utiles apres extraction.
+- Fallbacks de frames dans `gameplay-scene.ts`: utiles en securite, mais a documenter par groupe.
+
+References directes a `docs/extraction` dans le runtime:
+
+- `src/screens/gameplay-scene.ts`: atlas tuiles, diamants, monstres, panneaux HUD.
+- `src/screens/startup-screens.ts`: ecrans startup et animations titre.
+- `src/animation-gallery.ts`: atlas viewer.
+
+Constantes ASM/runtime actuellement dispersees:
+
+- `RUNTIME_GRID_STRIDE`, `RUNTIME_GRID_FILL_TILE_ID`, `RUNTIME_GRID_BASE_ADDRESS`.
+- Tile ids: `0x00`, `0x01`, `0x03`, `0x04`, `0x05`, `0x06`, `0x12`, `0x13`, `0x17`, `0x80`.
+- Seuils camera ASM: `0x04`, `0x0f`, `0x02`, `0x07`.
+- Timings modernes: joueur, camera, monstres, objets tombants, HUD.
+- Donnees HUD encodees en dur: diamant panneau, couleurs TO8, positions.
+
+Zones ou le rendu et la logique restent proches:
+
+- `drawPlayfield` masque certaines tiles runtime dynamiques (`0x17`, `0x80`, `0x12`, `0x13`) comme vide.
+- `drawEntitiesAndObjects` gere l'ordre de rendu gameplay directement dans la scene.
+- Les entites diamants sont synchronisees depuis les objets tombants pendant l'interpolation.
+- Le HUD calcule et rend des donnees TO8 directement dans `gameplay-scene.ts`.
+- Les helpers de couleur TO8 et fontes HUD sont dans la scene gameplay.
+
+Conventions retenues:
+
+- Fichiers runtime domaine: `src/game/runtime-*.ts`.
+- Systems gameplay: `src/game/systems/*-system.ts`.
+- Rendu gameplay: `src/rendering/*-renderer.ts` ou `src/screens/renderers/*` si on veut garder le rendu pres des scenes.
+- Assets runtime: `src/assets/runtime-assets.ts`.
+- Outils extraction/generation: `tools/extract-*.mjs`, `tools/decode-*.mjs`, `tools/generate-*.mjs`.
+- Plans transversaux: racine du repo si l'impact est global, `docs/plans/` si le plan est specifique a une feature.
+
+Dette connue:
+
+- `GameplayScene` reste le god file principal tant que les phases 1 a 5 ne sont pas realisees.
+- Le runtime connait encore des chemins `docs/extraction`; une facade assets doit absorber cela.
+- `src/game/types.ts` importe `TileFrame`, donc le domaine runtime depend encore du rendu.
+- `levelComplete` et transition directe niveau suivant sont modernes, pas encore sequence ISO originale.
+- Les objets physiques implementent le glissement lateral minimal; la priorite exacte gauche/droite reste a raffiner contre ASM complet.
+- Les tests unitaires runtime modernes n'existent pas encore.
+
+## Phase 1 - Decoupage du domaine runtime
+
+- [x] Extraire `LevelRuntimeGrid` vers `src/game/runtime-grid.ts`.
+- [x] Ajouter des methodes explicites sur la grille: `getTile`, `setTile`, `clearTile`, `isInside`, `isEmpty`.
+- [x] Remplacer les appels directs `runtimeGrid.getRuntimeTile` par une API nommee selon le domaine.
+- [x] Remplacer les appels directs `runtimeGrid.setRuntimeTile` par une API de mutation centralisee.
+- [x] Extraire les tile ids runtime vers `src/game/runtime-tiles.ts`.
+- [x] Documenter dans `runtime-tiles.ts` les correspondances prouvees par ASM.
+- [x] Separer les types runtime purs des types de rendu.
+- [x] Supprimer les imports de rendu depuis `src/game/types.ts` si possible.
+
+## Phase 2 - Loader de niveaux modernes
+
+- [ ] Extraire les imports des 16 JSON vers `src/game/level-loader.ts`.
+- [ ] Extraire `ModernLevelJson` vers un type public dedie.
+- [ ] Extraire `buildLevelDefinition` depuis `state.ts`.
+- [ ] Renommer `state.ts` si son role devient uniquement factory d'etat.
+- [ ] Conserver `createGameLevelState(levelNumber)` comme facade publique stable.
+- [ ] Encapsuler le mapping `ModernTileType -> tileId runtime`.
+- [ ] Gerer proprement les niveaux absents ou futurs.
+- [ ] Preparer la future edition de niveaux sans adresses ASM.
+- [ ] Verifier que `level.exit` reste dans le meme repere logique que `playerSpawn`.
+
+## Phase 3 - Systems gameplay
+
+- [ ] Extraire un `PlayerSystem` pour input, mouvement case par case et effets d'arrivee.
+- [ ] Extraire un `CameraSystem` pour seuils ASM, bornes et interpolation visuelle.
+- [ ] Extraire un `MonsterSystem` pour direction, marqueurs `0x17/0x80`, interpolation et sync entite.
+- [ ] Extraire un `FallingObjectSystem` pour rochers/diamants physiques.
+- [ ] Extraire un `SpawnSystem` pour blink spawn et nettoyage de la tile temporaire.
+- [ ] Extraire un `ExitSystem` pour ouverture sortie et transition niveau.
+- [ ] Definir l'ordre d'update des systems dans un seul endroit.
+- [ ] Documenter l'ordre d'update attendu par rapport au runtime original.
+- [ ] Interdire qu'un system modifie directement le rendu.
+
+## Phase 4 - Mutations et evenements runtime
+
+- [ ] Introduire un petit journal d'evenements runtime: `tileCleared`, `diamondCollected`, `exitOpened`, `levelCompleted`.
+- [ ] Faire emettre les evenements par les systems gameplay.
+- [ ] Faire consommer les evenements par le HUD et les transitions.
+- [ ] Eviter les doubles mutations d'une meme case pendant un tick.
+- [ ] Decider si les mutations doivent etre appliquees immediatement ou en fin de tick.
+- [ ] Conserver l'application a l'arrivee pour joueur et objets physiques.
+- [ ] Ajouter une structure pour les cellules deja traitees par tick si necessaire.
+
+## Phase 5 - Rendu gameplay
+
+- [ ] Extraire un `LevelRenderer` pour la grille visible.
+- [ ] Extraire un `EntityRenderer` pour joueur, monstres, diamants et objets tombants.
+- [ ] Extraire un `HudRenderer` pour panneaux bois, compteurs et diamant HUD.
+- [ ] Extraire un `FontRenderer` TO8 pour les fontes generees.
+- [ ] Extraire un `StartupRenderer` ou simplifier les scenes startup.
+- [ ] Garder la couche rendu sans mutation de grille.
+- [ ] Remplacer les constructions de `TileFrame` en scene par un cache d'assets dedie.
+- [ ] Centraliser les URLs d'assets runtime.
+
+## Phase 6 - Assets runtime et extraction
+
+- [ ] Creer une facade `src/assets/runtime-assets.ts`.
+- [ ] Centraliser les URLs vers atlas tuiles, sprites, HUD, startup et title.
+- [ ] Distinguer les assets runtime obligatoires des assets de viewer.
+- [ ] Eviter que les scenes connaissent directement les chemins `docs/extraction`.
+- [ ] Garder les outils d'extraction dans `tools/`.
+- [ ] Garder les preuves d'extraction dans `docs/extraction` et `docs/provenance`.
+- [ ] Verifier si des PNG/metadata inutilises peuvent etre supprimes plus tard.
+- [ ] Ne supprimer aucun asset tant que le viewer ou une preuve ne depend pas de lui.
+
+## Phase 7 - Scenes et navigation
+
+- [ ] Confirmer si `src/screens/title-scene.ts` est mort.
+- [ ] Supprimer `title-scene.ts` si aucune route ne l'utilise.
+- [ ] Clarifier le role de `StartupInfogramScene`.
+- [ ] Clarifier le role de `StartupTitleScene`.
+- [ ] Introduire une scene ou transition dediee pour le passage de niveau si l'ASM le justifie.
+- [ ] Eviter que `GameplayScene` instancie directement la scene suivante sans passer par une intention de navigation.
+- [ ] Ajouter une petite abstraction de scene factory si utile.
+- [ ] Garder le flux startup ISO comme reference.
+
+## Phase 8 - Viewer et outils developpeur
+
+- [ ] Separer clairement `animation-gallery.ts` du runtime jeu.
+- [ ] Renommer le viewer si necessaire en `dev-animation-gallery`.
+- [ ] Isoler les styles du viewer des styles runtime.
+- [ ] Verifier que le viewer continue d'exposer les animations utiles.
+- [ ] Ajouter si besoin un viewer de tuiles runtime et de niveaux JSON.
+- [ ] Documenter comment utiliser `?mode=gallery`.
+- [ ] Eviter que le viewer impose des dependances au bundle jeu principal si possible.
+
+## Phase 9 - Code mort et dette technique
+
+- [ ] Rechercher les exports non utilises.
+- [ ] Rechercher les fichiers non importes.
+- [ ] Rechercher les constantes obsoletes.
+- [ ] Rechercher les types generiques inutilises: `ladder`, `door`, `marker`, `effect`, etc.
+- [ ] Rechercher les fallbacks temporaires de frames et les documenter.
+- [ ] Rechercher les textes de chargement temporaires.
+- [ ] Rechercher les logs ou fichiers de dev commites par erreur.
+- [ ] Supprimer uniquement apres preuve d'inutilisation.
+
+## Phase 10 - Robustesse TypeScript
+
+- [ ] Reduire les assertions `as` non necessaires.
+- [ ] Typer les JSON modernes plus strictement.
+- [ ] Ajouter des validateurs runtime legers pour les JSON de niveaux.
+- [ ] Eviter que `ModernTileType` accepte `exit` si le JSON ne cree pas de tile `exit` directement.
+- [ ] Remplacer les magic numbers par des constantes nommees quand elles sont stables.
+- [ ] Garder les adresses ASM uniquement dans documentation/provenance, pas dans les types runtime modernes.
+- [ ] Verifier l'impact de `noUnusedLocals` apres extraction des modules.
+
+## Phase 11 - Tests et verification future
+
+- [ ] Ajouter des tests unitaires pour `LevelRuntimeGrid`.
+- [ ] Ajouter des tests unitaires pour conversion JSON -> grille runtime.
+- [ ] Ajouter des tests unitaires pour ouverture sortie.
+- [ ] Ajouter des tests unitaires pour collecte diamant/herbe.
+- [ ] Ajouter des tests unitaires pour chute verticale.
+- [ ] Ajouter des tests unitaires pour glissement lateral minimal.
+- [ ] Ajouter des tests de non-regression sur compteurs HUD.
+- [ ] Ajouter une verification de coherence des 16 JSON modernes.
+- [ ] Garder les tests de provenance separes des tests runtime modernes.
+
+## Phase 12 - Ordre de realisation recommande
+
+- [ ] Extraire d'abord `runtime-tiles.ts`.
+- [ ] Extraire ensuite `runtime-grid.ts`.
+- [ ] Extraire le loader de niveaux.
+- [ ] Extraire `HudRenderer`, car c'est peu risque et tres local.
+- [ ] Extraire `CameraSystem`, car il est assez autonome.
+- [ ] Extraire `PlayerSystem`, apres stabilisation des mutations.
+- [ ] Extraire `FallingObjectSystem`, avant d'ajouter morts/explosions.
+- [ ] Extraire `MonsterSystem`, avant collisions mortelles.
+- [ ] Faire seulement ensuite les phases gameplay suivantes: poussee, morts, explosions.
+
+## Definition de fini
+
+- [ ] `GameplayScene` orchestre les systems mais ne contient plus leur logique interne.
+- [ ] La logique runtime peut etre lue sans lire le code de rendu canvas.
+- [ ] Le rendu peut etre lu sans lire les routines de collision.
+- [ ] Les JSON modernes restent la seule source runtime des niveaux.
+- [ ] Les preuves ASM restent consultables et reliees aux decisions importantes.
+- [ ] Aucun comportement ISO deja obtenu n'est perdu.
+- [ ] Le code mort identifie est supprime ou documente.
+- [ ] Le plan gameplay peut continuer avec poussee, morts et explosions sur une base plus claire.
