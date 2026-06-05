@@ -1,31 +1,71 @@
 import { mineSpriteMetadata } from "./assets/generated/mine-sprites";
 import { VIEWER_ASSET_URLS } from "./assets/runtime-assets";
 
+/**
+ * Viewer developpeur des animations extraites.
+ *
+ * Cet outil se monte avec `?mode=gallery` et permet de verifier rapidement les
+ * atlas sprites et les sequences de frames declarees dans les metadata.
+ */
+
+/** Alias local des atlas affichables par groupe de sprites. */
 const ATLAS_URLS: Record<string, string> = VIEWER_ASSET_URLS;
 
+/** Groupe de sprites issu des metadata generees. */
 type SpriteGroup = (typeof mineSpriteMetadata.groups)[number];
+
+/** Frame de sprite issue d'un groupe metadata. */
 type SpriteFrame = SpriteGroup["frames"][number];
+
+/** Animation declaree dans un groupe metadata. */
 type SpriteAnimation = NonNullable<SpriteGroup["animations"]>[number];
 
+/** Animation prete a etre rendue sous forme de carte dans le viewer. */
 type GalleryAnimation = {
+  /** Groupe metadata auquel appartient l'animation. */
   group: SpriteGroup;
+
+  /** Definition metadata de l'animation. */
   animation: SpriteAnimation;
+
+  /** Frames resolues dans l'ordre de lecture. */
   frames: SpriteFrame[];
+
+  /** URL de l'atlas contenant les frames. */
   atlasUrl: string;
 };
 
+/** Etat runtime d'une carte animee du viewer. */
 type Player = {
+  /** Carte DOM de l'animation. */
   card: HTMLElement;
+
+  /** Canvas de preview 16x16. */
   canvas: HTMLCanvasElement;
+
+  /** Contexte 2D du canvas de preview. */
   ctx: CanvasRenderingContext2D;
+
+  /** Image atlas chargee. */
   image: HTMLImageElement;
+
+  /** Frames jouees par la preview. */
   frames: SpriteFrame[];
+
+  /** Index de frame courant. */
   frameIndex: number;
+
+  /** Timestamp de reference pour la cadence d'animation. */
   elapsedMs: number;
+
+  /** Duree d'une frame en millisecondes. */
   frameMs: number;
+
+  /** Indique si la preview animee tourne. */
   playing: boolean;
 };
 
+/** Monte le viewer dans l'element racine fourni. */
 export function mountDevAnimationGallery(root: HTMLElement): void {
   root.innerHTML = "";
   root.className = "dev-gallery-shell";
@@ -51,6 +91,7 @@ export function mountDevAnimationGallery(root: HTMLElement): void {
 
   const players = createCards(gallery);
 
+  /** Boucle d'animation du viewer synchronisee sur `requestAnimationFrame`. */
   const tick = (time: number) => {
     animatePlayers(players, time);
     window.requestAnimationFrame(tick);
@@ -58,6 +99,7 @@ export function mountDevAnimationGallery(root: HTMLElement): void {
   window.requestAnimationFrame(tick);
 }
 
+/** Cree toutes les cartes du viewer et retourne leurs etats d'animation. */
 function createCards(container: HTMLElement): Player[] {
   const animations = collectAnimations();
   return animations.map((item) => {
@@ -141,6 +183,7 @@ function createCards(container: HTMLElement): Player[] {
   });
 }
 
+/** Collecte les animations disposant a la fois de metadata et d'un atlas visible. */
 function collectAnimations(): GalleryAnimation[] {
   const cards: GalleryAnimation[] = [];
   for (const group of mineSpriteMetadata.groups) {
@@ -155,6 +198,7 @@ function collectAnimations(): GalleryAnimation[] {
   return cards;
 }
 
+/** Resout la liste de frames d'une animation depuis ses tile ids ou son frame count. */
 function framesForAnimation(group: SpriteGroup, animation: SpriteAnimation): SpriteFrame[] {
   if ("frameCount" in animation && typeof animation.frameCount === "number") {
     return group.frames.slice(0, animation.frameCount);
@@ -164,6 +208,7 @@ function framesForAnimation(group: SpriteGroup, animation: SpriteAnimation): Spr
     .filter((frame): frame is SpriteFrame => Boolean(frame));
 }
 
+/** Avance et redessine toutes les previews animees. */
 function animatePlayers(players: Player[], time: number): void {
   for (const player of players) {
     if (!player.image.complete || player.frames.length === 0) continue;
@@ -181,11 +226,13 @@ function animatePlayers(players: Player[], time: number): void {
   }
 }
 
+/** Dessine une frame metadata dans le canvas 16x16 de preview. */
 function drawFrame(ctx: CanvasRenderingContext2D, image: HTMLImageElement, frame: SpriteFrame): void {
   ctx.clearRect(0, 0, 16, 16);
   ctx.drawImage(image, frame.atlasX, frame.atlasY, frame.width, frame.height, 0, 0, 16, 16);
 }
 
+/** Transforme un identifiant technique en libelle lisible. */
 function label(value: string): string {
   return value.replace(/[-_]/g, " ");
 }

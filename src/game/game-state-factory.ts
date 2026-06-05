@@ -1,9 +1,18 @@
+/**
+ * Role: Cree l'etat runtime initial d'une partie ou d'un niveau.
+ * Scope: Assemble LevelDefinition, entites, HUD, monstres et files runtime.
+ * ISO: Les pointeurs monstres utilisent la base/stride runtime TO8 centralises.
+ * Notes: `createGameLevelState` reste la facade stable pour les scenes.
+ */
+
 import type { EntityState, GameState, MonsterRuntimeState } from "./types";
 import { loadLevelDefinition } from "./level-loader";
 import { RUNTIME_GRID_BASE_ADDRESS, RUNTIME_GRID_STRIDE } from "./runtime-tiles";
 
+/** Definition du premier niveau, exposee pour compatibilite et inspection. */
 export const LEVEL1_DEFINITION = loadLevelDefinition(1);
 
+/** Cree l'etat complet initial pour un niveau donne. */
 export function createGameLevelState(levelNumber = 1): GameState {
   const levelDefinition = loadLevelDefinition(levelNumber);
   const entities: EntityState[] = levelDefinition.initialEntities.map((entity) => ({ ...entity }));
@@ -35,7 +44,9 @@ export function createGameLevelState(levelNumber = 1): GameState {
   };
 }
 
+/** Cree les etats runtime specialises des monstres a partir des entites de niveau. */
 function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRuntimeState[] {
+  /** Direction initiale moderne conservee pour tous les monstres au chargement. */
   const initialDirection: MonsterRuntimeState["direction"] = 2;
   return entities
     .filter((entity) => entity.kind === "monster")
@@ -51,4 +62,5 @@ function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRu
     }));
 }
 
+/** Alias historique conserve pour compatibilite avec les anciennes integrations. */
 export const createGameShellState = createGameLevelState;

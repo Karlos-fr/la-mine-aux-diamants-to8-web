@@ -1,3 +1,10 @@
+/**
+ * Role: Orchestre les deux ecrans startup ISO avant l'entree gameplay.
+ * Scope: Charge les images, gere les timers/input et delegue le rendu a `startup-renderer`.
+ * ISO: Les assets et positions viennent des extractions Infogrames/title.
+ * Notes: Le second ecran titre est anime via les frames extraites.
+ */
+
 import { mineTitleMetadata } from "../assets/generated/mine-title";
 import type { InputState } from "../engine/input";
 import { loadImage } from "../engine/image-loader";
@@ -8,13 +15,19 @@ import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } fro
 import { createGameplayScene } from "./scene-factory";
 
 export class StartupInfogramScene implements Scene {
+  /** Contexte de scene fourni par le routeur pour naviguer vers l'ecran titre. */
   private context: SceneContext | undefined;
+  /** Temps ecoule depuis l'entree dans l'ecran Infogrames. */
   private elapsed = 0;
+  /** Image plein ecran chargee de l'ecran Infogrames/presente. */
   private backgroundImage: HTMLImageElement | undefined;
+  /** Message d'erreur de chargement affiche si l'image manque. */
   private backgroundError: string | null = null;
 
+  /** URL runtime centralisee de l'image Infogrames. */
   private readonly backgroundImageUrl = RUNTIME_ASSET_URLS.startupInfogramesPresents;
 
+  /** Lance le chargement asynchrone de l'image Infogrames. */
   constructor() {
     void loadImage(this.backgroundImageUrl).then((image) => {
       this.backgroundImage = image;
@@ -23,10 +36,12 @@ export class StartupInfogramScene implements Scene {
     });
   }
 
+  /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
   }
 
+  /** Avance le timer et passe au titre apres delai ou action utilisateur. */
   update(dt: number, input: InputState): void {
     this.elapsed += dt;
 
@@ -38,34 +53,55 @@ export class StartupInfogramScene implements Scene {
     }
   }
 
+  /** Rend l'ecran Infogrames ou son etat chargement/erreur. */
   render(renderer: Renderer): void {
     renderStartupInfogram(renderer, this.backgroundImage, this.backgroundError);
   }
 }
 
+/** Scene du second ecran startup: titre principal anime et attente de la barre/action. */
 export class StartupTitleScene implements Scene {
+  /** Contexte de scene fourni par le routeur pour lancer le gameplay. */
   private context: SceneContext | undefined;
+  /** Accumulateur de temps pour les scintillements. */
   private sparkleElapsed = 0;
+  /** Accumulateur de temps pour le visage. */
   private faceElapsed = 0;
+  /** Accumulateur de temps pour les pieds. */
   private feetElapsed = 0;
+  /** Index courant de frame scintillement. */
   private sparkleIndex = 0;
+  /** Index courant de frame visage. */
   private faceIndex = 0;
+  /** Index courant de frame pieds. */
   private feetIndex = 0;
 
+  /** Image de base plein ecran du titre. */
   private baseImage: HTMLImageElement | undefined;
+  /** Frames extraites du visage. */
   private readonly faceFrames: StartupTitleFrame[];
+  /** Frames extraites des etoiles/scintillements. */
   private readonly sparkleFrames: StartupTitleFrame[];
+  /** Frames extraites des pieds. */
   private readonly feetFrames: StartupTitleFrame[];
+  /** URL runtime centralisee de l'image de base du titre. */
   private readonly baseImagePath = RUNTIME_ASSET_URLS.startupTitleBase;
 
+  /** Cache des images de visage chargees. */
   private readonly faceImageCache = new Map<string, HTMLImageElement>();
+  /** Cache des images de scintillement chargees. */
   private readonly sparkleImageCache = new Map<string, HTMLImageElement>();
+  /** Cache des images de pieds chargees. */
   private readonly feetImageCache = new Map<string, HTMLImageElement>();
 
+  /** Frequence moderne de scintillement. */
   private readonly sparkleTiming = 1 / 12;
+  /** Frequence moderne de l'animation visage. */
   private readonly faceTiming = 1 / 14;
+  /** Frequence moderne de l'animation pieds. */
   private readonly feetTiming = 1 / 6;
 
+  /** Extrait les listes de frames metadata et lance leur chargement image. */
   constructor() {
     const faceAnimation = mineTitleMetadata.animations.find((animation) => animation.id === "title-face");
     const sparkleAnimation = mineTitleMetadata.animations.find((animation) => animation.id === "title-sparkles");
@@ -97,10 +133,12 @@ export class StartupTitleScene implements Scene {
     this.queueLoading(this.feetFrames, this.feetImageCache);
   }
 
+  /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
   }
 
+  /** Avance les clocks d'animation et lance le niveau 1 sur action. */
   update(dt: number, input: InputState): void {
     this.sparkleElapsed += dt;
     this.faceElapsed += dt;
@@ -126,6 +164,7 @@ export class StartupTitleScene implements Scene {
     }
   }
 
+  /** Rend l'image de base et les overlays animes courants. */
   render(renderer: Renderer): void {
     const currentSparkle = this.sparkleFrames[this.sparkleIndex];
     const currentFace = this.faceFrames[this.faceIndex];
@@ -142,6 +181,7 @@ export class StartupTitleScene implements Scene {
     });
   }
 
+  /** Charge une liste de frames image dans le cache fourni. */
   private queueLoading(
     frames: StartupTitleFrame[],
     cache: Map<string, HTMLImageElement>
@@ -159,6 +199,7 @@ export class StartupTitleScene implements Scene {
   }
 }
 
+/** Retourne l'element d'un tableau si l'index existe. */
 function pick<T>(value: ReadonlyArray<T> | undefined, index: number): T | undefined {
   return value?.[index];
 }

@@ -1,22 +1,42 @@
+/**
+ * Role: Rend les deux ecrans startup ISO.
+ * Scope: Dessine l'ecran Infogrames et l'ecran titre anime a partir d'images deja chargees.
+ * ISO: Les positions et images viennent des extractions startup/title.
+ * Notes: Les timers et transitions restent dans les scenes startup.
+ */
+
 import { TO8_PALETTE } from "../assets/palette";
 import type { Renderer } from "../engine/renderer";
 
+/** Frame d'animation title extraite avec son chemin et sa position ecran optionnelle. */
 export interface StartupTitleFrame {
+  /** Chemin relatif dans `docs/extraction`. */
   readonly path: string;
+  /** Position X de rendu si la frame n'est pas plein ecran. */
   readonly x?: number;
+  /** Position Y de rendu si la frame n'est pas plein ecran. */
   readonly y?: number;
 }
 
+/** Etat de rendu instantane de l'ecran titre. */
 export interface StartupTitleRenderState {
+  /** Image de base plein ecran du titre. */
   readonly baseImage?: HTMLImageElement;
+  /** Frame courante de scintillement. */
   readonly currentSparkle?: StartupTitleFrame;
+  /** Frame courante du visage. */
   readonly currentFace?: StartupTitleFrame;
+  /** Frame courante des pieds. */
   readonly currentFeet?: StartupTitleFrame;
+  /** Image chargee du scintillement courant. */
   readonly sparkleImage?: HTMLImageElement;
+  /** Image chargee du visage courant. */
   readonly faceImage?: HTMLImageElement;
+  /** Image chargee des pieds courants. */
   readonly feetImage?: HTMLImageElement;
 }
 
+/** Rend l'ecran Infogrames ou son etat de chargement/erreur. */
 export function renderStartupInfogram(
   renderer: Renderer,
   backgroundImage: HTMLImageElement | undefined,
@@ -37,6 +57,7 @@ export function renderStartupInfogram(
   renderer.drawImage(backgroundImage, 0, 0);
 }
 
+/** Rend l'ecran titre anime a partir de l'etat instantane fourni. */
 export function renderStartupTitle(renderer: Renderer, state: StartupTitleRenderState): void {
   if (!state.baseImage) {
     renderer.clear("#000000");

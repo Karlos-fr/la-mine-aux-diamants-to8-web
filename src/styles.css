@@ -1,3 +1,11 @@
+/*
+ * Styles globaux du portage moderne.
+ *
+ * Le canvas reste en rendu pixel-perfect, tandis que le viewer developpeur
+ * partage la meme feuille pour rester disponible sans build separe.
+ */
+
+/* Variables implicites et base typographique de la page. */
 :root {
   color-scheme: dark;
   background: #000;
@@ -5,10 +13,12 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* Normalisation minimale du modele de boite. */
 * {
   box-sizing: border-box;
 }
 
+/* Surface plein ecran et largeur minimale compatible TO8. */
 html,
 body,
 #app {
@@ -18,16 +28,19 @@ body,
   margin: 0;
 }
 
+/* Fond noir historique autour du canvas. */
 body {
   overflow-x: hidden;
   background: #000;
 }
 
+/* Heritage typographique pour les controles du viewer. */
 button,
 input {
   font: inherit;
 }
 
+/* Boutons sobres utilises par le viewer d'animations. */
 button {
   min-height: 34px;
   border: 1px solid #6b6541;
@@ -37,20 +50,24 @@ button {
   cursor: pointer;
 }
 
+/* Retour visuel au survol des boutons du viewer. */
 button:hover {
   border-color: #f3d44d;
 }
 
+/* Conteneur plein ecran du viewer developpeur. */
 .dev-gallery-shell {
   min-height: 100vh;
 }
 
+/* Largeur et marges de la page du viewer. */
 .dev-gallery-page {
   width: min(1180px, calc(100vw - 28px));
   margin: 0 auto;
   padding: 22px 0 34px;
 }
 
+/* Entete du viewer: titre, aide et separation visuelle. */
 .dev-gallery-header {
   display: flex;
   align-items: end;
@@ -61,6 +78,7 @@ button:hover {
   padding-bottom: 14px;
 }
 
+/* Libelle secondaire du viewer. */
 .dev-gallery-eyebrow {
   margin: 0 0 5px;
   color: #67ff68;
@@ -69,6 +87,7 @@ button:hover {
   text-transform: uppercase;
 }
 
+/* Titre principal du viewer. */
 .dev-gallery-title {
   margin: 0;
   color: #fff7c4;
@@ -76,18 +95,21 @@ button:hover {
   line-height: 1.05;
 }
 
+/* Texte d'aide pour ouvrir le mode galerie. */
 .dev-gallery-help {
   margin: 8px 0 0;
   color: #bbb49b;
   font-size: 12px;
 }
 
+/* Grille responsive des cartes d'animations. */
 .dev-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
 }
 
+/* Carte de preview d'une animation extraite. */
 .dev-gallery-card {
   display: grid;
   grid-template-columns: 88px 1fr;
@@ -106,6 +128,7 @@ button:hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+/* Ligne de titre et statut d'une carte. */
 .dev-gallery-card-title {
   grid-area: title;
   display: flex;
@@ -119,6 +142,7 @@ button:hover {
   text-transform: capitalize;
 }
 
+/* Badge indiquant le statut metadata de l'animation. */
 .dev-gallery-status-pill {
   flex: 0 0 auto;
   border: 1px solid #315c35;
@@ -130,6 +154,7 @@ button:hover {
   text-transform: none;
 }
 
+/* Canvas 16x16 agrandi pour verifier une animation. */
 .dev-gallery-sprite-preview {
   grid-area: sprite;
   width: 80px;
@@ -140,6 +165,7 @@ button:hover {
   image-rendering: crisp-edges;
 }
 
+/* Zone de controles lecture/vitesse d'une animation. */
 .dev-gallery-card-controls {
   grid-area: controls;
   display: grid;
@@ -148,11 +174,13 @@ button:hover {
   gap: 10px;
 }
 
+/* Slider de cadence d'animation. */
 .dev-gallery-card-controls input {
   width: 100%;
   accent-color: #f3d44d;
 }
 
+/* Liste compacte des frames jouees par l'animation. */
 .dev-gallery-frame-strip {
   grid-area: frames;
   display: flex;
@@ -163,6 +191,7 @@ button:hover {
   overflow: auto;
 }
 
+/* Pastille de frame individuelle. */
 .dev-gallery-frame-strip span {
   border: 1px solid #3f3b2c;
   border-radius: 4px;
@@ -172,6 +201,7 @@ button:hover {
   font-size: 11px;
 }
 
+/* Apercu horizontal de l'atlas source. */
 .dev-gallery-atlas-preview {
   grid-area: atlas;
   width: 100%;
@@ -184,6 +214,7 @@ button:hover {
   image-rendering: crisp-edges;
 }
 
+/* Trace ASM/metadata affichee dans une carte. */
 .dev-gallery-evidence {
   grid-area: evidence;
   min-height: 38px;
@@ -194,6 +225,7 @@ button:hover {
   line-height: 1.35;
 }
 
+/* Canvas principal du jeu, mis a l'echelle sans lissage. */
 #game-screen {
   display: block;
   margin: 0 auto;
@@ -208,11 +240,13 @@ button:hover {
   outline: none;
 }
 
+/* Le focus clavier reste actif sans surcouche visuelle moderne. */
 #game-screen:focus-visible {
   box-shadow: none;
   outline: none;
 }
 
+/* Racine centree pour afficher le canvas dans la page. */
 #app {
   min-height: 100vh;
   margin: 0;
@@ -221,6 +255,7 @@ button:hover {
   place-items: center;
 }
 
+/* Ajustements mobiles du viewer. */
 @media (max-width: 620px) {
   .dev-gallery-header {
     align-items: stretch;

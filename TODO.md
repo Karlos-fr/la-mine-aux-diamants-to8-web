@@ -1,6 +1,6 @@
 ﻿- Faire un audit de l'archi, code mort, découpage logique, ...
 
-
+- Animation IDL
 
 
 - Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
@@ -12,6 +12,7 @@
 - Gestion du son
 - Gestion des autres monstres
 - - Niveau secret Infogram
+- [ ] Ajouter si besoin un viewer de tuiles runtime et de niveaux JSON.
 
 La mine aux diamants
 

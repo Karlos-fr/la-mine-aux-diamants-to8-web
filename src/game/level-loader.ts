@@ -1,3 +1,10 @@
+/**
+ * Role: Charge les JSON de niveaux modernes et les convertit en definitions runtime.
+ * Scope: Valide le format moderne, mappe les types de tuiles vers les tile ids TO8 et cree les entites initiales.
+ * ISO: Les tile ids produits renvoient aux constantes prouvees dans `runtime-tiles.ts`.
+ * Notes: Le format JSON moderne reste sans adresse ASM et porte `exit` comme coordonnee logique separee.
+ */
+
 import type { EntityState, LevelDefinition, TileDefinition } from "./types";
 import { RUNTIME_TILE } from "./runtime-tiles";
 import level01Json from "../assets/levels/level-01.json";
@@ -17,34 +24,64 @@ import level14Json from "../assets/levels/level-14.json";
 import level15Json from "../assets/levels/level-15.json";
 import level16Json from "../assets/levels/level-16.json";
 
+/** Types de tuiles autorises dans les JSON modernes. */
 export type ModernTileType = "empty" | "earth" | "rock" | "diamond" | "monster" | "border" | "platform";
+/** Types d'entites declarables dans les JSON modernes. */
 export type ModernEntityType = "diamond" | "monster";
 
+/** Coordonnees de grille modernes, sans adresse ASM. */
 export interface ModernGridPoint {
+  /** Colonne de grille. */
   readonly x: number;
+  /** Ligne de grille. */
   readonly y: number;
 }
 
+/** Cellule moderne typee, utilisee pour tuiles et entites. */
 export interface ModernLevelCell<TType extends string> extends ModernGridPoint {
+  /** Type moderne de la cellule. */
   readonly type: TType;
 }
 
+/**
+ * Format JSON moderne editable d'un niveau.
+ *
+ * Schema attendu:
+ * `id` et `label` identifient le niveau, `width`/`height`/`tileSize`
+ * definissent la grille, `defaultTile` remplit toute la carte, `tiles`
+ * surcharge les cellules explicites, `entities` place les entites animees,
+ * `playerSpawn` et `exit` restent des coordonnees logiques separees.
+ */
 export interface ModernLevelJson {
+  /** Identifiant stable du niveau. */
   readonly id: string;
+  /** Libelle humain affiche/documentaire. */
   readonly label: string;
+  /** Largeur logique en cellules. */
   readonly width: number;
+  /** Hauteur logique en cellules. */
   readonly height: number;
+  /** Taille d'une cellule en pixels. */
   readonly tileSize: number;
+  /** Tuile par defaut de la grille avant application des cellules explicites. */
   readonly defaultTile: ModernTileType;
+  /** Temps initial du niveau. */
   readonly time: number;
+  /** Score ajoute par diamant. */
   readonly scoreStep: number;
+  /** Nombre de diamants requis pour ouvrir la sortie. */
   readonly requiredDiamonds: number;
+  /** Position joueur initiale en coordonnees de grille. */
   readonly playerSpawn: ModernGridPoint;
+  /** Position sortie en coordonnees de grille. */
   readonly exit: ModernGridPoint;
+  /** Tuiles explicites differant de la tuile par defaut. */
   readonly tiles: ReadonlyArray<ModernLevelCell<ModernTileType>>;
+  /** Entites placees dans le niveau. */
   readonly entities: ReadonlyArray<ModernLevelCell<ModernEntityType>>;
 }
 
+/** Sources JSON brutes importees par Vite avant validation runtime legere. */
 const RAW_LEVEL_SOURCES = [
   level01Json,
   level02Json,
@@ -64,8 +101,10 @@ const RAW_LEVEL_SOURCES = [
   level16Json
 ] as readonly unknown[];
 
+/** Niveaux modernes valides au chargement du module. */
 const LEVEL_SOURCES = RAW_LEVEL_SOURCES.map((source, index) => validateModernLevelJson(source, index + 1));
 
+/** Conversion des types modernes vers les tile ids runtime prouves. */
 const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
   empty: RUNTIME_TILE.empty,
   earth: RUNTIME_TILE.earth,
@@ -76,19 +115,28 @@ const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
   platform: RUNTIME_TILE.platform
 };
 
+/** Tile ids qui definissent un rocher dans les definitions de tuile. */
 const ROCK_TILE_IDS = [RUNTIME_TILE.rock];
+/** Tile ids solides de type mur/terrain. */
 const WALL_TILE_IDS = [RUNTIME_TILE.earth, RUNTIME_TILE.platform];
+/** Tile ids collectible diamant. */
 const DIAMOND_TILE_IDS = [RUNTIME_TILE.diamond];
+/** Tile ids representant une sortie/bloc protege dans le runtime courant. */
 const EXIT_TILE_IDS = [RUNTIME_TILE.border];
+/** Tile ids de monstre initial. */
 const MONSTER_TILE_IDS = [RUNTIME_TILE.monster];
+/** Tile ids vides. */
 const EMPTY_TILE_IDS = [RUNTIME_TILE.empty];
 
+/** Nombre de niveaux modernes disponibles. */
 export const LEVEL_COUNT = LEVEL_SOURCES.length;
 
+/** Retourne le JSON moderne valide d'un niveau, ou `undefined` si absent. */
 export function getModernLevelSource(levelNumber: number): ModernLevelJson | undefined {
   return LEVEL_SOURCES[levelNumber - 1];
 }
 
+/** Charge et convertit un niveau moderne en definition runtime jouable. */
 export function loadLevelDefinition(levelNumber: number): LevelDefinition {
   const levelSource = getModernLevelSource(levelNumber);
   if (!levelSource) {
@@ -98,6 +146,7 @@ export function loadLevelDefinition(levelNumber: number): LevelDefinition {
   return buildLevelDefinition(levelSource, levelNumber);
 }
 
+/** Convertit un JSON moderne deja valide en `LevelDefinition` runtime. */
 export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number): LevelDefinition {
   const tileSize = level.tileSize;
   const tiles = buildTilesFromModernLevel(level);
@@ -168,6 +217,7 @@ export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number
   };
 }
 
+/** Cree les definitions de tuiles uniquement pour les tile ids presents dans la grille. */
 function buildTileDefinitionsFromRows(tiles: readonly number[], scoreStep: number): Record<number, TileDefinition> {
   const definitions: Record<number, TileDefinition> = {};
   const uniqueTileIds = [...new Set(tiles)];
@@ -178,6 +228,7 @@ function buildTileDefinitionsFromRows(tiles: readonly number[], scoreStep: numbe
   return definitions;
 }
 
+/** Cree une definition descriptive pour un tile id runtime donne. */
 function createTileDefinition(tileId: number, scoreStep: number): TileDefinition {
   if (ROCK_TILE_IDS.includes(tileId)) {
     return {
@@ -245,6 +296,7 @@ function createTileDefinition(tileId: number, scoreStep: number): TileDefinition
   };
 }
 
+/** Construit la grille aplatie de tile ids runtime depuis les cellules modernes. */
 function buildTilesFromModernLevel(level: ModernLevelJson): number[] {
   const defaultTileId = TILE_IDS_BY_TYPE[level.defaultTile];
   const tiles = Array.from({ length: level.width * level.height }, () => defaultTileId);
@@ -256,12 +308,14 @@ function buildTilesFromModernLevel(level: ModernLevelJson): number[] {
   return tiles;
 }
 
+/** Extrait les positions des entites d'un type donne depuis le JSON moderne. */
 function findEntityPositions(level: ModernLevelJson, type: ModernEntityType): ModernGridPoint[] {
   return level.entities
     .filter((entity) => entity.type === type)
     .map((entity) => ({ x: entity.x, y: entity.y }));
 }
 
+/** Valide legerement un JSON de niveau et retourne une structure typee. */
 function validateModernLevelJson(source: unknown, levelNumber: number): ModernLevelJson {
   const level = expectRecord(source, `level ${levelNumber}`);
   const width = expectPositiveInteger(level.width, levelNumber, "width");
@@ -285,6 +339,7 @@ function validateModernLevelJson(source: unknown, levelNumber: number): ModernLe
   };
 }
 
+/** Valide un tableau de cellules modernes et leurs coordonnees. */
 function expectLevelCells<TType extends string>(
   value: unknown,
   levelNumber: number,
@@ -306,6 +361,7 @@ function expectLevelCells<TType extends string>(
   });
 }
 
+/** Valide une coordonnee de grille et ses bornes. */
 function expectGridPoint(
   value: unknown,
   levelNumber: number,
@@ -323,6 +379,7 @@ function expectGridPoint(
   return { x, y };
 }
 
+/** Valide un type de tuile moderne sans accepter `exit` comme tuile placable. */
 function expectModernTileType(value: unknown, levelNumber: number, field: string): ModernTileType {
   if (
     value === "empty" ||
@@ -339,6 +396,7 @@ function expectModernTileType(value: unknown, levelNumber: number, field: string
   throw new Error(`Niveau ${levelNumber}: ${field} contient une tuile moderne inconnue: ${String(value)}.`);
 }
 
+/** Valide un type d'entite moderne. */
 function expectModernEntityType(value: unknown, levelNumber: number, field: string): ModernEntityType {
   if (value === "diamond" || value === "monster") {
     return value;
@@ -347,6 +405,7 @@ function expectModernEntityType(value: unknown, levelNumber: number, field: stri
   throw new Error(`Niveau ${levelNumber}: ${field} contient une entite moderne inconnue: ${String(value)}.`);
 }
 
+/** Valide une chaine non vide. */
 function expectString(value: unknown, levelNumber: number, field: string): string {
   if (typeof value === "string" && value.length > 0) {
     return value;
@@ -355,6 +414,7 @@ function expectString(value: unknown, levelNumber: number, field: string): strin
   throw new Error(`Niveau ${levelNumber}: ${field} doit etre une chaine non vide.`);
 }
 
+/** Valide un entier strictement positif. */
 function expectPositiveInteger(value: unknown, levelNumber: number, field: string): number {
   if (Number.isInteger(value) && value > 0) {
     return value;
@@ -363,6 +423,7 @@ function expectPositiveInteger(value: unknown, levelNumber: number, field: strin
   throw new Error(`Niveau ${levelNumber}: ${field} doit etre un entier positif.`);
 }
 
+/** Valide un entier positif ou nul. */
 function expectNonNegativeInteger(value: unknown, levelNumber: number, field: string): number {
   if (Number.isInteger(value) && value >= 0) {
     return value;
@@ -371,6 +432,7 @@ function expectNonNegativeInteger(value: unknown, levelNumber: number, field: st
   throw new Error(`Niveau ${levelNumber}: ${field} doit etre un entier positif ou nul.`);
 }
 
+/** Valide qu'une valeur inconnue est un objet indexable. */
 function expectRecord(value: unknown, label: string): Record<string, unknown> {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
     return value;

@@ -1,3 +1,11 @@
+/**
+ * Role: Gere la sequence visuelle de spawn joueur.
+ * Scope: Calcule la duree du blink et la tuile a rendre pendant cette phase.
+ * ISO: Reproduit la sequence moderne convenue: bordure puis noir plusieurs fois avant apparition.
+ * Notes: Le nettoyage de grille reste orchestre hors de ce system.
+ */
+
+/** Indique si le joueur est encore dans la fenetre de blink de spawn. */
 export function isPlayerSpawning(
   spawnElapsed: number,
   blinkRepetitions: number,
@@ -6,6 +14,7 @@ export function isPlayerSpawning(
   return spawnElapsed < blinkRepetitions * 2 * blinkStepDuration;
 }
 
+/** Retourne la tuile de blink spawn, `null` pour noir, ou `undefined` hors spawn. */
 export function getPlayerSpawnBlinkTileId(
   spawnElapsed: number,
   blinkStepDuration: number,

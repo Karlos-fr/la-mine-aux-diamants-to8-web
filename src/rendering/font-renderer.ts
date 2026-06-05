@@ -1,6 +1,14 @@
+/**
+ * Role: Rend les fontes TO8 extraites depuis les metadata generees.
+ * Scope: Dessine du texte pixel par pixel via l'interface Renderer.
+ * ISO: Les glyphes viennent de `mine-fonts`, produit par extraction/provenance.
+ * Notes: Le fallback `drawPixelText` reste un filet de securite si une font manque.
+ */
+
 import { mineFontMetadata } from "../assets/generated/mine-fonts";
 import type { Renderer } from "../engine/renderer";
 
+/** Dessine une chaine avec une font TO8 extraite ou un fallback pixel moderne. */
 export function drawTo8FontText(
   renderer: Renderer,
   text: string,

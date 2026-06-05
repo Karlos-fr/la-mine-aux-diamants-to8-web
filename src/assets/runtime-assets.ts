@@ -1,7 +1,16 @@
+/**
+ * Registre central des assets runtime.
+ *
+ * Les scenes passent par ce module pour eviter de disperser les chemins vers
+ * `docs/extraction` dans le code applicatif.
+ */
+
+/** Construit une URL publique vers un asset conserve dans `docs/extraction`. */
 export function docsExtractionAssetUrl(relativePath: string): string {
   return `/docs/extraction/${relativePath}`;
 }
 
+/** Assets utilises par le runtime principal du jeu. */
 export const RUNTIME_ASSET_URLS = {
   tilesAtlas: docsExtractionAssetUrl("mine-tiles-atlas-D218-D8D7.png"),
   diamondAtlas: docsExtractionAssetUrl("sprites/diamond-atlas.png"),
@@ -12,6 +21,7 @@ export const RUNTIME_ASSET_URLS = {
   startupTitleBase: docsExtractionAssetUrl("startup/startup-02-title-entet-9367.png")
 } as const;
 
+/** Assets supplementaires exposes par le viewer developpeur d'animations. */
 export const VIEWER_ASSET_URLS: Record<string, string> = {
   player: docsExtractionAssetUrl("sprites/player-atlas.png"),
   diamond: RUNTIME_ASSET_URLS.diamondAtlas,

@@ -1,8 +1,20 @@
+/**
+ * Police bitmap minimale du moteur.
+ *
+ * Cette police 5x7 sert aux messages techniques et au viewer; les textes ISO
+ * extraits du jeu utilisent des glyphes dedies ailleurs dans le portage.
+ */
+
+/** Representation textuelle d'un glyphe, une chaine binaire par ligne. */
 export type Glyph = readonly string[];
 
+/** Largeur fixe d'un glyphe en pixels. */
 export const BITMAP_FONT_WIDTH = 5;
+
+/** Hauteur fixe d'un glyphe en pixels. */
 export const BITMAP_FONT_HEIGHT = 7;
 
+/** Table des glyphes bitmap disponibles, indexee par caractere majuscule. */
 export const BITMAP_FONT: Readonly<Record<string, Glyph>> = {
   " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
   "-": ["00000", "00000", "00000", "11110", "00000", "00000", "00000"],
