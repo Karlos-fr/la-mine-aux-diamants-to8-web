@@ -2,7 +2,7 @@ import { TO8_PALETTE } from "../assets/palette";
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { EntityState, GameState } from "../game/types";
-import type { Scene } from "../engine/scene";
+import type { Scene, SceneContext } from "../engine/scene";
 import { createGameLevelState } from "../game/state";
 import { loadImage } from "../engine/image-loader";
 import type { TileFrame } from "../engine/render-types";
@@ -26,12 +26,19 @@ interface GridMoveState {
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
-  readonly targetTileId?: number;
+  readonly arrivalEffect?: RuntimeTileArrivalEffect;
   elapsed: number;
   readonly duration: number;
 }
 
 type CameraMoveState = GridMoveState;
+type RuntimeTileArrivalEffect = "none" | "dig" | "collectDiamond" | "clearTrail" | "enterExit";
+
+interface PlayerMoveResolution {
+  readonly canEnter: boolean;
+  readonly tileId: number;
+  readonly arrivalEffect: RuntimeTileArrivalEffect;
+}
 
 const PLAYFIELD_HEIGHT = 160;
 const RENDER_TILE_SIZE = 16;
@@ -89,6 +96,7 @@ const HUD_VALUES_Y = 177;
 const HUD_GALLERY_DIAMOND_WIDTH = 24;
 const HUD_GALLERY_DIAMOND_HEIGHT = 16;
 const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: HUD_GALLERY_DIAMOND_HEIGHT }, (_, index) => index);
+const LAST_LEVEL_NUMBER = 16;
 
 const TO8_INTENSITIES = [
   0, 100, 127, 147, 163, 179, 191, 203,
@@ -158,7 +166,9 @@ const HUD_RIGHT_PANEL_URL = new URL(
 ).href;
 
 export class GameplayScene implements Scene {
+  private context: SceneContext | undefined;
   private readonly state: GameState;
+  private readonly levelNumber: number;
   private readonly runtimeGrid: LevelRuntimeGrid;
   private readonly tileFrames = new Map<number, TileFrame>();
   private readonly diamondFrames = new Map<number, TileFrame>();
@@ -203,8 +213,10 @@ export class GameplayScene implements Scene {
   private leftHudPanelImage: HTMLImageElement | null = null;
   private rightHudPanelImage: HTMLImageElement | null = null;
   private atlasError: string | null = null;
+  private levelTransitionQueued = false;
 
   constructor(levelNumber = 1) {
+    this.levelNumber = levelNumber;
     this.state = createGameLevelState(levelNumber);
     this.runtimeGrid = new LevelRuntimeGrid(
       this.state.level.tiles,
@@ -221,6 +233,10 @@ export class GameplayScene implements Scene {
     this.animationState.set("hudDiamond", { frameIndex: 0, accumulator: 0 });
     void this.loadAtlas();
     void this.loadHudPanels();
+  }
+
+  enter(context: SceneContext): void {
+    this.context = context;
   }
 
   private async loadAtlas(): Promise<void> {
@@ -287,7 +303,7 @@ export class GameplayScene implements Scene {
             fromY,
             toX,
             toY,
-            targetTileId: collision.tileId,
+            arrivalEffect: collision.arrivalEffect,
             elapsed: 0,
             duration: PLAYER_GRID_MOVE_DURATION
           };
@@ -381,8 +397,17 @@ export class GameplayScene implements Scene {
       return;
     }
 
+    this.drawEntitiesByLayer(renderer, false);
+    this.drawEntitiesByLayer(renderer, true);
+  }
+
+  private drawEntitiesByLayer(renderer: Renderer, playerLayer: boolean): void {
     for (const entity of this.state.entities) {
       if (!entity.active) {
+        continue;
+      }
+
+      if ((entity.kind === "player") !== playerLayer) {
         continue;
       }
 
@@ -473,13 +498,11 @@ export class GameplayScene implements Scene {
       this.holdPlayerFinalMoveFrame();
       this.state.player.gridX = this.playerMove.toX;
       this.state.player.gridY = this.playerMove.toY;
-      if (this.playerMove.targetTileId !== undefined) {
-        this.applyPlayerTileMutation(
-          this.playerMove.toX,
-          this.playerMove.toY,
-          this.playerMove.targetTileId
-        );
-      }
+      this.applyPlayerArrivalEffect(
+        this.playerMove.toX,
+        this.playerMove.toY,
+        this.playerMove.arrivalEffect ?? "none"
+      );
       this.playerMove = null;
     }
   }
@@ -580,26 +603,53 @@ export class GameplayScene implements Scene {
     return lerp(this.cameraMove.fromY, this.cameraMove.toY, smoothStep(progress));
   }
 
-  private resolvePlayerMove(gridX: number, gridY: number): { readonly canEnter: boolean; readonly tileId: number } {
+  private resolvePlayerMove(gridX: number, gridY: number): PlayerMoveResolution {
     if (gridX < 0 || gridY < 0) {
       return {
         canEnter: false,
-        tileId: RUNTIME_GRID_FILL_TILE_ID
+        tileId: RUNTIME_GRID_FILL_TILE_ID,
+        arrivalEffect: "none"
       };
     }
 
     if (this.findEntityKindAtGrid("diamond", gridX, gridY) !== null) {
       return {
         canEnter: true,
-        tileId: DIAMOND_TILE_ID
+        tileId: DIAMOND_TILE_ID,
+        arrivalEffect: "collectDiamond"
       };
     }
 
     const tileId = this.runtimeGrid.getRuntimeTile(gridX, gridY);
+    if (this.isOpenExitCell(gridX, gridY)) {
+      return {
+        canEnter: true,
+        tileId,
+        arrivalEffect: "enterExit"
+      };
+    }
+
     return {
       canEnter: this.canPlayerEnterTile(tileId),
-      tileId
+      tileId,
+      arrivalEffect: this.getPlayerArrivalEffect(tileId)
     };
+  }
+
+  private getPlayerArrivalEffect(tileId: number): RuntimeTileArrivalEffect {
+    if (tileId === PLAYER_DIGGABLE_TILE_ID) {
+      return "dig";
+    }
+
+    if (tileId === DIAMOND_TILE_ID) {
+      return "collectDiamond";
+    }
+
+    if (tileId === MONSTER_RUNTIME_TRAIL_TILE_ID) {
+      return "clearTrail";
+    }
+
+    return "none";
   }
 
   private canPlayerEnterTile(tileId: number): boolean {
@@ -618,17 +668,70 @@ export class GameplayScene implements Scene {
     return false;
   }
 
-  private applyPlayerTileMutation(gridX: number, gridY: number, tileId: number): void {
-    if (tileId === PLAYER_DIGGABLE_TILE_ID || tileId === MONSTER_RUNTIME_TRAIL_TILE_ID) {
-      this.runtimeGrid.setRuntimeTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
+  private applyPlayerArrivalEffect(gridX: number, gridY: number, effect: RuntimeTileArrivalEffect): void {
+    if (effect === "dig") {
+      this.digRuntimeTile(gridX, gridY);
       return;
     }
 
-    if (tileId === DIAMOND_TILE_ID) {
-      this.runtimeGrid.setRuntimeTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
-      this.incrementScore(this.state.level.meta.scoreStep);
-      this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
-      this.deactivateEntityAtGrid("diamond", gridX, gridY);
+    if (effect === "collectDiamond") {
+      this.collectRuntimeDiamond(gridX, gridY);
+      return;
+    }
+
+    if (effect === "clearTrail") {
+      this.clearRuntimeTile(gridX, gridY);
+      return;
+    }
+
+    if (effect === "enterExit") {
+      this.state.levelComplete = true;
+      this.queueNextLevelTransition();
+    }
+  }
+
+  private setRuntimeTile(gridX: number, gridY: number, tileId: number): void {
+    this.runtimeGrid.setRuntimeTile(gridX, gridY, tileId);
+  }
+
+  private clearRuntimeTile(gridX: number, gridY: number): void {
+    this.setRuntimeTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
+  }
+
+  private digRuntimeTile(gridX: number, gridY: number): void {
+    this.clearRuntimeTile(gridX, gridY);
+  }
+
+  private collectRuntimeDiamond(gridX: number, gridY: number): void {
+    this.clearRuntimeTile(gridX, gridY);
+    this.incrementScore(this.state.level.meta.scoreStep);
+    this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
+    this.deactivateEntityAtGrid("diamond", gridX, gridY);
+    this.updateLevelExitStateAfterDiamondCollection();
+  }
+
+  private updateLevelExitStateAfterDiamondCollection(): void {
+    if (this.state.hud.diamonds === 0) {
+      this.state.exitOpen = true;
+    }
+  }
+
+  private isOpenExitCell(gridX: number, gridY: number): boolean {
+    return (
+      this.state.exitOpen &&
+      gridX === this.state.level.exit.x &&
+      gridY === this.state.level.exit.y
+    );
+  }
+
+  private queueNextLevelTransition(): void {
+    if (this.levelTransitionQueued) {
+      return;
+    }
+
+    this.levelTransitionQueued = true;
+    if (this.levelNumber < LAST_LEVEL_NUMBER) {
+      this.context?.setScene(new GameplayScene(this.levelNumber + 1));
     }
   }
 
@@ -712,8 +815,8 @@ export class GameplayScene implements Scene {
       const targetY = monster.gridY + delta.y;
 
       if (isMonsterWalkableRuntimeTile(this.runtimeGrid.getRuntimeTile(targetX, targetY))) {
-        this.runtimeGrid.setRuntimeTile(monster.gridX, monster.gridY, MONSTER_RUNTIME_TRAIL_TILE_ID);
-        this.runtimeGrid.setRuntimeTile(targetX, targetY, MONSTER_RUNTIME_ACTIVE_TILE_ID);
+        this.setRuntimeTile(monster.gridX, monster.gridY, MONSTER_RUNTIME_TRAIL_TILE_ID);
+        this.setRuntimeTile(targetX, targetY, MONSTER_RUNTIME_ACTIVE_TILE_ID);
         monster.movement = {
           fromX: monster.gridX,
           fromY: monster.gridY,
@@ -759,7 +862,7 @@ export class GameplayScene implements Scene {
 
     const spawnGridX = Math.round(this.state.player.gridX);
     const spawnGridY = Math.round(this.state.player.gridY);
-    this.runtimeGrid.setRuntimeTile(spawnGridX, spawnGridY, RUNTIME_EMPTY_TILE_ID);
+    this.clearRuntimeTile(spawnGridX, spawnGridY);
 
     this.spawnTileCleared = true;
   }

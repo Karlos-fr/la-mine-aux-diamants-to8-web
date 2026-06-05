@@ -1,5 +1,20 @@
 import type { EntityState, GameState, LevelDefinition, MonsterRuntimeState, TileDefinition } from "./types";
 import level01Json from "../assets/levels/level-01.json";
+import level02Json from "../assets/levels/level-02.json";
+import level03Json from "../assets/levels/level-03.json";
+import level04Json from "../assets/levels/level-04.json";
+import level05Json from "../assets/levels/level-05.json";
+import level06Json from "../assets/levels/level-06.json";
+import level07Json from "../assets/levels/level-07.json";
+import level08Json from "../assets/levels/level-08.json";
+import level09Json from "../assets/levels/level-09.json";
+import level10Json from "../assets/levels/level-10.json";
+import level11Json from "../assets/levels/level-11.json";
+import level12Json from "../assets/levels/level-12.json";
+import level13Json from "../assets/levels/level-13.json";
+import level14Json from "../assets/levels/level-14.json";
+import level15Json from "../assets/levels/level-15.json";
+import level16Json from "../assets/levels/level-16.json";
 
 type ModernTileType = "empty" | "earth" | "rock" | "diamond" | "monster" | "border" | "platform" | "exit";
 
@@ -17,6 +32,10 @@ interface ModernLevelJson {
     readonly x: number;
     readonly y: number;
   };
+  readonly exit: {
+    readonly x: number;
+    readonly y: number;
+  };
   readonly tiles: ReadonlyArray<{
     readonly x: number;
     readonly y: number;
@@ -29,8 +48,25 @@ interface ModernLevelJson {
   }>;
 }
 
-const LEVEL1_SOURCE = level01Json as ModernLevelJson;
-const BOARD_TILE_SIZE = LEVEL1_SOURCE.tileSize;
+const LEVEL_SOURCES = [
+  level01Json,
+  level02Json,
+  level03Json,
+  level04Json,
+  level05Json,
+  level06Json,
+  level07Json,
+  level08Json,
+  level09Json,
+  level10Json,
+  level11Json,
+  level12Json,
+  level13Json,
+  level14Json,
+  level15Json,
+  level16Json
+] as ReadonlyArray<ModernLevelJson>;
+
 const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
 const RUNTIME_GRID_STRIDE = 40;
 const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
@@ -51,111 +87,117 @@ const EXIT_TILE_IDS = [0x04];
 const MONSTER_TILE_IDS = [0x02];
 const EMPTY_TILE_IDS = [0x05];
 
-const LEVEL1_TILES = buildTilesFromModernLevel(LEVEL1_SOURCE);
-const LEVEL1_SCORE_STEP = LEVEL1_SOURCE.scoreStep;
-
-const LEVEL1_TILE_DEFINITIONS: Record<number, TileDefinition> = buildTileDefinitionsFromRows(LEVEL1_TILES);
-
-const LEVEL1_MONSTER_ENTITIES = findEntityPositions("monster").map((position, index) => ({
-  id: `monster-${index}`,
-  kind: "monster" as const,
-  gridX: position.x,
-  gridY: position.y,
-  x: position.x * BOARD_TILE_SIZE,
-  y: position.y * BOARD_TILE_SIZE,
-  width: BOARD_TILE_SIZE,
-  height: BOARD_TILE_SIZE,
-  spriteFrameId: "tile:2",
-  active: true
-}));
-
-const LEVEL1_DIAMOND_ENTITIES = findEntityPositions("diamond").map(
-  (diamond, index) => ({
-    id: `diamond-${index}`,
-    kind: "diamond" as const,
-    gridX: diamond.x,
-    gridY: diamond.y,
-    x: diamond.x * BOARD_TILE_SIZE,
-    y: diamond.y * BOARD_TILE_SIZE,
-    width: BOARD_TILE_SIZE,
-    height: BOARD_TILE_SIZE,
-    spriteFrameId: "tile:3",
-    active: true
-  })
-);
-
-export const LEVEL1_DEFINITION: LevelDefinition = {
-  id: LEVEL1_SOURCE.id,
-  name: LEVEL1_SOURCE.label,
-  width: LEVEL1_SOURCE.width,
-  height: LEVEL1_SOURCE.height,
-  tileSize: LEVEL1_SOURCE.tileSize,
-  tiles: LEVEL1_TILES,
-  tileDefinitions: LEVEL1_TILE_DEFINITIONS,
-  initialEntities: [
-    {
-      id: "player",
-      kind: "player",
-      gridX: LEVEL1_SOURCE.playerSpawn.x,
-      gridY: LEVEL1_SOURCE.playerSpawn.y,
-      x: LEVEL1_SOURCE.playerSpawn.x * BOARD_TILE_SIZE,
-      y: LEVEL1_SOURCE.playerSpawn.y * BOARD_TILE_SIZE,
-      width: BOARD_TILE_SIZE,
-      height: BOARD_TILE_SIZE,
-      spriteFrameId: "player-idle",
-      active: true
-    },
-    ...LEVEL1_MONSTER_ENTITIES,
-    ...LEVEL1_DIAMOND_ENTITIES
-  ],
-  playerStart: {
-    x: LEVEL1_SOURCE.playerSpawn.x,
-    y: LEVEL1_SOURCE.playerSpawn.y
-  },
-  meta: {
-    timeLimit: LEVEL1_SOURCE.time,
-    gallery: 1,
-    requiredDiamonds: LEVEL1_SOURCE.requiredDiamonds,
-    scoreStep: LEVEL1_SCORE_STEP
-  }
-};
+export const LEVEL1_DEFINITION: LevelDefinition = buildLevelDefinition(LEVEL_SOURCES[0], 1);
 
 export function createGameLevelState(levelNumber = 1): GameState {
-  if (levelNumber !== 1) {
+  const levelSource = LEVEL_SOURCES[levelNumber - 1];
+  if (!levelSource) {
     throw new Error(`Niveau non pris en charge: ${levelNumber}`);
   }
 
-  const entities: EntityState[] = LEVEL1_DEFINITION.initialEntities.map((entity) => ({ ...entity }));
+  const levelDefinition = buildLevelDefinition(levelSource, levelNumber);
+  const entities: EntityState[] = levelDefinition.initialEntities.map((entity) => ({ ...entity }));
   const player = entities.find((entity) => entity.kind === "player");
   const monsters = createMonsterRuntimeStates(entities);
   if (!player) {
-    throw new Error("Le niveau 1 doit contenir une entité joueur.");
+    throw new Error(`Le niveau ${levelNumber} doit contenir une entite joueur.`);
   }
 
   return {
     sceneId: "gameplay",
-    level: LEVEL1_DEFINITION,
+    level: levelDefinition,
     entities,
     monsters,
     player,
     hud: {
       score: 0,
-      time: LEVEL1_DEFINITION.meta.timeLimit,
+      time: levelDefinition.meta.timeLimit,
       record: 0,
-      gallery: LEVEL1_DEFINITION.meta.gallery,
-      diamonds: LEVEL1_DEFINITION.meta.requiredDiamonds
+      gallery: levelDefinition.meta.gallery,
+      diamonds: levelDefinition.meta.requiredDiamonds
     },
     lives: 3,
+    exitOpen: levelDefinition.meta.requiredDiamonds === 0,
     levelComplete: false,
     gameOver: false
   };
 }
 
-function buildTileDefinitionsFromRows(tiles: readonly number[]): Record<number, TileDefinition> {
+function buildLevelDefinition(level: ModernLevelJson, levelNumber: number): LevelDefinition {
+  const tileSize = level.tileSize;
+  const tiles = buildTilesFromModernLevel(level);
+  const monsterEntities = findEntityPositions(level, "monster").map((position, index) => ({
+    id: `monster-${index}`,
+    kind: "monster" as const,
+    gridX: position.x,
+    gridY: position.y,
+    x: position.x * tileSize,
+    y: position.y * tileSize,
+    width: tileSize,
+    height: tileSize,
+    spriteFrameId: "tile:2",
+    active: true
+  }));
+  const diamondEntities = findEntityPositions(level, "diamond").map((diamond, index) => ({
+    id: `diamond-${index}`,
+    kind: "diamond" as const,
+    gridX: diamond.x,
+    gridY: diamond.y,
+    x: diamond.x * tileSize,
+    y: diamond.y * tileSize,
+    width: tileSize,
+    height: tileSize,
+    spriteFrameId: "tile:3",
+    active: true
+  }));
+
+  return {
+    id: level.id,
+    name: level.label,
+    width: level.width,
+    height: level.height,
+    tileSize,
+    tiles,
+    tileDefinitions: buildTileDefinitionsFromRows(tiles, level.scoreStep),
+    initialEntities: [
+      {
+        id: "player",
+        kind: "player",
+        gridX: level.playerSpawn.x,
+        gridY: level.playerSpawn.y,
+        x: level.playerSpawn.x * tileSize,
+        y: level.playerSpawn.y * tileSize,
+        width: tileSize,
+        height: tileSize,
+        spriteFrameId: "player-idle",
+        active: true
+      },
+      ...monsterEntities,
+      ...diamondEntities
+    ],
+    playerStart: {
+      x: level.playerSpawn.x,
+      y: level.playerSpawn.y
+    },
+    exit: {
+      x: level.exit.x,
+      y: level.exit.y
+    },
+    meta: {
+      timeLimit: level.time,
+      gallery: levelNumber,
+      requiredDiamonds: level.requiredDiamonds,
+      scoreStep: level.scoreStep,
+      nextLevelId: levelNumber < LEVEL_SOURCES.length ? LEVEL_SOURCES[levelNumber].id : undefined
+    }
+  };
+}
+
+function buildTileDefinitionsFromRows(tiles: readonly number[], scoreStep: number): Record<number, TileDefinition> {
   const definitions: Record<number, TileDefinition> = {};
   const uniqueTileIds = [...new Set(tiles)];
   uniqueTileIds.forEach((tileId) => {
-    definitions[tileId] = createTileDefinition(tileId);
+    definitions[tileId] = createTileDefinition(tileId, scoreStep);
   });
 
   return definitions;
@@ -176,7 +218,7 @@ function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRu
     }));
 }
 
-function createTileDefinition(tileId: number): TileDefinition {
+function createTileDefinition(tileId: number, scoreStep: number): TileDefinition {
   if (ROCK_TILE_IDS.includes(tileId)) {
     return {
       id: tileId,
@@ -201,7 +243,7 @@ function createTileDefinition(tileId: number): TileDefinition {
       name: "diamond",
       collision: "empty",
       collectible: {
-        score: LEVEL1_SCORE_STEP,
+        score: scoreStep,
         counter: "diamonds"
       },
       render: { tileFrameId: `tile:${tileId}` }
@@ -256,8 +298,8 @@ function buildTilesFromModernLevel(level: ModernLevelJson): number[] {
   return tiles;
 }
 
-function findEntityPositions(type: ModernTileType): Array<{ x: number; y: number }> {
-  return LEVEL1_SOURCE.entities
+function findEntityPositions(level: ModernLevelJson, type: ModernTileType): Array<{ x: number; y: number }> {
+  return level.entities
     .filter((entity) => entity.type === type)
     .map((entity) => ({ x: entity.x, y: entity.y }));
 }

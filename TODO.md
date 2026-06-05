@@ -1,8 +1,13 @@
-﻿- Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
+﻿- Faire un audit de l'archi, code mort, découpage logique, ...
+
+
+
+
+- Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
 - Implementer les animations de l'ecran 2
 
 
-Enregistrer le reccord en local
+- Enregistrer le reccord en local
 - Commenter le code
 
 

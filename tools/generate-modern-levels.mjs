@@ -84,6 +84,10 @@ function buildModernLevel(sourceLevel) {
       x: sourceLevel.playerStart.x,
       y: sourceLevel.playerStart.y
     },
+    exit: {
+      x: sourceLevel.exit.x,
+      y: sourceLevel.exit.y
+    },
     tiles,
     entities
   };

@@ -77,6 +77,10 @@ export interface LevelDefinition {
     readonly x: number;
     readonly y: number;
   };
+  readonly exit: {
+    readonly x: number;
+    readonly y: number;
+  };
   readonly meta: {
     readonly timeLimit: number;
     readonly gallery: number;
@@ -94,6 +98,7 @@ export interface GameState {
   player: EntityState;
   hud: HudState;
   lives: number;
+  exitOpen: boolean;
   levelComplete: boolean;
   gameOver: boolean;
 }
