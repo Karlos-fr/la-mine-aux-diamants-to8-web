@@ -5,13 +5,14 @@
  * Notes: Cette scene reste volontairement orchestratrice; les systems/renderers portent les details specialises.
  */
 
-import { TO8_PALETTE } from "../assets/palette";
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { EntityState, FallingObjectRuntimeState, GameState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
-import { createGameLevelState } from "../game/state";
+import { createGameLevelState } from "../game/game-state-factory";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
+import { GameplayRuntime } from "../game/gameplay-runtime";
+import { RuntimeMutations } from "../game/runtime-mutations";
 import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
 import {
   RUNTIME_GRID_BASE_ADDRESS,
@@ -39,13 +40,10 @@ import {
   getPlayerSpawnBlinkTileId as getPlayerSpawnBlinkTileIdSystem,
   isPlayerSpawning as isPlayerSpawningSystem
 } from "../game/systems/spawn-system";
-import { loadImage } from "../engine/image-loader";
 import type { TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
-import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible } from "../rendering/entity-renderer";
-import { drawHudSmallCounter, drawHudTextFields } from "../rendering/hud-renderer";
-import { getGridCellScreenPosition } from "../rendering/level-renderer";
-import { RUNTIME_ASSET_URLS } from "../assets/runtime-assets";
+import { RuntimeAssets } from "../assets/runtime-asset-loader";
+import { GameplayRenderer } from "../rendering/gameplay-renderer";
 import { TileFrameCache } from "../rendering/tile-frame-cache";
 
 /** Horloge generique pour les animations cycliques de rendu. */
@@ -88,8 +86,6 @@ interface GridMoveState {
 
 /** Alias semantique pour les mouvements interpoles de camera. */
 type CameraMoveState = GridMoveState;
-/** Hauteur en pixels de la zone de jeu au-dessus du HUD. */
-const PLAYFIELD_HEIGHT = 160;
 /** Taille de rendu d'une tuile TO8. */
 const RENDER_TILE_SIZE = 16;
 /** Nombre de colonnes visibles dans la fenetre niveau. */
@@ -154,104 +150,10 @@ const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 const PLATFORM_TILE_ID = RUNTIME_TILE.platform;
 /** Duree en secondes d'un tick compteur temps HUD. */
 const HUD_TIMER_TICK_SECONDS = 1;
-/** Couleur orange du panneau HUD extraite/reproduite. */
-const HUD_PANEL_ORANGE = "#ef9300";
-/** Position X du panneau galerie. */
-const HUD_RIGHT_PANEL_X = 256;
-/** Position Y des panneaux HUD. */
-const HUD_RIGHT_PANEL_Y = PLAYFIELD_HEIGHT;
-/** Position Y des compteurs du panneau galerie. */
-const HUD_RIGHT_COUNTER_Y = HUD_RIGHT_PANEL_Y + 20;
-/** Position X du compteur galerie. */
-const HUD_GALLERY_COUNTER_X = HUD_RIGHT_PANEL_X;
-/** Position X du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_X = HUD_RIGHT_PANEL_X + 16;
-/** Position Y du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_Y = HUD_RIGHT_PANEL_Y + 16;
-/** Position X du compteur diamants restants. */
-const HUD_DIAMOND_COUNTER_X = HUD_RIGHT_PANEL_X + 40;
-/** Font des petits compteurs de panneau. */
-const HUD_SMALL_COUNTER_FONT_ID = "hud-digits-7";
-/** Couleur bleue des petits compteurs. */
-const HUD_SMALL_COUNTER_COLOR = "#0048ff";
-/** Largeur effacee derriere les petits compteurs. */
-const HUD_SMALL_COUNTER_WIDTH = 16;
-/** Hauteur effacee derriere les petits compteurs. */
-const HUD_SMALL_COUNTER_HEIGHT = 8;
-/** Font des libelles HUD principaux. */
-const HUD_LABEL_FONT_ID = "hud-large-16";
-/** Font des valeurs HUD principales. */
-const HUD_VALUE_FONT_ID = "hud-small-11";
-/** Couleur des libelles HUD principaux. */
-const HUD_LABEL_COLOR = "#f5f5f5";
-/** Couleur cyan des valeurs HUD principales. */
-const HUD_VALUE_COLOR = "#00d8d8";
-/** Position X des libelles HUD principaux. */
-const HUD_LABELS_X = 72;
-/** Position Y des libelles HUD principaux. */
-const HUD_LABELS_Y = 160;
-/** Position X du score. */
-const HUD_SCORE_X = 72;
-/** Position X du temps. */
-const HUD_TIME_X = 144;
-/** Position X du record. */
-const HUD_RECORD_X = 192;
-/** Position Y des valeurs HUD principales. */
-const HUD_VALUES_Y = 177;
-/** Largeur du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_WIDTH = 24;
-/** Hauteur du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_HEIGHT = 16;
 /** Frames couleur du diamant HUD, animees par decalage de lignes. */
-const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: HUD_GALLERY_DIAMOND_HEIGHT }, (_, index) => index);
+const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: 16 }, (_, index) => index);
 /** Dernier niveau actuellement disponible. */
 const LAST_LEVEL_NUMBER = 16;
-
-/** Conversion des intensites 4 bits TO8 vers RGB 8 bits. */
-const TO8_INTENSITIES = [
-  0, 100, 127, 147, 163, 179, 191, 203,
-  215, 223, 231, 239, 243, 247, 251, 255
-] as const;
-
-/** Palette RGB4 TO8 par defaut utilisee pour decoder les attributs HUD. */
-const TO8_DEFAULT_RGB4 = [
-  [0x0, 0x0, 0x0],
-  [0xf, 0x0, 0x0],
-  [0x0, 0xf, 0x0],
-  [0xf, 0xf, 0x0],
-  [0x0, 0x0, 0xf],
-  [0xf, 0x0, 0xf],
-  [0x0, 0xf, 0xf],
-  [0xf, 0xf, 0xf],
-  [0x7, 0x7, 0x7],
-  [0xa, 0x3, 0x3],
-  [0x3, 0xa, 0x3],
-  [0xa, 0xa, 0x3],
-  [0x3, 0x3, 0xa],
-  [0xa, 0x3, 0xa],
-  [0x7, 0xe, 0xe],
-  [0xb, 0x3, 0x0]
-] as const;
-
-/** Plan de forme du diamant affiche dans le panneau galerie. */
-const HUD_GALLERY_DIAMOND_SHAPE_BLOCKS = [
-  [
-    [0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x07],
-    [0x08, 0x1c, 0x3e, 0x7f, 0xff, 0xff, 0xff, 0xff],
-    [0x00, 0x00, 0x00, 0x00, 0x80, 0xc0, 0xe0, 0xf0]
-  ],
-  [
-    [0x07, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00],
-    [0xff, 0xff, 0xff, 0xff, 0x7f, 0x3e, 0x1c, 0x08],
-    [0xf0, 0xe0, 0xc0, 0x80, 0x00, 0x00, 0x00, 0x00]
-  ]
-] as const;
-
-/** Lignes de couleurs du diamant de panneau galerie. */
-const HUD_GALLERY_DIAMOND_COLOR_ROWS = [
-  0x4f, 0x4f, 0x1f, 0x1f, 0x5f, 0x5f, 0x5f, 0x5f,
-  0x37, 0x37, 0x77, 0x77, 0x27, 0x27, 0x67, 0x67
-] as const;
 
 export class GameplayScene implements Scene {
   /** Contexte de navigation fourni par le routeur de scenes. */
@@ -262,6 +164,12 @@ export class GameplayScene implements Scene {
   private readonly levelNumber: number;
   /** Grille runtime mutable qui fait autorite pour la logique discrete. */
   private readonly runtimeGrid: LevelRuntimeGrid;
+  /** API centralisee pour les mutations de grille runtime. */
+  private readonly runtimeMutations: RuntimeMutations;
+  /** Runtime charge d'orchestrer l'ordre d'update gameplay. */
+  private readonly runtime: GameplayRuntime;
+  /** Renderer dedie a l'ordre de rendu gameplay ISO. */
+  private readonly gameplayRenderer = new GameplayRenderer();
   /** Factory injectee pour creer la scene du niveau suivant sans cycle d'import. */
   private readonly createNextLevelScene: (currentLevelNumber: number) => Scene;
   /** Cache de frames issues des atlas gameplay. */
@@ -288,15 +196,15 @@ export class GameplayScene implements Scene {
   private readonly levelWidth: number;
   /** Hauteur totale du niveau courant en cellules. */
   private readonly levelHeight: number;
-  /** Frames d'idle joueur issues des metadata avec fallback. */
+  /** Frames d'idle joueur issues des metadata; fallback conserve si l'extraction est incomplete. */
   private readonly playerAnimationFrames = extractFrameIdsFromMetadata("player", "idleCycle", [8, 8, 7, 8, 9]);
-  /** Frames de marche vers la droite. */
+  /** Frames de marche vers la droite; fallback conserve si l'extraction est incomplete. */
   private readonly playerMoveRightFrames = extractFrameIdsFromMetadata("player", "moveRight", [0x0c, 0x0d, 0x0e]);
-  /** Frames de marche vers la gauche. */
+  /** Frames de marche vers la gauche; fallback conserve si l'extraction est incomplete. */
   private readonly playerMoveLeftFrames = extractFrameIdsFromMetadata("player", "moveLeft", [0x0f, 0x10, 0x11]);
-  /** Frames du cycle couleur diamant. */
+  /** Frames du cycle couleur diamant; fallback conserve si l'extraction est incomplete. */
   private readonly diamondAnimationFrames = extractFrameIdsFromMetadata("diamond", "colorCycle", [3, 3, 3, 3, 3, 3, 3, 3]);
-  /** Frames de clignotement monstre. */
+  /** Frames de clignotement monstre; fallback conserve si l'extraction est incomplete. */
   private readonly monsterAnimationFrames = extractFrameIdsFromMetadata("monster", "blinkToggle", [2, 2]);
   /** Durees de frames par animation. */
   private readonly animationDurations = {
@@ -329,20 +237,8 @@ export class GameplayScene implements Scene {
   private playerFacing: "idle" | "left" | "right" = "idle";
   /** Derniere direction horizontale, reutilisee pour haut/bas. */
   private lastHorizontalFacing: "left" | "right" = "right";
-  /** Cellules deja nettoyees via evenement pendant le tick courant. */
-  private readonly mutatedRuntimeTilesThisTick = new Set<string>();
-  /** Atlas principal des tuiles. */
-  private atlasImage: HTMLImageElement | null = null;
-  /** Atlas anime des diamants. */
-  private diamondAtlasImage: HTMLImageElement | null = null;
-  /** Atlas anime des monstres. */
-  private monsterAtlasImage: HTMLImageElement | null = null;
-  /** Panneau HUD gauche charge. */
-  private leftHudPanelImage: HTMLImageElement | null = null;
-  /** Panneau HUD droit charge. */
-  private rightHudPanelImage: HTMLImageElement | null = null;
-  /** Derniere erreur de chargement d'atlas/panneau. */
-  private atlasError: string | null = null;
+  /** Assets runtime charges pour le rendu gameplay. */
+  private readonly runtimeAssets = new RuntimeAssets();
   /** Garde-fou pour ne demander la transition de niveau qu'une fois. */
   private levelTransitionQueued = false;
 
@@ -358,14 +254,34 @@ export class GameplayScene implements Scene {
       RUNTIME_GRID_STRIDE,
       RUNTIME_GRID_FILL_TILE_ID
     );
+    this.runtimeMutations = new RuntimeMutations({
+      state: this.state,
+      runtimeGrid: this.runtimeGrid,
+      emptyTileId: RUNTIME_EMPTY_TILE_ID
+    });
     this.levelWidth = this.state.level.width;
     this.levelHeight = this.state.level.height;
+    this.runtime = new GameplayRuntime({
+      resetRuntimeTick: () => this.resetRuntimeTick(),
+      isPlayerSpawning: () => this.isPlayerSpawning(),
+      advanceSpawnTimer: (dt) => this.advanceSpawnTimer(dt),
+      clearSpawnBlinkTileAfterSpawn: () => this.clearSpawnBlinkTileAfterSpawn(),
+      advanceHudCounters: (dt, playerSpawning) => this.advanceHudCounters(dt, playerSpawning),
+      advancePlayerRuntime: (dt, input, playerSpawning) => this.advancePlayerRuntime(dt, input, playerSpawning),
+      advanceCameraMove: (dt) => this.advanceCameraMove(dt),
+      syncPlayerPixelPosition: () => this.syncPlayerPixelPosition(),
+      advanceFallingObjects: (dt) => this.advanceFallingObjects(dt),
+      advanceMonsterRuntime: (dt) => this.advanceMonsterRuntime(dt),
+      advanceMonsterMoves: (dt) => this.advanceMonsterMoves(dt),
+      syncMonsterEntitiesFromRuntimeState: () => this.syncMonsterEntitiesFromRuntimeState(),
+      consumeRuntimeEvents: () => this.consumeRuntimeEvents(),
+      advanceRenderAnimations: (dt) => this.advanceRenderAnimations(dt)
+    });
     this.animationState.set("player", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("diamond", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("monster", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("hudDiamond", { frameIndex: 0, accumulator: 0 });
-    void this.loadAtlas();
-    void this.loadHudPanels();
+    void this.runtimeAssets.load();
   }
 
   /** Recupere le contexte de navigation de scene. */
@@ -373,45 +289,23 @@ export class GameplayScene implements Scene {
     this.context = context;
   }
 
-  /** Charge les atlas gameplay obligatoires. */
-  private async loadAtlas(): Promise<void> {
-    try {
-      const [tileAtlas, diamondAtlas, monsterAtlas] = await Promise.all([
-        loadImage(RUNTIME_ASSET_URLS.tilesAtlas),
-        loadImage(RUNTIME_ASSET_URLS.diamondAtlas),
-        loadImage(RUNTIME_ASSET_URLS.monsterAtlas)
-      ]);
-      this.atlasImage = tileAtlas;
-      this.diamondAtlasImage = diamondAtlas;
-      this.monsterAtlasImage = monsterAtlas;
-    } catch (error) {
-      this.atlasError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
-  /** Charge les panneaux HUD extraits. */
-  private async loadHudPanels(): Promise<void> {
-    try {
-      const [leftPanel, rightPanel] = await Promise.all([
-        loadImage(RUNTIME_ASSET_URLS.hudLeftPanel),
-        loadImage(RUNTIME_ASSET_URLS.hudRightPanel)
-      ]);
-      this.leftHudPanelImage = leftPanel;
-      this.rightHudPanelImage = rightPanel;
-    } catch (error) {
-      this.atlasError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
   /** Orchestre un tick gameplay complet sans effectuer de rendu. */
   update(dt: number, input: InputState): void {
-    this.mutatedRuntimeTilesThisTick.clear();
-    const playerSpawning = this.isPlayerSpawning();
+    this.runtime.update(dt, input);
+  }
 
+  /** Nettoie les marqueurs temporaires du tick courant. */
+  private resetRuntimeTick(): void {
+    this.runtimeMutations.resetTick();
+  }
+
+  /** Avance le timer interne du spawn joueur. */
+  private advanceSpawnTimer(dt: number): void {
     this.spawnElapsed += dt;
-    this.clearSpawnBlinkTileAfterSpawn();
-    this.advanceHudCounters(dt, playerSpawning);
+  }
 
+  /** Traite le mouvement joueur et l'input clavier du tick courant. */
+  private advancePlayerRuntime(dt: number, input: InputState, playerSpawning: boolean): void {
     if (this.playerMove) {
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
@@ -451,16 +345,16 @@ export class GameplayScene implements Scene {
         }
       }
     }
-    this.advanceCameraMove(dt);
+  }
 
+  /** Synchronise la position pixel du joueur depuis sa position grille. */
+  private syncPlayerPixelPosition(): void {
     this.state.player.x = this.state.player.gridX * this.state.level.tileSize;
     this.state.player.y = this.state.player.gridY * this.state.level.tileSize;
-    this.advanceFallingObjects(dt);
-    this.advanceMonsterRuntime(dt);
-    this.advanceMonsterMoves(dt);
-    this.syncMonsterEntitiesFromRuntimeState();
-    this.consumeRuntimeEvents();
+  }
 
+  /** Avance toutes les animations cycliques de rendu du gameplay. */
+  private advanceRenderAnimations(dt: number): void {
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
     this.advanceAnimation("monster", this.monsterAnimationFrames, this.animationDurations.monster, dt);
@@ -474,168 +368,43 @@ export class GameplayScene implements Scene {
 
   /** Rend la scene gameplay dans l'ordre ISO: grille, objets/entites, HUD. */
   render(renderer: Renderer): void {
-    renderer.clear(TO8_PALETTE.black);
-    this.drawPlayfield(renderer);
-    this.drawEntitiesAndObjects(renderer);
-    this.drawHud(renderer);
-  }
-
-  /** Rend la grille visible du niveau courant. */
-  private drawPlayfield(renderer: Renderer): void {
-    if (!this.atlasImage) {
-      return;
-    }
-
-    renderer.fillRect(0, 0, renderer.width, PLAYFIELD_HEIGHT, TO8_PALETTE.black);
-
-    const renderViewportX = this.getRenderViewportX();
-    const renderViewportY = this.getRenderViewportY();
-    const baseLevelX = Math.floor(renderViewportX);
-    const baseLevelY = Math.floor(renderViewportY);
-
-    for (let y = 0; y < this.viewport.rows + 2; y += 1) {
-      for (let x = 0; x < this.viewport.columns + 2; x += 1) {
-        const levelX = baseLevelX + x;
-        const levelY = baseLevelY + y;
-        const screenPosition = getGridCellScreenPosition(
-          levelX,
-          levelY,
-          { x: renderViewportX, y: renderViewportY, columns: this.viewport.columns, rows: this.viewport.rows },
-          this.tileSize,
-          this.boardOffsetX,
-          this.boardOffsetY
-        );
-        const tileId = this.runtimeGrid.getTile(levelX, levelY);
-        const isDynamicTile =
-          tileId === MONSTER_TILE_ID ||
-          tileId === DIAMOND_TILE_ID ||
-          tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID ||
-          tileId === FALLING_ROCK_TILE_ID ||
-          tileId === FALLING_DIAMOND_TILE_ID;
-        const hasDynamicEntity = isDynamicTile && (
-          this.findEntityAtGrid(levelX, levelY) !== null ||
-          (tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID && this.findMonsterRuntimeAtGrid(levelX, levelY) !== null)
-        );
-        const hasPlayerEntity = this.state.player.active && this.isPlayerRenderedAtGrid(levelX, levelY);
-        const spawnBlinkTileId = this.getPlayerSpawnBlinkTileId(levelX, levelY);
-
-        if (spawnBlinkTileId === null) {
-          renderer.fillRect(
-            screenPosition.x,
-            screenPosition.y,
-            this.tileSize,
-            this.tileSize,
-            TO8_PALETTE.black
-          );
-          continue;
-        }
-
-        const renderTileId =
-          tileId === MONSTER_RUNTIME_TRAIL_TILE_ID || tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID
-            ? RUNTIME_EMPTY_TILE_ID
-            : tileId === FALLING_ROCK_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID
-            ? RUNTIME_EMPTY_TILE_ID
-            : tileId;
-        const frame = this.getTileFrame(spawnBlinkTileId ?? renderTileId);
-        if ((hasDynamicEntity || hasPlayerEntity) && spawnBlinkTileId === undefined) {
-          continue;
-        }
-
-        renderer.drawTile(
-          frame,
-          screenPosition.x,
-          screenPosition.y
-        );
-      }
-    }
-  }
-
-  /** Rend les entites et objets physiques selon les couches actuelles. */
-  private drawEntitiesAndObjects(renderer: Renderer): void {
-    if (!this.atlasImage) {
-      return;
-    }
-
-    this.drawEntitiesByLayer(renderer, false);
-    this.drawFallingRockObjects(renderer);
-    this.drawEntitiesByLayer(renderer, true);
-  }
-
-  /** Rend les rochers en chute avec interpolation visuelle. */
-  private drawFallingRockObjects(renderer: Renderer): void {
-    const renderViewportX = this.getRenderViewportX();
-    const renderViewportY = this.getRenderViewportY();
-    const cullViewportX = Math.floor(renderViewportX);
-    const cullViewportY = Math.floor(renderViewportY);
-
-    for (const fallingObject of this.state.fallingObjects) {
-      if (fallingObject.kind !== "rock") {
-        continue;
-      }
-
-      const progress = fallingObject.elapsed / fallingObject.duration;
-      const { x: gridX, y: gridY } = getInterpolatedFallingObjectGridPosition(fallingObject, progress);
-      if (
-        gridX < cullViewportX - 1 ||
-        gridX >= cullViewportX + this.viewport.columns + 2 ||
-        gridY < cullViewportY - 1 ||
-        gridY >= cullViewportY + this.viewport.rows + 2
-      ) {
-        continue;
-      }
-
-      renderer.drawTile(
-        this.getTileFrame(ROCK_TILE_ID),
-        Math.round(this.boardOffsetX + (gridX - renderViewportX) * this.tileSize),
-        Math.round(this.boardOffsetY + (gridY - renderViewportY) * this.tileSize)
-      );
-    }
-  }
-
-  /** Rend les entites non joueur puis joueur selon la couche demandee. */
-  private drawEntitiesByLayer(renderer: Renderer, playerLayer: boolean): void {
-    for (const entity of this.state.entities) {
-      if (!entity.active) {
-        continue;
-      }
-
-      if ((entity.kind === "player") !== playerLayer) {
-        continue;
-      }
-
-      if (entity.kind === "player" && this.isPlayerSpawning()) {
-        continue;
-      }
-
-      if (entity.kind === "rock") {
-        continue;
-      }
-
-      const renderViewportX = this.getRenderViewportX();
-      const renderViewportY = this.getRenderViewportY();
-      const cullViewportX = Math.floor(renderViewportX);
-      const cullViewportY = Math.floor(renderViewportY);
-      const entityGridX = entity.gridX;
-      const entityGridY = entity.gridY;
-      if (!isEntityGridPositionVisible(
-        entityGridX,
-        entityGridY,
-        { x: cullViewportX, y: cullViewportY, columns: this.viewport.columns, rows: this.viewport.rows }
-      )) {
-        continue;
-      }
-
-      const frame = entity.kind === "diamond"
-        ? this.getDiamondTileFrame()
-        : entity.kind === "monster"
-          ? this.getMonsterTileFrame()
-          : this.getTileFrame(this.getEntityTileFrameId(entity.kind));
-      renderer.drawTile(
-        frame,
-        Math.round(this.boardOffsetX + (entityGridX - renderViewportX) * this.tileSize),
-        Math.round(this.boardOffsetY + (entityGridY - renderViewportY) * this.tileSize)
-      );
-    }
+    this.gameplayRenderer.render(renderer, {
+      state: this.state,
+      tileAtlasLoaded: this.runtimeAssets.tileAtlasLoaded,
+      assetError: this.runtimeAssets.error,
+      leftHudPanelImage: this.runtimeAssets.leftHudPanel,
+      rightHudPanelImage: this.runtimeAssets.rightHudPanel,
+      viewport: {
+        x: this.getRenderViewportX(),
+        y: this.getRenderViewportY(),
+        columns: this.viewport.columns,
+        rows: this.viewport.rows
+      },
+      tileSize: this.tileSize,
+      boardOffsetX: this.boardOffsetX,
+      boardOffsetY: this.boardOffsetY,
+      tileIds: {
+        monster: MONSTER_TILE_ID,
+        diamond: DIAMOND_TILE_ID,
+        monsterActive: MONSTER_RUNTIME_ACTIVE_TILE_ID,
+        monsterTrail: MONSTER_RUNTIME_TRAIL_TILE_ID,
+        rock: ROCK_TILE_ID,
+        fallingRock: FALLING_ROCK_TILE_ID,
+        fallingDiamond: FALLING_DIAMOND_TILE_ID,
+        empty: RUNTIME_EMPTY_TILE_ID
+      },
+      hudDiamondColorOffset: this.animationState.get("hudDiamond")?.frameIndex ?? 0,
+      getRuntimeTile: (gridX, gridY) => this.runtimeGrid.getTile(gridX, gridY),
+      getTileFrame: (tileId) => this.getTileFrame(tileId),
+      getDiamondTileFrame: () => this.getDiamondTileFrame(),
+      getMonsterTileFrame: () => this.getMonsterTileFrame(),
+      getEntityTileFrameId: (kind) => this.getEntityTileFrameId(kind),
+      findEntityAtGrid: (gridX, gridY) => this.findEntityAtGrid(gridX, gridY),
+      findMonsterRuntimeAtGrid: (gridX, gridY) => this.findMonsterRuntimeAtGrid(gridX, gridY),
+      isPlayerRenderedAtGrid: (gridX, gridY) => this.isPlayerRenderedAtGrid(gridX, gridY),
+      getPlayerSpawnBlinkTileId: (gridX, gridY) => this.getPlayerSpawnBlinkTileId(gridX, gridY),
+      isPlayerSpawning: () => this.isPlayerSpawning()
+    });
   }
 
   /** Finds the first active visual entity occupying the given grid cell. */
@@ -848,39 +617,31 @@ export class GameplayScene implements Scene {
 
   /** Writes a runtime tile mutation and records it for same-tick systems. */
   private setTile(gridX: number, gridY: number, tileId: number): void {
-    this.runtimeGrid.setTile(gridX, gridY, tileId);
+    this.runtimeMutations.setTile(gridX, gridY, tileId);
   }
 
   /** Clears a runtime tile, optionally emitting the gameplay tile-cleared event. */
   private clearRuntimeTile(gridX: number, gridY: number, emitEvent = true): void {
-    if (emitEvent && !this.markRuntimeTileMutation(gridX, gridY)) {
+    if (!emitEvent) {
+      this.runtimeMutations.clearFallingObjectSource(gridX, gridY);
       return;
     }
 
-    this.setTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
-    if (emitEvent) {
-      emitRuntimeEvent(this.state, {
-        type: "tileCleared",
-        gridX,
-        gridY
-      });
-    }
+    this.runtimeMutations.clearPlayerTile(gridX, gridY);
   }
 
   /** Removes a diggable runtime tile from the level grid. */
   private digRuntimeTile(gridX: number, gridY: number): void {
-    this.clearRuntimeTile(gridX, gridY);
+    this.runtimeMutations.digPlayerTile(gridX, gridY);
   }
 
   /** Removes a runtime diamond tile and emits score/progression data. */
   private collectRuntimeDiamond(gridX: number, gridY: number): void {
-    this.clearRuntimeTile(gridX, gridY);
-    this.deactivateEntityAtGrid("diamond", gridX, gridY);
-    emitRuntimeEvent(this.state, {
-      type: "diamondCollected",
+    this.runtimeMutations.collectDiamond({
       gridX,
       gridY,
-      score: this.state.level.meta.scoreStep
+      score: this.state.level.meta.scoreStep,
+      deactivateEntity: () => this.deactivateEntityAtGrid("diamond", gridX, gridY)
     });
   }
 
@@ -995,14 +756,14 @@ export class GameplayScene implements Scene {
       duration: FALLING_OBJECT_GRID_MOVE_DURATION
     };
 
-    this.clearRuntimeTile(fromX, fromY, false);
-    this.setTile(toX, toY, movingTileId);
+    this.runtimeMutations.clearFallingObjectSource(fromX, fromY);
+    this.runtimeMutations.setFallingObjectMovingTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
   }
 
   /** Finalizes a falling object once its smooth movement reaches the destination. */
   private completeFallingObject(fallingObject: FallingObjectRuntimeState): void {
-    this.setTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
+    this.runtimeMutations.completeFallingObjectTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
 
     if (fallingObject.entityId) {
       const entity = this.state.entities.find((item) => item.id === fallingObject.entityId);
@@ -1076,17 +837,6 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Records a runtime-grid mutation and returns whether it is new this tick. */
-  private markRuntimeTileMutation(gridX: number, gridY: number): boolean {
-    const key = `${gridX}:${gridY}`;
-    if (this.mutatedRuntimeTilesThisTick.has(key)) {
-      return false;
-    }
-
-    this.mutatedRuntimeTilesThisTick.add(key);
-    return true;
-  }
-
   /** Returns whether the given cell is the currently opened exit. */
   private isOpenExitCell(gridX: number, gridY: number): boolean {
     return isOpenExitCellSystem(
@@ -1098,7 +848,7 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Queues the next-level transition once the player reaches an open exit. */
+  /** Queues the direct next-level transition once the player reaches an open exit. */
   private queueNextLevelTransition(): void {
     if (this.levelTransitionQueued) {
       return;
@@ -1110,7 +860,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Advances time, score, and panel counters on the HUD. */
+  /** Advances time, score, and panel counters; game-over navigation remains deferred. */
   private advanceHudCounters(dt: number, playerSpawning: boolean): void {
     if (playerSpawning || this.state.gameOver || this.state.levelComplete || this.state.hud.time <= 0) {
       return;
@@ -1191,7 +941,7 @@ export class GameplayScene implements Scene {
   private advanceSingleMonsterRuntime(monster: GameState["monsters"][number]): void {
     advanceSingleMonsterRuntimeSystem(monster, {
       getTile: (x, y) => this.runtimeGrid.getTile(x, y),
-      setTile: (x, y, tileId) => this.setTile(x, y, tileId),
+      setTile: (x, y, tileId) => this.runtimeMutations.setMonsterTile(x, y, tileId),
       runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
       runtimeStride: RUNTIME_GRID_STRIDE,
       activeTileId: MONSTER_RUNTIME_ACTIVE_TILE_ID,
@@ -1231,7 +981,7 @@ export class GameplayScene implements Scene {
 
     const spawnGridX = Math.round(this.state.player.gridX);
     const spawnGridY = Math.round(this.state.player.gridY);
-    this.clearRuntimeTile(spawnGridX, spawnGridY);
+    this.runtimeMutations.clearSpawnBlinkTile(spawnGridX, spawnGridY);
 
     this.spawnTileCleared = true;
   }
@@ -1365,11 +1115,11 @@ export class GameplayScene implements Scene {
     const frameIndex = diamondAnimation
       ? diamondAnimation.frameIndex % this.diamondAnimationFrames.length
       : 0;
-    if (!this.diamondAtlasImage) {
+    if (!this.runtimeAssets.diamondAtlas) {
       return this.getTileFrame(DIAMOND_TILE_ID);
     }
 
-    return this.tileFrameCache.getAtlasFrame(this.diamondAtlasImage, `diamond-${frameIndex}`, frameIndex);
+    return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.diamondAtlas, `diamond-${frameIndex}`, frameIndex);
   }
 
   /** Gets the current animated monster atlas frame. */
@@ -1378,113 +1128,16 @@ export class GameplayScene implements Scene {
     const frameIndex = monsterAnimation
       ? monsterAnimation.frameIndex % this.monsterAnimationFrames.length
       : 0;
-    if (!this.monsterAtlasImage) {
+    if (!this.runtimeAssets.monsterAtlas) {
       return this.getTileFrame(MONSTER_TILE_ID);
     }
 
-    return this.tileFrameCache.getAtlasFrame(this.monsterAtlasImage, `monster-${frameIndex}`, frameIndex);
-  }
-
-  /** Draws panels, counters, labels, and the gallery diamond HUD. */
-  private drawHud(renderer: Renderer): void {
-    const { hud } = this.state;
-    renderer.fillRect(0, PLAYFIELD_HEIGHT, 320, 40, TO8_PALETTE.black);
-
-    if (this.leftHudPanelImage) {
-      renderer.drawImage(this.leftHudPanelImage, 0, PLAYFIELD_HEIGHT);
-    }
-    if (this.rightHudPanelImage) {
-      renderer.drawImage(this.rightHudPanelImage, HUD_RIGHT_PANEL_X, HUD_RIGHT_PANEL_Y);
-      this.drawDynamicGalleryPanelContent(renderer);
-    }
-
-    drawHudTextFields(renderer, hud, {
-      labelFontId: HUD_LABEL_FONT_ID,
-      valueFontId: HUD_VALUE_FONT_ID,
-      labelColor: HUD_LABEL_COLOR,
-      valueColor: HUD_VALUE_COLOR,
-      labelsX: HUD_LABELS_X,
-      labelsY: HUD_LABELS_Y,
-      scoreX: HUD_SCORE_X,
-      timeX: HUD_TIME_X,
-      recordX: HUD_RECORD_X,
-      valuesY: HUD_VALUES_Y
-    });
-  }
-
-  /** Draws the live gallery number and remaining-diamond counters over the right panel. */
-  private drawDynamicGalleryPanelContent(renderer: Renderer): void {
-    renderer.fillRect(
-      HUD_GALLERY_COUNTER_X,
-      HUD_RIGHT_COUNTER_Y,
-      HUD_SMALL_COUNTER_WIDTH,
-      HUD_SMALL_COUNTER_HEIGHT,
-      HUD_PANEL_ORANGE
-    );
-    renderer.fillRect(
-      HUD_DIAMOND_COUNTER_X,
-      HUD_RIGHT_COUNTER_Y,
-      HUD_SMALL_COUNTER_WIDTH,
-      HUD_SMALL_COUNTER_HEIGHT,
-      HUD_PANEL_ORANGE
-    );
-    this.drawHudGalleryDiamond(renderer);
-    this.drawHudDigitValue(renderer, this.state.hud.gallery, HUD_GALLERY_COUNTER_X, HUD_RIGHT_COUNTER_Y);
-    this.drawHudDigitValue(renderer, this.state.hud.diamonds, HUD_DIAMOND_COUNTER_X, HUD_RIGHT_COUNTER_Y);
-  }
-
-  /** Draws the ASM-style panel diamond animation with independent color bands. */
-  private drawHudGalleryDiamond(renderer: Renderer): void {
-    renderer.fillRect(
-      HUD_GALLERY_DIAMOND_X,
-      HUD_GALLERY_DIAMOND_Y,
-      HUD_GALLERY_DIAMOND_WIDTH,
-      HUD_GALLERY_DIAMOND_HEIGHT,
-      HUD_PANEL_ORANGE
-    );
-
-    const animation = this.animationState.get("hudDiamond");
-    const colorOffset = animation?.frameIndex ?? 0;
-    for (let blockRow = 0; blockRow < HUD_GALLERY_DIAMOND_SHAPE_BLOCKS.length; blockRow += 1) {
-      for (let blockColumn = 0; blockColumn < HUD_GALLERY_DIAMOND_SHAPE_BLOCKS[blockRow].length; blockColumn += 1) {
-        const block = HUD_GALLERY_DIAMOND_SHAPE_BLOCKS[blockRow][blockColumn];
-        for (let row = 0; row < 8; row += 1) {
-          const globalRow = blockRow * 8 + row;
-          const shapeByte = block[row];
-          const colorByte = HUD_GALLERY_DIAMOND_COLOR_ROWS[
-            (globalRow + colorOffset) % HUD_GALLERY_DIAMOND_COLOR_ROWS.length
-          ];
-          for (let bit = 0; bit < 8; bit += 1) {
-            const shape = (shapeByte & (0x80 >> bit)) !== 0;
-            const color = to8ColorFromAttribute(colorByte, shape);
-            renderer.fillRect(
-              HUD_GALLERY_DIAMOND_X + blockColumn * 8 + bit,
-              HUD_GALLERY_DIAMOND_Y + globalRow,
-              1,
-              1,
-              color
-            );
-          }
-        }
-      }
-    }
-  }
-
-  /** Draws a blue two-digit HUD value using extracted TO8 glyphs. */
-  private drawHudDigitValue(renderer: Renderer, value: number, x: number, y: number): void {
-    drawHudSmallCounter(renderer, value, 2, x, y, {
-      fontId: HUD_SMALL_COUNTER_FONT_ID,
-      color: HUD_SMALL_COUNTER_COLOR
-    });
+    return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.monsterAtlas, `monster-${frameIndex}`, frameIndex);
   }
 
   /** Returns the loaded tile atlas or throws a user-facing loading error. */
   private getTileAtlasImage(): HTMLImageElement {
-    if (!this.atlasImage) {
-      throw new Error("Atlas de tuiles non charge.");
-    }
-
-    return this.atlasImage;
+    return this.runtimeAssets.requireTileAtlas();
   }
 }
 
@@ -1517,24 +1170,6 @@ function lerp(from: number, to: number, progress: number): number {
 /** Applies a smooth-step easing curve for camera interpolation. */
 function smoothStep(progress: number): number {
   return progress * progress * (3 - 2 * progress);
-}
-
-/** Converts a TO8 attribute byte into the corresponding CSS color. */
-function to8ColorFromAttribute(attribute: number, shape: boolean): string {
-  const background = ((attribute & 0x07) | ((~attribute & 0x80) >> 4)) & 0x0f;
-  const foreground = (((attribute >> 3) & 0x07) | ((~attribute & 0x40) >> 3)) & 0x0f;
-  const [red, green, blue] = TO8_DEFAULT_RGB4[shape ? foreground : background];
-  return rgbToHex(TO8_INTENSITIES[red], TO8_INTENSITIES[green], TO8_INTENSITIES[blue]);
-}
-
-/** Converts RGB channels into a CSS hexadecimal color. */
-function rgbToHex(red: number, green: number, blue: number): string {
-  return `#${hexByte(red)}${hexByte(green)}${hexByte(blue)}`;
-}
-
-/** Formats an 8-bit color channel as a two-character hexadecimal byte. */
-function hexByte(value: number): string {
-  return value.toString(16).padStart(2, "0");
 }
 
 /** Increments a decimal counter with wraparound at the configured digit count. */

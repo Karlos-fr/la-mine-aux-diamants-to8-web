@@ -2,7 +2,7 @@
  * Role: Centralise la creation des scenes gameplay modernes.
  * Scope: Fournit des factories pour eviter que les scenes connaissent directement les transitions niveau suivant.
  * ISO: Ne porte aucune regle TO8; preserve seulement le flux de navigation moderne.
- * Notes: La scene startup reste creee directement pour eviter les cycles d'import.
+ * Notes: Aucune scene de transition niveau n'est ajoutee tant qu'une sequence ISO n'est pas prouvee.
  */
 
 import type { Scene } from "../engine/scene";
@@ -13,7 +13,7 @@ export function createGameplayScene(levelNumber = 1): Scene {
   return new GameplayScene(levelNumber, createNextGameplayScene);
 }
 
-/** Cree la scene gameplay qui suit le niveau courant. */
+/** Cree la scene gameplay suivante sans introduire de transition non prouvee par l'ASM. */
 export function createNextGameplayScene(currentLevelNumber: number): Scene {
   return createGameplayScene(currentLevelNumber + 1);
 }

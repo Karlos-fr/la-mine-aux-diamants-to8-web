@@ -4,6 +4,8 @@ Objectif: auditer puis moderniser progressivement le portage web de `La Mine aux
 
 Ce document est un plan de realisation. Il ne remplace pas les plans gameplay existants; il organise le nettoyage architectural transversal.
 
+Suite pragmatique de cet audit: [MODERN_ARCHITECTURE_PERFECTION_PLAN.md](MODERN_ARCHITECTURE_PERFECTION_PLAN.md).
+
 ## Constat actuel
 
 - `src/screens/gameplay-scene.ts` concentre rendu, input joueur, camera, HUD, grille runtime, monstres, objets physiques, spawn, transitions de niveau et chargement d'assets.
