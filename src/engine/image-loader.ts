@@ -1,6 +1,10 @@
 const loadedImages = new Map<string, Promise<HTMLImageElement>>();
 
-export function loadImage(url: string): Promise<HTMLImageElement> {
+export function loadImage(url: string | undefined): Promise<HTMLImageElement> {
+  if (!url) {
+    return Promise.reject(new Error("Impossible de charger l'image : URL manquante"));
+  }
+
   const existing = loadedImages.get(url);
   if (existing) {
     return existing;

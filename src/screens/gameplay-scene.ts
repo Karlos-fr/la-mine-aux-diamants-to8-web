@@ -265,12 +265,16 @@ export class GameplayScene implements Scene {
   }
 
   private async loadHudPanels(): Promise<void> {
-    const [leftPanel, rightPanel] = await Promise.all([
-      loadImage(HUD_LEFT_PANEL_URL),
-      loadImage(HUD_RIGHT_PANEL_URL)
-    ]);
-    this.leftHudPanelImage = leftPanel;
-    this.rightHudPanelImage = rightPanel;
+    try {
+      const [leftPanel, rightPanel] = await Promise.all([
+        loadImage(HUD_LEFT_PANEL_URL),
+        loadImage(HUD_RIGHT_PANEL_URL)
+      ]);
+      this.leftHudPanelImage = leftPanel;
+      this.rightHudPanelImage = rightPanel;
+    } catch (error) {
+      this.atlasError = error instanceof Error ? error.message : String(error);
+    }
   }
 
   update(dt: number, input: InputState): void {
@@ -819,19 +823,43 @@ export class GameplayScene implements Scene {
       return { x: gridX, y: belowY };
     }
 
+    if (!this.isFallingObjectStaticTile(this.runtimeGrid.getTile(gridX, belowY))) {
+      return null;
+    }
+
     const playerGridX = Math.round(this.state.player.gridX);
     const horizontalDirections = playerGridX < gridX ? [-1, 1] : playerGridX > gridX ? [1, -1] : [-1, 1];
     for (const direction of horizontalDirections) {
       const sideX = gridX + direction;
       if (
-        this.canFallingObjectMoveTo(sideX, gridY) &&
-        this.canFallingObjectMoveTo(sideX, belowY)
+        this.hasTwoEmptyCellsInSideColumn(gridX, gridY, direction) &&
+        this.canFallingObjectMoveTo(sideX, gridY + 1)
       ) {
         return { x: sideX, y: belowY };
       }
     }
 
     return null;
+  }
+
+  private hasTwoEmptyCellsInSideColumn(gridX: number, gridY: number, direction: -1 | 1): boolean {
+    const sideX = gridX + direction;
+    return (
+      this.isFallingObjectClearanceCellEmpty(sideX, gridY) &&
+      this.isFallingObjectClearanceCellEmpty(sideX, gridY + 1)
+    );
+  }
+
+  private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
+    return (
+      this.runtimeGrid.getTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
+      !this.hasFallingObjectAtGrid(gridX, gridY) &&
+      !this.isPlayerRenderedAtGrid(gridX, gridY)
+    );
+  }
+
+  private isFallingObjectStaticTile(tileId: number): boolean {
+    return tileId === ROCK_TILE_ID || tileId === DIAMOND_TILE_ID;
   }
 
   private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {

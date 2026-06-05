@@ -120,7 +120,7 @@ export class StartupTitleScene implements Scene {
     const baseImageUrl = this.baseImagePath;
     void loadImage(baseImageUrl).then((image) => {
       this.baseImage = image;
-    });
+    }).catch(() => undefined);
 
     this.queueLoading(this.faceFrames, this.faceImageCache);
     this.queueLoading(this.sparkleFrames, this.sparkleImageCache);
@@ -196,7 +196,7 @@ export class StartupTitleScene implements Scene {
       const url = docsAssetUrl(frame.path);
       void loadImage(url).then((image) => {
         cache.set(frame.path, image);
-      });
+      }).catch(() => undefined);
     });
   }
 }

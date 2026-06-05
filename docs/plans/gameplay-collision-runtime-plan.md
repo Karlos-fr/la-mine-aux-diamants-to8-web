@@ -81,7 +81,7 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 - [x] Introduire un `FallingObjectRuntimeState` pour rochers et diamants.
 - [x] Faire tomber un rocher si la case dessous est vide.
 - [x] Faire tomber un diamant si la case dessous est vide.
-- [x] Gerer le glissement lateral minimal: si le dessous est bloque et qu'un cote + sa diagonale basse sont vides, l'objet glisse sur ce cote.
+- [x] Gerer le glissement lateral minimal: si le dessous est un objet physique statique `0x00`/`0x03` et que deux cases vides en colonne existent a gauche ou a droite, l'objet bascule sur ce cote.
 - [x] Prioriser le cote du joueur quand les deux directions de glissement sont possibles.
 - [x] Conserver un rendu fluide entre cases, sans changer la logique discrete.
 - [x] Poser la tile finale a la fin du pas physique, avec `0x12/0x13` comme marqueurs runtime temporaires pendant le mouvement.
