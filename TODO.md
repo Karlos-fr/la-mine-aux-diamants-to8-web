@@ -1,0 +1,40 @@
+﻿- Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
+- Implementer les animations de l'ecran 2
+- Supprimer a terme l'offset joueur -1/-1 en reproduisant fidelement le viewport runtime DBAF/DBB0 et la conversion de $D034 vers position ecran.
+
+
+Enregistrer le reccord en local
+- Commenter le code
+
+
+La mine aux diamants
+
+Fonctionnalites
+- Editeur de niveaux
+- Generateur procedural de niveaux via seed
+- Interface multilingue
+- Bruitage
+- Musique
+- Mondes thematiques (nouvelles tiles & monstres)
+- Mode versus en local ou a distance
+
+Graphique
+- Particules pixelisees: poussiere quand on creuse.
+- Tremblement d'ecran leger quand un gros rocher tombe, explosion, etc.
+- Flash quand on ramasse un gros paquet de diamants.
+- Augmentation des frames des animations.
+- Variantes de mineur (skins).
+
+Controles
+- Input buffering: si le joueur appuie legerement avant d'arriver a une intersection, le mouvement est memorise.
+- Deplacement plus fluide: interpoler graphiquement entre les cases.
+
+Animations
+- Eboulements plus lisibles: legere acceleration, petit effet de chute.
+- Diamants qui scintillent: luminosite qui varie.
+
+
+
+Paramètres :
+Mouvements fluides 
+taille grille affichée

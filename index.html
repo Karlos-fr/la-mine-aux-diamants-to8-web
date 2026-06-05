@@ -3,22 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>La Mine aux Diamants TO8</title>
+    <title>La Mine aux Diamants</title>
     <link rel="icon" href="data:,">
-    <script type="module" crossorigin src="./assets/index-B5rG8cJ5.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BadfPJuL.css">
-    <script>
-      window.addEventListener("load", () => {
-        document.title = "La Mine aux Diamants TO8";
-      });
-    </script>
   </head>
   <body>
-    <main id="to8-app" class="to8-app" data-fullscreen-page="false">
-      <section class="to8-stage" aria-label="Jeu TO8">
-        <canvas id="to8-screen" class="to8-screen" width="320" height="200" tabindex="0"></canvas>
-        <div id="to8-controls" class="to8-controls" aria-label="Commandes"></div>
-      </section>
+    <main id="app" aria-label="La Mine aux Diamants">
+      <canvas id="game-screen" width="320" height="200" tabindex="0" aria-label="Ecran du jeu"></canvas>
     </main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,0 +1,754 @@
+{
+  "generatedBy": "extract-mine-assets.mjs",
+  "sourceAtlas": {
+    "startAddress": "0xD218",
+    "endAddress": "0xD8D7",
+    "rendererRoutine": "KIT.BIN:$D145"
+  },
+  "groups": [
+    {
+      "id": "player",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "idle_07",
+          "tileId": 7,
+          "status": "confirmed",
+          "hexId": "0x07",
+          "sourceAddress": "0xD3D8",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b30623b607a785cb25cdfec14c9fae99f9f9cc77b53afbdbc17f79bd3f81209c"
+        },
+        {
+          "name": "idle_08",
+          "tileId": 8,
+          "status": "confirmed",
+          "hexId": "0x08",
+          "sourceAddress": "0xD418",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "a576c1d7cbd35d7c9d2ae204e45935f0bd7d9852282aedd21e69b192e9110314"
+        },
+        {
+          "name": "idle_09",
+          "tileId": 9,
+          "status": "confirmed",
+          "hexId": "0x09",
+          "sourceAddress": "0xD458",
+          "atlasX": 32,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "03b905cfa6b84de5818f866291558fdc470d0502c16aab7fb074c45f697419ce"
+        },
+        {
+          "name": "idle_0a",
+          "tileId": 10,
+          "status": "confirmed",
+          "hexId": "0x0A",
+          "sourceAddress": "0xD498",
+          "atlasX": 48,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "6a57aecfb63ff5fd5bfb2ae2cce98d79cff22786747497185bfe99a399dd2f49"
+        },
+        {
+          "name": "idle_0b",
+          "tileId": 11,
+          "status": "confirmed",
+          "hexId": "0x0B",
+          "sourceAddress": "0xD4D8",
+          "atlasX": 64,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "86357aafed49a44ea0789c317dc30f55ed970f60c806c30539458d3133ead93e"
+        },
+        {
+          "name": "move_right_step_0",
+          "tileId": 12,
+          "status": "confirmed",
+          "hexId": "0x0C",
+          "sourceAddress": "0xD518",
+          "atlasX": 80,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "426d26c9f54f176fbf60c209d4d0ea719e73446f8e2418f5f60c29d530abbed2"
+        },
+        {
+          "name": "move_right_step_1",
+          "tileId": 13,
+          "status": "confirmed",
+          "hexId": "0x0D",
+          "sourceAddress": "0xD558",
+          "atlasX": 96,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "072fa2f2e5711f5a108961833e47a96e9aae836e3a379807febbddca7f05e9f5"
+        },
+        {
+          "name": "move_right_step_2",
+          "tileId": 14,
+          "status": "confirmed",
+          "hexId": "0x0E",
+          "sourceAddress": "0xD598",
+          "atlasX": 112,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "55861b69b5c3140545a829bba5ee73ff31f95ad191256a121619c927dbcfad98"
+        },
+        {
+          "name": "move_left_step_0",
+          "tileId": 15,
+          "status": "confirmed",
+          "hexId": "0x0F",
+          "sourceAddress": "0xD5D8",
+          "atlasX": 128,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b3299b424279209e5a176a8ab225b613c0f5156d692601a64e5ac710cbb0353b"
+        },
+        {
+          "name": "move_left_step_1",
+          "tileId": 16,
+          "status": "confirmed",
+          "hexId": "0x10",
+          "sourceAddress": "0xD618",
+          "atlasX": 144,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "fbd265929091ada636328ecb1356889f6f32b6d16a268938d1dc9d7dfcaa4d4b"
+        },
+        {
+          "name": "move_left_step_2",
+          "tileId": 17,
+          "status": "confirmed",
+          "hexId": "0x11",
+          "sourceAddress": "0xD658",
+          "atlasX": 160,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "2155823fb49faf737fbdd7429d0f0ff609ebf7971f6f77b4f567def9c7672203"
+        }
+      ],
+      "animations": [
+        {
+          "id": "idleCycle",
+          "status": "confirmed",
+          "frameTileIds": [
+            8,
+            8,
+            8,
+            8,
+            8,
+            7,
+            7,
+            8,
+            8,
+            8,
+            8,
+            8,
+            7,
+            7,
+            8,
+            8,
+            8,
+            8,
+            8,
+            7,
+            7,
+            8,
+            8,
+            8,
+            8,
+            8,
+            9,
+            10,
+            9,
+            8,
+            8,
+            8,
+            8,
+            8,
+            9,
+            10,
+            9,
+            8,
+            8,
+            8,
+            8,
+            8,
+            11,
+            11,
+            8,
+            8,
+            11,
+            11,
+            8,
+            8,
+            11,
+            11
+          ],
+          "uniqueFrameTileIds": [
+            8,
+            7,
+            9,
+            10,
+            11
+          ],
+          "sourceAddress": "0xD036-0xD069",
+          "evidence": [
+            "KIT.BIN:$CED9 cycles bytes from $D036-$D069 and writes them at $D034 player pointer"
+          ]
+        },
+        {
+          "id": "moveRight",
+          "status": "confirmed",
+          "frameTileIds": [
+            12,
+            13,
+            14
+          ],
+          "frameNames": [
+            "move_right_step_0",
+            "move_right_step_1",
+            "move_right_step_2"
+          ],
+          "evidence": [
+            "KIT.BIN:$CEF0 stores tileId 0x0C before moving right",
+            "KIT.BIN:$CEF5 applies COM $D02F, enabling the walk phase",
+            "KIT.BIN:$CEC0-$CED5 increments the current player tile until 0x0E, then toggles $D02F"
+          ]
+        },
+        {
+          "id": "moveLeft",
+          "status": "confirmed",
+          "frameTileIds": [
+            15,
+            16,
+            17
+          ],
+          "frameNames": [
+            "move_left_step_0",
+            "move_left_step_1",
+            "move_left_step_2"
+          ],
+          "evidence": [
+            "KIT.BIN:$CF4A stores tileId 0x0F before moving left",
+            "KIT.BIN:$CF4F applies COM $D02F, enabling the walk phase",
+            "KIT.BIN:$CEC0-$CED5 increments the current player tile until 0x11, then toggles $D02F"
+          ]
+        },
+        {
+          "id": "moveVertical",
+          "status": "confirmed_alias",
+          "frameTileIds": [],
+          "usesLastHorizontalFrame": true,
+          "evidence": [
+            "KIT.BIN:$CFA8 and KIT.BIN:$CFEA do not store a vertical tileId",
+            "KIT.BIN:$CFAE/$CFF0 apply COM $D02F and KIT.BIN:$CFBF/$D001 reload $D02E, reusing the last horizontal direction",
+            "the shared KIT.BIN:$CEC0-$CED5 phase code then advances through the right or left walk frames"
+          ]
+        },
+        {
+          "id": "exitBlock",
+          "status": "confirmed_non_sprite",
+          "frameTileIds": [
+            4
+          ],
+          "evidence": [
+            "KIT.BIN:$BFB6 writes 0x04 at the exit pointer $DBB3, so tile 0x04 is not grouped as a character sprite"
+          ]
+        }
+      ],
+      "evidence": [
+        "KIT.BIN:$CED9 cycles the player idle table $D036-$D069",
+        "KIT.BIN:$CEF0 writes 0x0C while moving right, $CEF5 toggles $D02F, then $CEC0-$CED5 advances 0x0C->0x0D->0x0E",
+        "KIT.BIN:$CF4A writes 0x0F while moving left, $CF4F toggles $D02F, then $CEC0-$CED5 advances 0x0F->0x10->0x11",
+        "KIT.BIN:$CFA8/$CFEA reuse $D02E for vertical movement and rely on the same $D02F phase advance",
+        "KIT.BIN:$BFB6 writes 0x04 as the exit/protected block marker, not a confirmed character frame"
+      ],
+      "atlas": "sprites/player-atlas.png",
+      "controlPng": "sprites/player-control.png"
+    },
+    {
+      "id": "diamond",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "color_cycle_0",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b83631fd1c70ae514777e4ecf2ad31652eb25606cc1131897a601eeb892ff800"
+        },
+        {
+          "name": "color_cycle_1",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "92a04900a518b25e698a00cc67f6f945f9e0a481cea5ea404dffaa08768657b7"
+        },
+        {
+          "name": "color_cycle_2",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 32,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "56b81148dbfdf6c545d5885764f7fdebf3aa45b2783e34d720769f84618efae6"
+        },
+        {
+          "name": "color_cycle_3",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 48,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "1642a98a5e5cd1fe28dcdcca2aa05f53c7b8dd2b66ba1eb1266c4df69569a0c3"
+        },
+        {
+          "name": "color_cycle_4",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 64,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "8e1517bc2f7f220083cf458c339978594b7f611de82691d3fdf3171aab0dbbc7"
+        },
+        {
+          "name": "color_cycle_5",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 80,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b04841c9e66b725cf59369d5059227c085b0a272760c3930e8a0edfc3c8af6d7"
+        },
+        {
+          "name": "color_cycle_6",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 96,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "13245a14c049267e1ebada74004f2c3373ba7029f1bf0184d6bff4374f7854c9"
+        },
+        {
+          "name": "color_cycle_7",
+          "tileId": 3,
+          "status": "confirmed",
+          "hexId": "0x03",
+          "sourceAddress": "0xD2D8",
+          "atlasX": 112,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b5191a47a45354f667b23d88b4806ed76d83abe525a2237cb44913575bf76b9b"
+        },
+        {
+          "name": "sliding_left_state",
+          "tileId": 19,
+          "status": "confirmed",
+          "hexId": "0x13",
+          "sourceAddress": "0xD6D8",
+          "atlasX": 128,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "b83631fd1c70ae514777e4ecf2ad31652eb25606cc1131897a601eeb892ff800"
+        }
+      ],
+      "animations": [
+        {
+          "id": "colorCycle",
+          "status": "confirmed",
+          "frameTileIds": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "frameCount": 8,
+          "evidence": [
+            "KIT.BIN:$D1E0 rotates the color plane bytes $D2F8-$D317 of tileId 0x03",
+            "the rotation moves the color attributes upward by two rows per call"
+          ]
+        },
+        {
+          "id": "fallingOrSliding",
+          "status": "confirmed",
+          "frameTileIds": [
+            3,
+            19
+          ],
+          "evidence": [
+            "KIT.BIN:$CB17 treats 0x03 as falling object",
+            "KIT.BIN:$CB84/$CBE2 generate 0x13 from diamond state"
+          ]
+        }
+      ],
+      "evidence": [
+        "tileId 0x03 confirmed as diamond in phase 3",
+        "tileId 0x13 is generated by falling-object routines from diamond state",
+        "KIT.BIN:$D1E0 animates diamond colors by rotating tile 0x03 color plane"
+      ],
+      "atlas": "sprites/diamond-atlas.png",
+      "controlPng": "sprites/diamond-control.png"
+    },
+    {
+      "id": "rocks",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "static",
+          "tileId": 0,
+          "status": "confirmed",
+          "hexId": "0x00",
+          "sourceAddress": "0xD218",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "42d9069123a72a99809133f6d1b977da8c5421200e32b10a83a3ed0a5803d218"
+        },
+        {
+          "name": "sliding_left_state",
+          "tileId": 18,
+          "status": "confirmed",
+          "hexId": "0x12",
+          "sourceAddress": "0xD698",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "42d9069123a72a99809133f6d1b977da8c5421200e32b10a83a3ed0a5803d218"
+        }
+      ],
+      "animations": [
+        {
+          "id": "fallingOrSliding",
+          "status": "confirmed",
+          "frameTileIds": [
+            0,
+            18
+          ],
+          "evidence": [
+            "KIT.BIN:$CB17 treats 0x00 as falling object",
+            "KIT.BIN:$CB89/$CBDD generate 0x12 from rock state"
+          ]
+        }
+      ],
+      "evidence": [
+        "tileId 0x00 confirmed as rock in phase 1",
+        "tileId 0x12 shares rock visual asset and is generated by falling-object routines"
+      ],
+      "atlas": "sprites/rocks-atlas.png",
+      "controlPng": "sprites/rocks-control.png"
+    },
+    {
+      "id": "explosion",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "blast_1",
+          "tileId": 20,
+          "status": "confirmed",
+          "hexId": "0x14",
+          "sourceAddress": "0xD718",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "d0fd67c15a088c077372f458882ca1e849122f970691add565ec70087156e2fd"
+        },
+        {
+          "name": "blast_2",
+          "tileId": 21,
+          "status": "confirmed",
+          "hexId": "0x15",
+          "sourceAddress": "0xD758",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "9040010c89a82a126f2dc3e078c892f30a17a3e3daf825c9b1e5e7ab23517804"
+        },
+        {
+          "name": "blast_3",
+          "tileId": 22,
+          "status": "confirmed",
+          "hexId": "0x16",
+          "sourceAddress": "0xD798",
+          "atlasX": 32,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "d3b25064b6803f00910ef41606b2c9b61ef1714509934b9db924a892ba80eb62"
+        },
+        {
+          "name": "empty_after_blast",
+          "tileId": 5,
+          "status": "confirmed",
+          "hexId": "0x05",
+          "sourceAddress": "0xD358",
+          "atlasX": 48,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "9503245a0161a939de15c2414db2d336e761822fa6cff8136e4148f58f1f782e"
+        }
+      ],
+      "animations": [
+        {
+          "id": "blast3x3",
+          "status": "confirmed",
+          "frameTileIds": [
+            20,
+            21,
+            22,
+            5
+          ],
+          "evidence": [
+            "KIT.BIN:$CCC6 writes 0x14 then 0x15 then 0x16 then 0x05 around the target cell",
+            "KIT.BIN:$CCFE applies each frame to the 3x3 neighborhood unless a cell contains 0x04"
+          ]
+        }
+      ],
+      "evidence": [
+        "KIT.BIN:$CCC6 is the 3x3 explosion sequence",
+        "KIT.BIN:$CD4E refreshes rendering after each explosion frame through $D1BB/$D1E0/$D06B"
+      ],
+      "atlas": "sprites/explosion-atlas.png",
+      "controlPng": "sprites/explosion-control.png"
+    },
+    {
+      "id": "objects",
+      "status": "mixed",
+      "frames": [
+        {
+          "name": "earth",
+          "tileId": 1,
+          "status": "suspected",
+          "hexId": "0x01",
+          "sourceAddress": "0xD258",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "d09c84fdcbb559e7e5610d33c1a4e2d7a8a348e55992f5ab0229029cbb488d19"
+        },
+        {
+          "name": "monster",
+          "tileId": 2,
+          "status": "confirmed",
+          "hexId": "0x02",
+          "sourceAddress": "0xD298",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "12a0e5caf4eef905d6a5e7f9aefbac3cf10e19a3073c9004469bd6664df24755"
+        },
+        {
+          "name": "exit_block",
+          "tileId": 4,
+          "status": "confirmed",
+          "hexId": "0x04",
+          "sourceAddress": "0xD318",
+          "atlasX": 32,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "eba9f062eaa7fb08b49ed75bd9223718f95f466aa3fcebbbb86a6ea311da81e3"
+        },
+        {
+          "name": "empty",
+          "tileId": 5,
+          "status": "confirmed",
+          "hexId": "0x05",
+          "sourceAddress": "0xD358",
+          "atlasX": 48,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "9503245a0161a939de15c2414db2d336e761822fa6cff8136e4148f58f1f782e"
+        },
+        {
+          "name": "platform",
+          "tileId": 6,
+          "status": "suspected",
+          "hexId": "0x06",
+          "sourceAddress": "0xD398",
+          "atlasX": 64,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "548689e3f82af822cc85a4912afb7e9486132ad61225bbc64a1b5dbe01222605"
+        },
+        {
+          "name": "special_target",
+          "tileId": 23,
+          "status": "confirmed",
+          "hexId": "0x17",
+          "sourceAddress": "0xD7D8",
+          "atlasX": 80,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "697dff24fc430b99967ef10b5913af4d12ba64c8fb48e0c1c6a5938a9de45c4c"
+        },
+        {
+          "name": "unknown_18",
+          "tileId": 24,
+          "status": "unidentified",
+          "hexId": "0x18",
+          "sourceAddress": "0xD818",
+          "atlasX": 96,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "9667b08cc5b88241338efed844771ab24e5ea6abc0ec6fccdfd40e27af0c63c1"
+        },
+        {
+          "name": "unknown_19",
+          "tileId": 25,
+          "status": "unidentified",
+          "hexId": "0x19",
+          "sourceAddress": "0xD858",
+          "atlasX": 112,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "6d2dbf8f31c2b182dee89802156712194ed0da1e7b56e2b48170d9b369f64946"
+        },
+        {
+          "name": "unknown_1a",
+          "tileId": 26,
+          "status": "unidentified",
+          "hexId": "0x1A",
+          "sourceAddress": "0xD898",
+          "atlasX": 128,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "74a23957ed20b391b750e1ed9400cac66466af585a2a43446586d157a21d8b10"
+        }
+      ],
+      "animations": [
+        {
+          "id": "monsterBlink",
+          "status": "confirmed",
+          "frameTileIds": [
+            2,
+            2
+          ],
+          "evidence": [
+            "KIT.BIN:$D1BB complements the shape plane bytes $D298-$D2B7 of tileId 0x02",
+            "KIT.BIN:$CC5B tests tileId 0x02 against the special-position table at $DAF4",
+            "KIT.BIN:$D1BB is called from the active loop at $BEC7 and $BF68"
+          ]
+        }
+      ],
+      "evidence": [
+        "static and special tiles grouped separately from player/diamond/rocks",
+        "tile 0x02 is animated by KIT.BIN:$D1BB and checked against $DAF4 by KIT.BIN:$CC5B-$CC88",
+        "tile 0x18 remains unconfirmed and is not treated as the monster",
+        "KIT.BIN:$D1BB also swaps the shape planes $D7D8-$D7F7 and $D858-$D877 for tileIds 0x17 and 0x1A",
+        "unidentified tiles remain explicitly unconfirmed"
+      ],
+      "atlas": "sprites/objects-atlas.png",
+      "controlPng": "sprites/objects-control.png"
+    },
+    {
+      "id": "monster",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "blink_0",
+          "tileId": 2,
+          "status": "confirmed",
+          "hexId": "0x02",
+          "sourceAddress": "0xD298",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "12a0e5caf4eef905d6a5e7f9aefbac3cf10e19a3073c9004469bd6664df24755"
+        },
+        {
+          "name": "blink_1",
+          "tileId": 2,
+          "status": "confirmed",
+          "hexId": "0x02",
+          "sourceAddress": "0xD298",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "cb0a859ae1c6d242f2326947c86345a49a892f407d56410c5fab9983011a76ee"
+        }
+      ],
+      "animations": [
+        {
+          "id": "blinkToggle",
+          "status": "confirmed",
+          "frameTileIds": [
+            2,
+            2
+          ],
+          "evidence": [
+            "KIT.BIN:$D1BB toggles tile 0x02 by complementing its 32-byte shape plane"
+          ]
+        }
+      ],
+      "evidence": [
+        "animation reconstructed by applying KIT.BIN:$D1BB effects to tileId 0x02 atlas bytes",
+        "the two frames match the red/blue square alternation seen in the running port"
+      ],
+      "atlas": "sprites/monster-atlas.png",
+      "controlPng": "sprites/monster-control.png"
+    }
+  ]
+}

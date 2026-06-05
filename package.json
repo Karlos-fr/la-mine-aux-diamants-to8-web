@@ -1,0 +1,29 @@
+{
+  "name": "la-mine-aux-diamants-remake",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "extract:assets": "node tools/extract-mine-assets.mjs",
+    "extract:fonts": "node tools/extract-mine-fonts.mjs",
+    "extract:hud": "node tools/extract-mine-hud.mjs",
+    "extract:levels": "node tools/decode-mine-levels.mjs",
+    "extract:startup": "node tools/extract-mine-startup.mjs",
+    "extract:title": "node tools/extract-mine-title.mjs",
+    "test:assets": "node tools/verify-mine-assets.mjs",
+    "test:fonts": "node tools/verify-mine-fonts.mjs",
+    "test:hud": "node tools/verify-mine-hud.mjs",
+    "test:levels": "node tools/verify-mine-levels.mjs",
+    "test:startup": "node tools/verify-mine-startup.mjs",
+    "test:title": "node tools/verify-mine-title.mjs",
+    "test:asset-policy": "node tools/verify-asset-integration-policy.mjs",
+    "test:provenance": "node tools/verify-mine-provenance.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vite": "^7.2.0"
+  }
+}
