@@ -5,15 +5,12 @@ import { loadImage } from "../engine/image-loader";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { GameplayScene } from "./gameplay-scene";
+import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 
 interface DecodedFrame {
   readonly path: string;
   readonly x?: number;
   readonly y?: number;
-}
-
-function docsAssetUrl(relativePath: string): string {
-  return new URL(`../../docs/extraction/${relativePath}`, import.meta.url).href;
 }
 
 function pick<T>(value: ReadonlyArray<T> | undefined, index: number): T | undefined {
@@ -26,10 +23,7 @@ export class StartupInfogramScene implements Scene {
   private backgroundImage: HTMLImageElement | undefined;
   private backgroundError: string | null = null;
 
-  private readonly backgroundImageUrl = new URL(
-    "../../docs/extraction/startup/startup-01-infogrames-presents.png",
-    import.meta.url
-  ).href;
+  private readonly backgroundImageUrl = RUNTIME_ASSET_URLS.startupInfogramesPresents;
 
   constructor() {
     void loadImage(this.backgroundImageUrl).then((image) => {
@@ -83,10 +77,7 @@ export class StartupTitleScene implements Scene {
   private readonly faceFrames: DecodedFrame[];
   private readonly sparkleFrames: DecodedFrame[];
   private readonly feetFrames: DecodedFrame[];
-  private readonly baseImagePath = new URL(
-    "../../docs/extraction/startup/startup-02-title-entet-9367.png",
-    import.meta.url
-  ).href;
+  private readonly baseImagePath = RUNTIME_ASSET_URLS.startupTitleBase;
 
   private readonly faceImageCache = new Map<string, HTMLImageElement>();
   private readonly sparkleImageCache = new Map<string, HTMLImageElement>();
@@ -193,7 +184,7 @@ export class StartupTitleScene implements Scene {
         return;
       }
 
-      const url = docsAssetUrl(frame.path);
+      const url = docsExtractionAssetUrl(frame.path);
       void loadImage(url).then((image) => {
         cache.set(frame.path, image);
       }).catch(() => undefined);

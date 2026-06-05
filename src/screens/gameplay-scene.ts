@@ -38,6 +38,7 @@ import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible } from "../rendering/entity-renderer";
 import { drawHudSmallCounter, drawHudTextFields } from "../rendering/hud-renderer";
 import { getGridCellScreenPosition } from "../rendering/level-renderer";
+import { RUNTIME_ASSET_URLS } from "../assets/runtime-assets";
 
 interface AnimationClock {
   frameIndex: number;
@@ -163,31 +164,6 @@ const HUD_GALLERY_DIAMOND_COLOR_ROWS = [
   0x37, 0x37, 0x77, 0x77, 0x27, 0x27, 0x67, 0x67
 ] as const;
 
-const LEVEL1_ATLAS_URL = new URL(
-  "../../docs/extraction/mine-tiles-atlas-D218-D8D7.png",
-  import.meta.url
-).href;
-
-const DIAMOND_ATLAS_URL = new URL(
-  "../../docs/extraction/sprites/diamond-atlas.png",
-  import.meta.url
-).href;
-
-const MONSTER_ATLAS_URL = new URL(
-  "../../docs/extraction/sprites/monster-atlas.png",
-  import.meta.url
-).href;
-
-const HUD_LEFT_PANEL_URL = new URL(
-  "../../docs/extraction/hud/left-wood-sign.png",
-  import.meta.url
-).href;
-
-const HUD_RIGHT_PANEL_URL = new URL(
-  "../../docs/extraction/hud/right-gallery-sign.png",
-  import.meta.url
-).href;
-
 export class GameplayScene implements Scene {
   private context: SceneContext | undefined;
   private readonly state: GameState;
@@ -267,9 +243,9 @@ export class GameplayScene implements Scene {
   private async loadAtlas(): Promise<void> {
     try {
       const [tileAtlas, diamondAtlas, monsterAtlas] = await Promise.all([
-        loadImage(LEVEL1_ATLAS_URL),
-        loadImage(DIAMOND_ATLAS_URL),
-        loadImage(MONSTER_ATLAS_URL)
+        loadImage(RUNTIME_ASSET_URLS.tilesAtlas),
+        loadImage(RUNTIME_ASSET_URLS.diamondAtlas),
+        loadImage(RUNTIME_ASSET_URLS.monsterAtlas)
       ]);
       this.atlasImage = tileAtlas;
       this.diamondAtlasImage = diamondAtlas;
@@ -282,8 +258,8 @@ export class GameplayScene implements Scene {
   private async loadHudPanels(): Promise<void> {
     try {
       const [leftPanel, rightPanel] = await Promise.all([
-        loadImage(HUD_LEFT_PANEL_URL),
-        loadImage(HUD_RIGHT_PANEL_URL)
+        loadImage(RUNTIME_ASSET_URLS.hudLeftPanel),
+        loadImage(RUNTIME_ASSET_URLS.hudRightPanel)
       ]);
       this.leftHudPanelImage = leftPanel;
       this.rightHudPanelImage = rightPanel;

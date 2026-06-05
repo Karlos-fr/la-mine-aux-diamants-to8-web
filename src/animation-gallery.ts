@@ -1,15 +1,9 @@
 import { mineSpriteMetadata } from "./assets/generated/mine-sprites";
+import { VIEWER_ASSET_URLS } from "./assets/runtime-assets";
 import { createGameApp } from "./engine/game-app";
 import { StartupInfogramScene } from "./screens/startup-screens";
 
-const ATLAS_URLS: Record<string, string> = {
-  player: new URL("../docs/extraction/sprites/player-atlas.png", import.meta.url).href,
-  diamond: new URL("../docs/extraction/sprites/diamond-atlas.png", import.meta.url).href,
-  rocks: new URL("../docs/extraction/sprites/rocks-atlas.png", import.meta.url).href,
-  explosion: new URL("../docs/extraction/sprites/explosion-atlas.png", import.meta.url).href,
-  objects: new URL("../docs/extraction/sprites/objects-atlas.png", import.meta.url).href,
-  monster: new URL("../docs/extraction/sprites/monster-atlas.png", import.meta.url).href
-};
+const ATLAS_URLS: Record<string, string> = VIEWER_ASSET_URLS;
 
 type SpriteGroup = (typeof mineSpriteMetadata.groups)[number];
 type SpriteFrame = SpriteGroup["frames"][number];

@@ -194,14 +194,22 @@ Dette connue:
 
 ## Phase 6 - Assets runtime et extraction
 
-- [ ] Creer une facade `src/assets/runtime-assets.ts`.
-- [ ] Centraliser les URLs vers atlas tuiles, sprites, HUD, startup et title.
-- [ ] Distinguer les assets runtime obligatoires des assets de viewer.
-- [ ] Eviter que les scenes connaissent directement les chemins `docs/extraction`.
-- [ ] Garder les outils d'extraction dans `tools/`.
-- [ ] Garder les preuves d'extraction dans `docs/extraction` et `docs/provenance`.
-- [ ] Verifier si des PNG/metadata inutilises peuvent etre supprimes plus tard.
-- [ ] Ne supprimer aucun asset tant que le viewer ou une preuve ne depend pas de lui.
+- [x] Creer une facade `src/assets/runtime-assets.ts`.
+- [x] Centraliser les URLs vers atlas tuiles, sprites, HUD, startup et title.
+- [x] Distinguer les assets runtime obligatoires des assets de viewer.
+- [x] Eviter que les scenes connaissent directement les chemins `docs/extraction`.
+- [x] Garder les outils d'extraction dans `tools/`.
+- [x] Garder les preuves d'extraction dans `docs/extraction` et `docs/provenance`.
+- [x] Verifier si des PNG/metadata inutilises peuvent etre supprimes plus tard.
+- [x] Ne supprimer aucun asset tant que le viewer ou une preuve ne depend pas de lui.
+
+### Notes Phase 6
+
+- `src/assets/runtime-assets.ts` centralise les URLs vers `docs/extraction`.
+- `RUNTIME_ASSET_URLS` regroupe les assets obligatoires du jeu: atlas tuiles, atlas diamants/monstres, panneaux HUD, startup Infogrames et ecran titre.
+- `VIEWER_ASSET_URLS` regroupe les atlas utiles au viewer developpeur.
+- `docsExtractionAssetUrl` reste disponible pour charger les frames d'animation referencees par metadata sans que les scenes reconstruisent elles-memes le chemin `docs/extraction`.
+- Aucun asset n'a ete supprime pendant cette phase: la verification d'inutilisation reste volontairement conservative, car certains fichiers servent de preuves ou de support viewer.
 
 ## Phase 7 - Scenes et navigation
 
