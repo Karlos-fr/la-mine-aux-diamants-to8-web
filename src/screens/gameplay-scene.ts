@@ -248,7 +248,8 @@ export class GameplayScene implements Scene {
     player: 1 / 8,
     diamond: 1 / 8,
     monster: 1 / 4,
-    hudDiamond: 1 / 8
+    hudDiamond: 1 / 8,
+    exit: 1 / 4
   };
   /** Horloges d'animation indexees par cle. */
   private readonly animationState = new Map<string, AnimationClock>();
@@ -330,6 +331,7 @@ export class GameplayScene implements Scene {
     this.animationState.set("diamond", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("monster", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("hudDiamond", { frameIndex: 0, accumulator: 0 });
+    this.animationState.set("exit", { frameIndex: 0, accumulator: 0 });
     void this.runtimeAssets.load();
   }
 
@@ -430,6 +432,7 @@ export class GameplayScene implements Scene {
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
     this.advanceAnimation("monster", this.monsterAnimationFrames, this.animationDurations.monster, dt);
+    this.advanceAnimation("exit", [0, 1], this.animationDurations.exit, dt);
     this.advanceAnimation(
       "hudDiamond",
       HUD_GALLERY_DIAMOND_ANIMATION_FRAMES,
@@ -475,6 +478,7 @@ export class GameplayScene implements Scene {
       findMonsterRuntimeAtGrid: (gridX, gridY) => this.findMonsterRuntimeAtGrid(gridX, gridY),
       isPlayerRenderedAtGrid: (gridX, gridY) => this.isPlayerRenderedAtGrid(gridX, gridY),
       getPlayerSpawnBlinkTileId: (gridX, gridY) => this.getPlayerSpawnBlinkTileId(gridX, gridY),
+      getExitBlinkTileId: (gridX, gridY) => this.getExitBlinkTileId(gridX, gridY),
       isPlayerSpawning: () => this.isPlayerSpawning()
     });
   }
@@ -1159,6 +1163,16 @@ export class GameplayScene implements Scene {
       gridX,
       gridY
     );
+  }
+
+  /** Returns the blinking visual tile for the active exit without mutating the runtime grid. */
+  private getExitBlinkTileId(gridX: number, gridY: number): number | undefined {
+    if (!this.isOpenExitCell(gridX, gridY)) {
+      return undefined;
+    }
+
+    const frameIndex = this.animationState.get("exit")?.frameIndex ?? 0;
+    return frameIndex % 2 === 0 ? RUNTIME_GRID_FILL_TILE_ID : RUNTIME_EMPTY_TILE_ID;
   }
 
   /** Queues the direct next-level transition once the player reaches an open exit. */

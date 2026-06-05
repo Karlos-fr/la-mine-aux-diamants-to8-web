@@ -214,6 +214,9 @@ export interface GameplayRenderContext {
   /** Retourne la tuile de clignotement spawn, noir, ou absence de remplacement. */
   readonly getPlayerSpawnBlinkTileId: (gridX: number, gridY: number) => number | null | undefined;
 
+  /** Retourne la tuile de clignotement sortie active, ou absence de remplacement. */
+  readonly getExitBlinkTileId: (gridX: number, gridY: number) => number | undefined;
+
   /** Indique si le joueur est encore dans l'animation de spawn. */
   readonly isPlayerSpawning: () => boolean;
 }
@@ -275,6 +278,7 @@ export class GameplayRenderer {
         );
         const hasPlayerEntity = context.state.player.active && context.isPlayerRenderedAtGrid(levelX, levelY);
         const spawnBlinkTileId = context.getPlayerSpawnBlinkTileId(levelX, levelY);
+        const exitBlinkTileId = context.getExitBlinkTileId(levelX, levelY);
 
         if (spawnBlinkTileId === null) {
           renderer.fillRect(
@@ -292,7 +296,7 @@ export class GameplayRenderer {
             ? context.tileIds.empty
             : tileId === context.tileIds.fallingRock || tileId === context.tileIds.fallingDiamond
               ? context.tileIds.empty
-              : tileId;
+              : exitBlinkTileId ?? tileId;
         const frame = context.getTileFrame(spawnBlinkTileId ?? renderTileId);
         if ((hasDynamicEntity || hasPlayerEntity) && spawnBlinkTileId === undefined) {
           continue;
