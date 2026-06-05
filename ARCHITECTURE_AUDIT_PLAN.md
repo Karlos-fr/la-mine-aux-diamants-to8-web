@@ -112,15 +112,22 @@ Dette connue:
 
 ## Phase 2 - Loader de niveaux modernes
 
-- [ ] Extraire les imports des 16 JSON vers `src/game/level-loader.ts`.
-- [ ] Extraire `ModernLevelJson` vers un type public dedie.
-- [ ] Extraire `buildLevelDefinition` depuis `state.ts`.
-- [ ] Renommer `state.ts` si son role devient uniquement factory d'etat.
-- [ ] Conserver `createGameLevelState(levelNumber)` comme facade publique stable.
-- [ ] Encapsuler le mapping `ModernTileType -> tileId runtime`.
-- [ ] Gerer proprement les niveaux absents ou futurs.
-- [ ] Preparer la future edition de niveaux sans adresses ASM.
-- [ ] Verifier que `level.exit` reste dans le meme repere logique que `playerSpawn`.
+- [x] Extraire les imports des 16 JSON vers `src/game/level-loader.ts`.
+- [x] Extraire `ModernLevelJson` vers un type public dedie.
+- [x] Extraire `buildLevelDefinition` depuis `state.ts`.
+- [x] Renommer `state.ts` si son role devient uniquement factory d'etat.
+- [x] Conserver `createGameLevelState(levelNumber)` comme facade publique stable.
+- [x] Encapsuler le mapping `ModernTileType -> tileId runtime`.
+- [x] Gerer proprement les niveaux absents ou futurs.
+- [x] Preparer la future edition de niveaux sans adresses ASM.
+- [x] Verifier que `level.exit` reste dans le meme repere logique que `playerSpawn`.
+
+### Notes Phase 2
+
+- `src/game/level-loader.ts` porte maintenant les imports JSON, le type public `ModernLevelJson`, la conversion JSON moderne -> `LevelDefinition` et le mapping `ModernTileType -> RUNTIME_TILE`.
+- `src/game/game-state-factory.ts` porte uniquement la creation de `GameState` et les etats runtime derives, notamment les pointeurs monstres calcules depuis la grille logique.
+- `src/game/state.ts` reste une facade de compatibilite pour ne pas casser les imports existants, mais le role effectif a ete renomme vers `game-state-factory.ts`.
+- `playerSpawn` et `exit` restent dans le meme repere logique moderne: coordonnees de grille issues du JSON, sans adresse ASM runtime.
 
 ## Phase 3 - Systems gameplay
 

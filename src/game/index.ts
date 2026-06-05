@@ -8,6 +8,18 @@ export type {
   TileCollision,
   TileDefinition
 } from "./types";
+export type { ModernLevelJson, ModernTileType } from "./level-loader";
+export {
+  LEVEL_COUNT,
+  buildLevelDefinition,
+  getModernLevelSource,
+  loadLevelDefinition
+} from "./level-loader";
+export {
+  LEVEL1_DEFINITION,
+  createGameLevelState,
+  createGameShellState
+} from "./game-state-factory";
 export { LevelRuntimeGrid } from "./runtime-grid";
 export {
   RUNTIME_GRID_BASE_ADDRESS,
