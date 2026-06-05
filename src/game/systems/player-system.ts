@@ -6,7 +6,7 @@
  */
 
 /** Effet logique applique quand le joueur atteint sa cellule cible. */
-export type RuntimeTileArrivalEffect = "none" | "dig" | "collectDiamond" | "clearTrail" | "enterExit";
+export type RuntimeTileArrivalEffect = "none" | "dig" | "collectDiamond" | "clearTrail" | "enterExit" | "hitMonster";
 
 /** Resultat d'une tentative d'entree du joueur dans une cellule. */
 export interface PlayerMoveResolution {

@@ -113,18 +113,37 @@ Notes phase 4:
 
 ## Phase 5 - Collisions mortelles
 
-- [ ] Detecter chute de rocher/diamant sur joueur.
-- [ ] Detecter chute de rocher/diamant sur monstre.
-- [ ] Detecter contact joueur/monstre selon les routines originales.
-- [ ] Distinguer collision directe, explosion, perte de vie et reset niveau.
+- [x] Detecter chute de rocher/diamant sur joueur.
+- [x] Detecter chute de rocher/diamant sur monstre.
+- [x] Detecter contact joueur/monstre selon les routines originales.
+- [x] Distinguer collision directe joueur/monstre et impact d'objet physique.
+- [x] Raffiner reset niveau et sequence exacte apres mort prouvee localement.
+- [ ] Raffiner compteur de vies et game over complet si une routine ASM exploitable est identifiee.
+
+Notes phase 5:
+
+- Une chute de rocher/diamant sur le joueur desactive le joueur et passe l'etat en `gameOver`.
+- Une chute de rocher/diamant sur un monstre desactive l'entite monstre et retire le monstre de la liste runtime.
+- Le contact direct joueur/monstre est detecte a l'arrivee joueur et apres synchronisation des monstres.
+- Le joueur inactif ou en `gameOver` ne traite plus l'input et ne peut plus recolter/modifier la grille.
+- Apres mort, la scene attend la fin des explosions puis recharge le niveau courant, en accord avec le flux local observe `CCC6 -> D9E6 -> BB14 -> BE68 -> DA10`.
+- Le compteur de vies/game over complet reste a confirmer: `$DBB6` est initialise a `3`, mais son interpretation definitive comme vies n'est pas encore prouvee.
 
 ## Phase 6 - Explosion
 
-- [ ] Utiliser les frames `0x14`, `0x15`, `0x16`, puis `0x05`.
-- [ ] Reproduire la zone d'explosion prouvee par `KIT.BIN:$CCC6/$CCFE`.
-- [ ] Ne pas effacer les cellules protegees/bordures si l'ASM les preserve.
-- [ ] Supprimer le monstre touche par un rocher avec explosion.
+- [x] Utiliser les frames `0x14`, `0x15`, `0x16`, puis `0x05`.
+- [x] Reproduire la zone d'explosion prouvee par `KIT.BIN:$CCC6/$CCFE`.
+- [x] Ne pas effacer les cellules protegees/bordures si l'ASM les preserve.
+- [x] Supprimer le monstre touche par un rocher avec explosion.
 - [ ] Mettre a jour score si le code original attribue des points.
+
+Notes phase 6:
+
+- L'explosion est representee par `RuntimeExplosionState` dans `GameState`.
+- La sequence applique les tuiles `0x14 -> 0x15 -> 0x16 -> 0x05` directement dans la grille runtime.
+- La zone appliquee est le voisinage 3x3 autour de l'impact, en preservant les cellules `0x04`.
+- Les entites non joueur couvertes par l'explosion sont desactivees; le joueur est tue si une explosion couvre sa cellule.
+- Le score lie a la destruction d'un monstre reste a confirmer dans l'ASM avant implementation.
 
 ## Phase 7 - Integration boucle runtime
 

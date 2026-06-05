@@ -7,7 +7,7 @@
 
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
-import type { EntityState, FallingObjectRuntimeState, GameState } from "../game/types";
+import type { EntityState, FallingObjectRuntimeState, GameState, RuntimeExplosionState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
 import { createGameLevelState } from "../game/game-state-factory";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
@@ -29,6 +29,7 @@ import {
 import { isOpenExitCell as isOpenExitCellSystem } from "../game/systems/exit-system";
 import { resolveFallingObjectTarget as resolveFallingObjectTargetSystem } from "../game/systems/falling-object-system";
 import { advanceSingleMonsterRuntime as advanceSingleMonsterRuntimeSystem } from "../game/systems/monster-system";
+import { resolveRockPushTarget as resolveRockPushTargetSystem } from "../game/systems/rock-push-system";
 import {
   canPlayerEnterTile as canPlayerEnterTileSystem,
   getPlayerArrivalEffect as getPlayerArrivalEffectSystem,
@@ -146,6 +147,15 @@ const MONSTER_TILE_ID = RUNTIME_TILE.monster;
 const FALLING_ROCK_TILE_ID = RUNTIME_TILE.fallingRock;
 /** Tile id temporaire de diamant en chute. */
 const FALLING_DIAMOND_TILE_ID = RUNTIME_TILE.fallingDiamond;
+/** Frames runtime de l'explosion 3x3 prouvee par `KIT.BIN:$CCC6/$CCFE`. */
+const EXPLOSION_TILE_SEQUENCE = [
+  RUNTIME_TILE.explosion1,
+  RUNTIME_TILE.explosion2,
+  RUNTIME_TILE.explosion3,
+  RUNTIME_TILE.empty
+] as const;
+/** Duree moderne d'une frame d'explosion. */
+const EXPLOSION_FRAME_DURATION = 0.12;
 /** Tile id vide. */
 const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 /** Tile id plateforme solide. */
@@ -174,6 +184,8 @@ export class GameplayScene implements Scene {
   private readonly gameplayRenderer = new GameplayRenderer();
   /** Factory injectee pour creer la scene du niveau suivant sans cycle d'import. */
   private readonly createNextLevelScene: (currentLevelNumber: number) => Scene;
+  /** Factory injectee pour recreer le niveau courant apres mort prouvee. */
+  private readonly recreateLevelScene: (levelNumber: number) => Scene;
   /** Cache de frames issues des atlas gameplay. */
   private readonly tileFrameCache = new TileFrameCache({
     sourceSize: RENDER_TILE_SIZE,
@@ -243,11 +255,17 @@ export class GameplayScene implements Scene {
   private readonly runtimeAssets = new RuntimeAssets();
   /** Garde-fou pour ne demander la transition de niveau qu'une fois. */
   private levelTransitionQueued = false;
-
+  /** Garde-fou pour ne demander le reset de niveau qu'une fois apres mort. */
+  private deathResetQueued = false;
   /** Initialise l'etat runtime, la grille et les horloges d'animation du niveau. */
-  constructor(levelNumber: number, createNextLevelScene: (currentLevelNumber: number) => Scene) {
+  constructor(
+    levelNumber: number,
+    createNextLevelScene: (currentLevelNumber: number) => Scene,
+    recreateLevelScene: (levelNumber: number) => Scene
+  ) {
     this.levelNumber = levelNumber;
     this.createNextLevelScene = createNextLevelScene;
+    this.recreateLevelScene = recreateLevelScene;
     this.state = createGameLevelState(levelNumber);
     this.runtimeGrid = new LevelRuntimeGrid(
       this.state.level.tiles,
@@ -308,14 +326,21 @@ export class GameplayScene implements Scene {
 
   /** Traite le mouvement joueur et l'input clavier du tick courant. */
   private advancePlayerRuntime(dt: number, input: InputState, playerSpawning: boolean): void {
+    if (this.state.gameOver || this.state.levelComplete || !this.state.player.active) {
+      this.playerMove = null;
+      this.clearPlayerHeldMoveFrame();
+      return;
+    }
+
     if (this.playerMove) {
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       this.advancePlayerHeldMoveFrame(dt);
       const { x: moveX, y: moveY } = resolvePressedPlayerMove(input.pressed);
       if (moveX !== 0 || moveY !== 0) {
-        const fromX = Math.round(this.state.player.gridX);
-        const fromY = Math.round(this.state.player.gridY);
+        const playerCell = this.getPlayerLogicalCell();
+        const fromX = playerCell.x;
+        const fromY = playerCell.y;
         const toX = fromX + moveX;
         const toY = fromY + moveY;
         const targetRuntimeX = toX;
@@ -347,7 +372,7 @@ export class GameplayScene implements Scene {
           this.clearPlayerHeldMoveFrame();
           this.advanceCameraAfterPlayerStep(fromX, fromY, moveX, moveY);
           if (pushedRockTarget) {
-            this.startPushedRock(targetRuntimeX, targetRuntimeY, pushedRockTarget.x, pushedRockTarget.y);
+            this.startPushedRockMove(targetRuntimeX, targetRuntimeY, pushedRockTarget.x, pushedRockTarget.y);
           }
           this.playerMove = {
             fromX,
@@ -371,6 +396,8 @@ export class GameplayScene implements Scene {
 
   /** Avance toutes les animations cycliques de rendu du gameplay. */
   private advanceRenderAnimations(dt: number): void {
+    this.advanceExplosions(dt);
+    this.queueDeathResetAfterExplosions();
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
     this.advanceAnimation("monster", this.monsterAnimationFrames, this.animationDurations.monster, dt);
@@ -556,11 +583,27 @@ export class GameplayScene implements Scene {
       };
     }
 
+    if (this.hasPhysicalObjectAtGrid(gridX, gridY)) {
+      return {
+        canEnter: false,
+        tileId: this.runtimeGrid.getTile(gridX, gridY),
+        arrivalEffect: "none"
+      };
+    }
+
     if (this.findEntityKindAtGrid("diamond", gridX, gridY) !== null) {
       return {
         canEnter: true,
         tileId: DIAMOND_TILE_ID,
         arrivalEffect: "collectDiamond"
+      };
+    }
+
+    if (this.findMonsterRuntimeAtGrid(gridX, gridY) !== null) {
+      return {
+        canEnter: true,
+        tileId: MONSTER_TILE_ID,
+        arrivalEffect: "hitMonster"
       };
     }
 
@@ -591,25 +634,13 @@ export class GameplayScene implements Scene {
     rockGridY: number,
     moveX: number
   ): { readonly x: number; readonly y: number } | null {
-    if (moveX === 0) {
-      return null;
-    }
-
-    const targetX = rockGridX + moveX;
-    const targetY = rockGridY;
-    if (this.runtimeGrid.getTile(targetX, targetY) !== RUNTIME_EMPTY_TILE_ID) {
-      return null;
-    }
-
-    if (
-      this.findEntityAtGrid(targetX, targetY) ||
-      this.findMonsterRuntimeAtGrid(targetX, targetY) ||
-      this.hasFallingObjectAtGrid(targetX, targetY)
-    ) {
-      return null;
-    }
-
-    return { x: targetX, y: targetY };
+    return resolveRockPushTargetSystem(rockGridX, rockGridY, moveX, {
+      getTile: (gridX, gridY) => this.runtimeGrid.getTile(gridX, gridY),
+      hasEntityAt: (gridX, gridY) => this.findEntityAtGrid(gridX, gridY) !== null,
+      hasMonsterAt: (gridX, gridY) => this.findMonsterRuntimeAtGrid(gridX, gridY) !== null,
+      hasPhysicalObjectAt: (gridX, gridY) => this.hasPhysicalObjectAtGrid(gridX, gridY),
+      emptyTileId: RUNTIME_EMPTY_TILE_ID
+    });
   }
 
   /** Returns whether the player can enter the runtime tile. */
@@ -655,6 +686,12 @@ export class GameplayScene implements Scene {
         levelNumber: this.levelNumber,
         nextLevelId: this.state.level.meta.nextLevelId
       });
+      return;
+    }
+
+    if (effect === "hitMonster") {
+      this.startExplosion(gridX, gridY);
+      this.killPlayer("monsterContact");
     }
   }
 
@@ -712,8 +749,10 @@ export class GameplayScene implements Scene {
         continue;
       }
 
-      this.completeFallingObject(fallingObject);
-      this.state.fallingObjects.splice(index, 1);
+      const shouldRemoveFallingObject = this.completeFallingObject(fallingObject);
+      if (shouldRemoveFallingObject) {
+        this.state.fallingObjects.splice(index, 1);
+      }
     }
   }
 
@@ -726,12 +765,14 @@ export class GameplayScene implements Scene {
           continue;
         }
 
+        if (this.isFallingObjectBlockedByPlayer(x, y)) continue;
+
         const target = this.resolveFallingObjectTarget(x, y);
         if (!target) {
           continue;
         }
 
-        this.startFallingObject(x, y, target.x, target.y, tileId);
+        this.startFallingObject(x, y, target.x, target.y, tileId, target.moveKind);
       }
     }
   }
@@ -740,11 +781,11 @@ export class GameplayScene implements Scene {
   private resolveFallingObjectTarget(
     gridX: number,
     gridY: number
-  ): { readonly x: number; readonly y: number } | null {
+  ): { readonly x: number; readonly y: number; readonly moveKind: "fall" | "slide" } | null {
     return resolveFallingObjectTargetSystem({
       gridX,
       gridY,
-      playerGridX: Math.round(this.state.player.gridX),
+      playerGridX: this.getPlayerLogicalCell().x,
       getTile: (x, y) => this.runtimeGrid.getTile(x, y),
       canMoveTo: (x, y) => this.canFallingObjectMoveTo(x, y),
       isStaticFallingObjectTile: (tileId) => this.isFallingObjectStaticTile(tileId),
@@ -756,8 +797,8 @@ export class GameplayScene implements Scene {
   private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
     return (
       this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
-      !this.hasFallingObjectAtGrid(gridX, gridY) &&
-      !this.isPlayerRenderedAtGrid(gridX, gridY)
+      !this.hasPhysicalObjectAtGrid(gridX, gridY) &&
+      !this.isPlayerLogicalAtGrid(gridX, gridY)
     );
   }
 
@@ -769,9 +810,22 @@ export class GameplayScene implements Scene {
   /** Returns whether a falling object may occupy the target cell. */
   private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {
     return (
-      this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
-      !this.hasFallingObjectAtGrid(gridX, gridY) &&
-      !this.isPlayerRenderedAtGrid(gridX, gridY)
+      (
+        this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) ||
+        this.findMonsterRuntimeAtGrid(gridX, gridY) !== null
+      ) &&
+      !this.hasPhysicalObjectAtGrid(gridX, gridY)
+    );
+  }
+
+  /** Returns whether a static gravity object is intentionally held while the player stands below it. */
+  private isFallingObjectBlockedByPlayer(gridX: number, gridY: number): boolean {
+    return (
+      this.isPlayerLogicalAtGrid(gridX, gridY + 1) ||
+      (
+        this.runtimeGrid.getTile(gridX, gridY) === DIAMOND_TILE_ID &&
+        this.isPlayerLogicalAtGrid(gridX, gridY)
+      )
     );
   }
 
@@ -787,17 +841,21 @@ export class GameplayScene implements Scene {
     toX: number,
     toY: number,
     tileId: number,
+    moveKind: "fall" | "slide",
     duration = FALLING_OBJECT_GRID_MOVE_DURATION
   ): void {
     const kind = tileId === DIAMOND_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
     const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
     const entity = kind === "diamond" ? this.findEntityKindAtGrid("diamond", fromX, fromY) : null;
+    const targetMonster = this.findMonsterRuntimeAtGrid(toX, toY);
     const fallingObject: FallingObjectRuntimeState = {
       id: `falling-${kind}-${fromX}-${fromY}-${Date.now()}`,
       kind,
+      moveKind,
       tileId: kind === "diamond" ? DIAMOND_TILE_ID : ROCK_TILE_ID,
       movingTileId,
       entityId: entity?.id,
+      targetMonsterId: targetMonster?.id,
       fromX,
       fromY,
       toX,
@@ -811,13 +869,14 @@ export class GameplayScene implements Scene {
     this.state.fallingObjects.push(fallingObject);
   }
 
-  /** Starts a horizontal rock push with the same temporary marker as moving rocks. */
-  private startPushedRock(fromX: number, fromY: number, toX: number, toY: number): void {
+  /** Starts a horizontal rock push as a non-deadly physical move. */
+  private startPushedRockMove(fromX: number, fromY: number, toX: number, toY: number): void {
     this.runtimeMutations.clearPushedRockSource(fromX, fromY);
     this.runtimeMutations.setPushedRockMovingTile(toX, toY, FALLING_ROCK_TILE_ID);
     this.state.fallingObjects.push({
       id: `pushed-rock-${fromX}-${fromY}-${Date.now()}`,
       kind: "rock",
+      moveKind: "push",
       tileId: ROCK_TILE_ID,
       movingTileId: FALLING_ROCK_TILE_ID,
       fromX,
@@ -829,8 +888,13 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Finalizes a falling object once its smooth movement reaches the destination. */
-  private completeFallingObject(fallingObject: FallingObjectRuntimeState): void {
+  /** Finalizes a physical object once its smooth movement reaches the destination. */
+  private completeFallingObject(fallingObject: FallingObjectRuntimeState): boolean {
+    const impact = this.applyFallingObjectImpact(fallingObject);
+    if (impact === "explosion") {
+      return true;
+    }
+
     this.runtimeMutations.completeFallingObjectTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
 
     if (fallingObject.entityId) {
@@ -842,6 +906,22 @@ export class GameplayScene implements Scene {
         entity.y = entity.gridY * this.state.level.tileSize;
       }
     }
+
+    if (fallingObject.moveKind !== "push") {
+      const nextTarget = this.resolveFallingObjectTarget(fallingObject.toX, fallingObject.toY);
+      if (nextTarget) {
+        this.startFallingObject(
+          fallingObject.toX,
+          fallingObject.toY,
+          nextTarget.x,
+          nextTarget.y,
+          fallingObject.tileId,
+          nextTarget.moveKind
+        );
+      }
+    }
+
+    return true;
   }
 
   /** Synchronizes the visual entity matching a falling runtime tile. */
@@ -868,8 +948,8 @@ export class GameplayScene implements Scene {
     return tileId === ROCK_TILE_ID || tileId === DIAMOND_TILE_ID;
   }
 
-  /** Returns whether an active falling object already targets or occupies the cell. */
-  private hasFallingObjectAtGrid(gridX: number, gridY: number): boolean {
+  /** Returns whether an active physical object already targets or occupies the cell. */
+  private hasPhysicalObjectAtGrid(gridX: number, gridY: number): boolean {
     return this.state.fallingObjects.some((fallingObject) =>
       (fallingObject.fromX === gridX && fallingObject.fromY === gridY) ||
       (fallingObject.toX === gridX && fallingObject.toY === gridY)
@@ -885,6 +965,108 @@ export class GameplayScene implements Scene {
         gridX: this.state.level.exit.x,
         gridY: this.state.level.exit.y
       });
+    }
+  }
+
+  /** Applies deadly impact effects when a falling rock or diamond reaches its target cell. */
+  private applyFallingObjectImpact(fallingObject: FallingObjectRuntimeState): "none" | "explosion" {
+    if (fallingObject.moveKind === "push") {
+      return "none";
+    }
+
+    if (this.isPlayerLogicalAtGrid(fallingObject.toX, fallingObject.toY)) {
+      this.startExplosion(fallingObject.toX, fallingObject.toY);
+      this.killPlayer(fallingObject.kind === "diamond" ? "fallingDiamond" : "fallingRock");
+      return "explosion";
+    }
+
+    const monster = fallingObject.targetMonsterId
+      ? this.findMonsterRuntimeById(fallingObject.targetMonsterId)
+      : this.findMonsterRuntimeAtGrid(fallingObject.toX, fallingObject.toY);
+    if (monster) {
+      this.deactivateMonster(monster);
+      this.startExplosion(fallingObject.toX, fallingObject.toY);
+      return "explosion";
+    }
+
+    return "none";
+  }
+
+  /** Starts the proven 3x3 explosion sequence around a target cell. */
+  private startExplosion(centerX: number, centerY: number): void {
+    const cells = this.getExplosionCells(centerX, centerY);
+    if (cells.length === 0) {
+      return;
+    }
+
+    const explosion: RuntimeExplosionState = {
+      id: `explosion-${centerX}-${centerY}-${Date.now()}`,
+      centerX,
+      centerY,
+      cells,
+      frameIndex: 0,
+      elapsed: 0,
+      frameDuration: EXPLOSION_FRAME_DURATION
+    };
+    this.state.explosions.push(explosion);
+    this.applyExplosionFrame(explosion);
+    this.deactivateEntitiesInExplosion(explosion);
+    if (explosion.cells.some((cell) => this.isPlayerLogicalAtGrid(cell.x, cell.y))) {
+      this.killPlayer("explosion");
+    }
+  }
+
+  /** Returns the 3x3 explosion cells, preserving protected border cells `0x04`. */
+  private getExplosionCells(centerX: number, centerY: number): RuntimeExplosionState["cells"] {
+    const cells: Array<{ readonly x: number; readonly y: number }> = [];
+    for (let y = centerY - 1; y <= centerY + 1; y += 1) {
+      for (let x = centerX - 1; x <= centerX + 1; x += 1) {
+        if (this.runtimeGrid.getTile(x, y) === RUNTIME_GRID_FILL_TILE_ID) {
+          continue;
+        }
+
+        cells.push({ x, y });
+      }
+    }
+
+    return cells;
+  }
+
+  /** Advances active explosions and removes them after the final empty frame. */
+  private advanceExplosions(dt: number): void {
+    for (let index = this.state.explosions.length - 1; index >= 0; index -= 1) {
+      const explosion = this.state.explosions[index];
+      explosion.elapsed += dt;
+      while (explosion.elapsed >= explosion.frameDuration) {
+        explosion.elapsed -= explosion.frameDuration;
+        explosion.frameIndex += 1;
+        this.applyExplosionFrame(explosion);
+        if (explosion.frameIndex >= EXPLOSION_TILE_SEQUENCE.length - 1) {
+          this.state.explosions.splice(index, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  /** Applies the current explosion tile frame to every non-protected cell. */
+  private applyExplosionFrame(explosion: RuntimeExplosionState): void {
+    const tileId = EXPLOSION_TILE_SEQUENCE[Math.min(explosion.frameIndex, EXPLOSION_TILE_SEQUENCE.length - 1)];
+    for (const cell of explosion.cells) {
+      this.runtimeMutations.setTile(cell.x, cell.y, tileId);
+    }
+  }
+
+  /** Deactivates entities covered by an explosion; monster removal is handled separately. */
+  private deactivateEntitiesInExplosion(explosion: RuntimeExplosionState): void {
+    for (const entity of this.state.entities) {
+      if (!entity.active || entity.kind === "player") {
+        continue;
+      }
+
+      if (explosion.cells.some((cell) => this.isEntityAtGrid(entity, cell.x, cell.y))) {
+        entity.active = false;
+      }
     }
   }
 
@@ -989,6 +1171,61 @@ export class GameplayScene implements Scene {
       entity.x = entity.gridX * this.state.level.tileSize;
       entity.y = entity.gridY * this.state.level.tileSize;
     }
+
+    this.resolvePlayerMonsterContact();
+  }
+
+  /** Ends the current life when the player and a monster share a cell. */
+  private resolvePlayerMonsterContact(): void {
+    if (!this.state.player.active || this.state.gameOver || this.isPlayerSpawning()) {
+      return;
+    }
+
+    const playerCell = this.getPlayerLogicalCell();
+    if (this.findMonsterRuntimeAtGrid(playerCell.x, playerCell.y)) {
+      this.startExplosion(playerCell.x, playerCell.y);
+      this.killPlayer("monsterContact");
+    }
+  }
+
+  /** Deactivates a monster hit by a falling object; explosion visuals are deferred to phase 6. */
+  private deactivateMonster(monster: GameState["monsters"][number]): void {
+    const entity = this.state.entities.find((item) => item.id === monster.entityId);
+    if (entity) {
+      entity.active = false;
+    }
+
+    const monsterIndex = this.state.monsters.indexOf(monster);
+    if (monsterIndex >= 0) {
+      this.state.monsters.splice(monsterIndex, 1);
+    }
+  }
+
+  /** Finds a runtime monster by stable id, even if it moved after an impact was targeted. */
+  private findMonsterRuntimeById(monsterId: string): GameState["monsters"][number] | null {
+    return this.state.monsters.find((monster) => monster.id === monsterId) ?? null;
+  }
+
+  /** Marks the player as dead for the current incomplete life/reset implementation. */
+  private killPlayer(_reason: "fallingRock" | "fallingDiamond" | "monsterContact" | "explosion"): void {
+    if (this.state.gameOver) {
+      return;
+    }
+
+    this.state.player.active = false;
+    this.state.gameOver = true;
+    this.playerMove = null;
+    this.clearPlayerHeldMoveFrame();
+  }
+
+  /** Recharges the current level after the proven death explosion sequence has completed. */
+  private queueDeathResetAfterExplosions(): void {
+    if (!this.state.gameOver || this.deathResetQueued || this.state.explosions.length > 0) {
+      return;
+    }
+
+    this.deathResetQueued = true;
+    this.context?.setScene(this.recreateLevelScene(this.levelNumber));
   }
 
   /** Advances monster decision timing and requests new moves when due. */
@@ -1071,6 +1308,27 @@ export class GameplayScene implements Scene {
       Math.round(this.state.player.gridX) === gridX &&
       Math.round(this.state.player.gridY) === gridY
     );
+  }
+
+  /** Returns the player's discrete gameplay cell, independent from visual interpolation. */
+  private getPlayerLogicalCell(): { readonly x: number; readonly y: number } {
+    if (this.playerMove) {
+      return {
+        x: this.playerMove.toX,
+        y: this.playerMove.toY
+      };
+    }
+
+    return {
+      x: Math.round(this.state.player.gridX),
+      y: Math.round(this.state.player.gridY)
+    };
+  }
+
+  /** Returns whether the player logically occupies a grid cell for physics decisions. */
+  private isPlayerLogicalAtGrid(gridX: number, gridY: number): boolean {
+    const playerCell = this.getPlayerLogicalCell();
+    return playerCell.x === gridX && playerCell.y === gridY;
   }
 
   /** Resolves a default tile-frame id for a non-player entity kind. */

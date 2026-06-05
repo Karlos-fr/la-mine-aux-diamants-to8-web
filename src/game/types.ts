@@ -91,18 +91,25 @@ export interface MonsterRuntimeState {
   };
 }
 
+/** Nature logique d'un mouvement physique applique a un rocher ou diamant. */
+export type PhysicalObjectMoveKind = "fall" | "slide" | "push";
+
 /** Etat runtime d'un rocher ou diamant en mouvement physique. */
 export interface FallingObjectRuntimeState {
   /** Identifiant unique de l'objet physique actif. */
   readonly id: string;
   /** Famille physique partageant la logique chute/glissement. */
   readonly kind: "rock" | "diamond";
+  /** Nature du mouvement logique, separee du rendu fluide. */
+  readonly moveKind: PhysicalObjectMoveKind;
   /** Tile id statique final a restaurer en fin de mouvement. */
   readonly tileId: number;
   /** Tile id temporaire pose pendant le mouvement. */
   readonly movingTileId: number;
   /** Entite visuelle associee, seulement pour les diamants actuellement. */
   readonly entityId?: string;
+  /** Monstre cible capture au demarrage d'une chute/glissade mortelle. */
+  readonly targetMonsterId?: string;
   /** Case de depart du mouvement. */
   fromX: number;
   /** Case de depart du mouvement. */
@@ -115,6 +122,29 @@ export interface FallingObjectRuntimeState {
   elapsed: number;
   /** Duree totale de l'interpolation visuelle. */
   readonly duration: number;
+}
+
+/** Etat runtime d'une explosion 3x3 en cours. */
+export interface RuntimeExplosionState {
+  /** Identifiant unique de l'explosion active. */
+  readonly id: string;
+  /** Centre horizontal de l'explosion en grille. */
+  readonly centerX: number;
+  /** Centre vertical de l'explosion en grille. */
+  readonly centerY: number;
+  /** Cellules affectees, deja filtrees pour preserver les blocs proteges. */
+  readonly cells: ReadonlyArray<{
+    /** Colonne de la cellule affectee. */
+    readonly x: number;
+    /** Ligne de la cellule affectee. */
+    readonly y: number;
+  }>;
+  /** Index de frame courant dans la sequence `0x14`, `0x15`, `0x16`, `0x05`. */
+  frameIndex: number;
+  /** Temps accumule depuis la derniere frame d'explosion. */
+  elapsed: number;
+  /** Duree d'une frame d'explosion. */
+  readonly frameDuration: number;
 }
 
 /** Etat des compteurs HUD gameplay. */
@@ -214,6 +244,8 @@ export interface GameState {
   monsters: MonsterRuntimeState[];
   /** Objets physiques actuellement interpoles. */
   fallingObjects: FallingObjectRuntimeState[];
+  /** Explosions 3x3 actuellement actives. */
+  explosions: RuntimeExplosionState[];
   /** Evenements runtime emis pendant le tick. */
   runtimeEvents: RuntimeEvent[];
   /** Reference directe vers l'entite joueur. */

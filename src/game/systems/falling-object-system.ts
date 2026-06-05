@@ -23,13 +23,23 @@ export interface FallingObjectTargetContext {
   readonly isClearanceCellEmpty: (gridX: number, gridY: number) => boolean;
 }
 
+/** Cible resolue pour un objet physique et nature logique du mouvement. */
+export interface FallingObjectResolvedTarget {
+  /** Colonne cible du mouvement. */
+  readonly x: number;
+  /** Ligne cible du mouvement. */
+  readonly y: number;
+  /** Nature physique du mouvement resolu. */
+  readonly moveKind: "fall" | "slide";
+}
+
 /** Calcule la prochaine cellule cible d'un rocher/diamant, ou `null` si l'objet reste immobile. */
 export function resolveFallingObjectTarget(
   context: FallingObjectTargetContext
-): { readonly x: number; readonly y: number } | null {
+): FallingObjectResolvedTarget | null {
   const belowY = context.gridY + 1;
   if (context.canMoveTo(context.gridX, belowY)) {
-    return { x: context.gridX, y: belowY };
+    return { x: context.gridX, y: belowY, moveKind: "fall" };
   }
 
   if (!context.isStaticFallingObjectTile(context.getTile(context.gridX, belowY))) {
@@ -44,7 +54,7 @@ export function resolveFallingObjectTarget(
       hasTwoEmptyCellsInSideColumn(context, direction) &&
       context.canMoveTo(sideX, belowY)
     ) {
-      return { x: sideX, y: belowY };
+      return { x: sideX, y: belowY, moveKind: "slide" };
     }
   }
 

@@ -30,6 +30,12 @@ export const RUNTIME_TILE = {
   fallingRock: 0x12,
   /** Etat temporaire de diamant en mouvement. */
   fallingDiamond: 0x13,
+  /** Premiere frame d'explosion. */
+  explosion1: 0x14,
+  /** Deuxieme frame d'explosion. */
+  explosion2: 0x15,
+  /** Troisieme frame d'explosion. */
+  explosion3: 0x16,
   /** Marqueur runtime de monstre actif. */
   monsterActive: 0x17,
   /** Trace runtime de monstre, rendue et traitee comme vide dans certains systems. */

@@ -10,7 +10,7 @@ import { GameplayScene } from "./gameplay-scene";
 
 /** Cree une scene gameplay pour le niveau demande avec injection de la factory de niveau suivant. */
 export function createGameplayScene(levelNumber = 1): Scene {
-  return new GameplayScene(levelNumber, createNextGameplayScene);
+  return new GameplayScene(levelNumber, createNextGameplayScene, createGameplayScene);
 }
 
 /** Cree la scene gameplay suivante sans introduire de transition non prouvee par l'ASM. */
