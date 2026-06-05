@@ -5,6 +5,7 @@ import type { EntityState, FallingObjectRuntimeState, GameState } from "../game/
 import type { Scene, SceneContext } from "../engine/scene";
 import { createGameLevelState } from "../game/state";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
+import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
 import {
   RUNTIME_GRID_BASE_ADDRESS,
   RUNTIME_GRID_FILL_TILE_ID,
@@ -33,8 +34,10 @@ import {
 } from "../game/systems/spawn-system";
 import { loadImage } from "../engine/image-loader";
 import type { TileFrame } from "../engine/render-types";
-import { mineFontMetadata } from "../assets/generated/mine-fonts";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
+import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible } from "../rendering/entity-renderer";
+import { drawHudSmallCounter, drawHudTextFields } from "../rendering/hud-renderer";
+import { getGridCellScreenPosition } from "../rendering/level-renderer";
 
 interface AnimationClock {
   frameIndex: number;
@@ -228,6 +231,7 @@ export class GameplayScene implements Scene {
   private cameraMove: CameraMoveState | null = null;
   private playerFacing: "idle" | "left" | "right" = "idle";
   private lastHorizontalFacing: "left" | "right" = "right";
+  private readonly mutatedRuntimeTilesThisTick = new Set<string>();
   private atlasImage: HTMLImageElement | null = null;
   private diamondAtlasImage: HTMLImageElement | null = null;
   private monsterAtlasImage: HTMLImageElement | null = null;
@@ -289,6 +293,7 @@ export class GameplayScene implements Scene {
   }
 
   update(dt: number, input: InputState): void {
+    this.mutatedRuntimeTilesThisTick.clear();
     const playerSpawning = this.isPlayerSpawning();
 
     this.spawnElapsed += dt;
@@ -342,6 +347,7 @@ export class GameplayScene implements Scene {
     this.advanceMonsterRuntime(dt);
     this.advanceMonsterMoves(dt);
     this.syncMonsterEntitiesFromRuntimeState();
+    this.consumeRuntimeEvents();
 
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
@@ -377,8 +383,14 @@ export class GameplayScene implements Scene {
       for (let x = 0; x < this.viewport.columns + 2; x += 1) {
         const levelX = baseLevelX + x;
         const levelY = baseLevelY + y;
-        const screenX = Math.round(this.boardOffsetX + (levelX - renderViewportX) * this.tileSize);
-        const screenY = Math.round(this.boardOffsetY + (levelY - renderViewportY) * this.tileSize);
+        const screenPosition = getGridCellScreenPosition(
+          levelX,
+          levelY,
+          { x: renderViewportX, y: renderViewportY, columns: this.viewport.columns, rows: this.viewport.rows },
+          this.tileSize,
+          this.boardOffsetX,
+          this.boardOffsetY
+        );
         const tileId = this.runtimeGrid.getTile(levelX, levelY);
         const isDynamicTile =
           tileId === 2 ||
@@ -395,8 +407,8 @@ export class GameplayScene implements Scene {
 
         if (spawnBlinkTileId === null) {
           renderer.fillRect(
-            screenX,
-            screenY,
+            screenPosition.x,
+            screenPosition.y,
             this.tileSize,
             this.tileSize,
             TO8_PALETTE.black
@@ -417,8 +429,8 @@ export class GameplayScene implements Scene {
 
         renderer.drawTile(
           frame,
-          screenX,
-          screenY
+          screenPosition.x,
+          screenPosition.y
         );
       }
     }
@@ -445,10 +457,8 @@ export class GameplayScene implements Scene {
         continue;
       }
 
-      const progress = clamp(fallingObject.elapsed / fallingObject.duration, 0, 1);
-      const easedProgress = smoothStep(progress);
-      const gridX = lerp(fallingObject.fromX, fallingObject.toX, easedProgress);
-      const gridY = lerp(fallingObject.fromY, fallingObject.toY, easedProgress);
+      const progress = fallingObject.elapsed / fallingObject.duration;
+      const { x: gridX, y: gridY } = getInterpolatedFallingObjectGridPosition(fallingObject, progress);
       if (
         gridX < cullViewportX - 1 ||
         gridX >= cullViewportX + this.viewport.columns + 2 ||
@@ -490,12 +500,11 @@ export class GameplayScene implements Scene {
       const cullViewportY = Math.floor(renderViewportY);
       const entityGridX = entity.gridX;
       const entityGridY = entity.gridY;
-      if (
-        entityGridX < cullViewportX - 1 ||
-        entityGridX >= cullViewportX + this.viewport.columns + 2 ||
-        entityGridY < cullViewportY - 1 ||
-        entityGridY >= cullViewportY + this.viewport.rows + 2
-      ) {
+      if (!isEntityGridPositionVisible(
+        entityGridX,
+        entityGridY,
+        { x: cullViewportX, y: cullViewportY, columns: this.viewport.columns, rows: this.viewport.rows }
+      )) {
         continue;
       }
 
@@ -696,8 +705,11 @@ export class GameplayScene implements Scene {
     }
 
     if (effect === "enterExit") {
-      this.state.levelComplete = true;
-      this.queueNextLevelTransition();
+      emitRuntimeEvent(this.state, {
+        type: "levelCompleted",
+        levelNumber: this.levelNumber,
+        nextLevelId: this.state.level.meta.nextLevelId
+      });
     }
   }
 
@@ -706,7 +718,16 @@ export class GameplayScene implements Scene {
   }
 
   private clearRuntimeTile(gridX: number, gridY: number): void {
+    if (!this.markRuntimeTileMutation(gridX, gridY)) {
+      return;
+    }
+
     this.setTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
+    emitRuntimeEvent(this.state, {
+      type: "tileCleared",
+      gridX,
+      gridY
+    });
   }
 
   private digRuntimeTile(gridX: number, gridY: number): void {
@@ -715,10 +736,13 @@ export class GameplayScene implements Scene {
 
   private collectRuntimeDiamond(gridX: number, gridY: number): void {
     this.clearRuntimeTile(gridX, gridY);
-    this.incrementScore(this.state.level.meta.scoreStep);
-    this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
     this.deactivateEntityAtGrid("diamond", gridX, gridY);
-    this.updateLevelExitStateAfterDiamondCollection();
+    emitRuntimeEvent(this.state, {
+      type: "diamondCollected",
+      gridX,
+      gridY,
+      score: this.state.level.meta.scoreStep
+    });
   }
 
   private advanceFallingObjects(dt: number): void {
@@ -870,7 +894,38 @@ export class GameplayScene implements Scene {
   private updateLevelExitStateAfterDiamondCollection(): void {
     if (this.state.hud.diamonds === 0) {
       this.state.exitOpen = true;
+      emitRuntimeEvent(this.state, {
+        type: "exitOpened",
+        gridX: this.state.level.exit.x,
+        gridY: this.state.level.exit.y
+      });
     }
+  }
+
+  private consumeRuntimeEvents(): void {
+    for (const event of drainRuntimeEvents(this.state)) {
+      if (event.type === "diamondCollected") {
+        this.incrementScore(event.score);
+        this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
+        this.updateLevelExitStateAfterDiamondCollection();
+        continue;
+      }
+
+      if (event.type === "levelCompleted") {
+        this.state.levelComplete = true;
+        this.queueNextLevelTransition();
+      }
+    }
+  }
+
+  private markRuntimeTileMutation(gridX: number, gridY: number): boolean {
+    const key = `${gridX}:${gridY}`;
+    if (this.mutatedRuntimeTilesThisTick.has(key)) {
+      return false;
+    }
+
+    this.mutatedRuntimeTilesThisTick.add(key);
+    return true;
   }
 
   private isOpenExitCell(gridX: number, gridY: number): boolean {
@@ -1222,10 +1277,18 @@ export class GameplayScene implements Scene {
       this.drawDynamicGalleryPanelContent(renderer);
     }
 
-    this.drawHudFontText(renderer, "Points  Temps  Record", HUD_LABEL_FONT_ID, HUD_LABELS_X, HUD_LABELS_Y, HUD_LABEL_COLOR);
-    this.drawHudFontText(renderer, padNumber(hud.score, 6), HUD_VALUE_FONT_ID, HUD_SCORE_X, HUD_VALUES_Y, HUD_VALUE_COLOR);
-    this.drawHudFontText(renderer, padNumber(hud.time, 3), HUD_VALUE_FONT_ID, HUD_TIME_X, HUD_VALUES_Y, HUD_VALUE_COLOR);
-    this.drawHudFontText(renderer, padNumber(hud.record, 6), HUD_VALUE_FONT_ID, HUD_RECORD_X, HUD_VALUES_Y, HUD_VALUE_COLOR);
+    drawHudTextFields(renderer, hud, {
+      labelFontId: HUD_LABEL_FONT_ID,
+      valueFontId: HUD_VALUE_FONT_ID,
+      labelColor: HUD_LABEL_COLOR,
+      valueColor: HUD_VALUE_COLOR,
+      labelsX: HUD_LABELS_X,
+      labelsY: HUD_LABELS_Y,
+      scoreX: HUD_SCORE_X,
+      timeX: HUD_TIME_X,
+      recordX: HUD_RECORD_X,
+      valuesY: HUD_VALUES_Y
+    });
   }
 
   private drawDynamicGalleryPanelContent(renderer: Renderer): void {
@@ -1244,8 +1307,8 @@ export class GameplayScene implements Scene {
       HUD_PANEL_ORANGE
     );
     this.drawHudGalleryDiamond(renderer);
-    this.drawHudDigitText(renderer, padNumber(this.state.hud.gallery, 2), HUD_GALLERY_COUNTER_X, HUD_RIGHT_COUNTER_Y);
-    this.drawHudDigitText(renderer, padNumber(this.state.hud.diamonds, 2), HUD_DIAMOND_COUNTER_X, HUD_RIGHT_COUNTER_Y);
+    this.drawHudDigitValue(renderer, this.state.hud.gallery, HUD_GALLERY_COUNTER_X, HUD_RIGHT_COUNTER_Y);
+    this.drawHudDigitValue(renderer, this.state.hud.diamonds, HUD_DIAMOND_COUNTER_X, HUD_RIGHT_COUNTER_Y);
   }
 
   private drawHudGalleryDiamond(renderer: Renderer): void {
@@ -1284,35 +1347,11 @@ export class GameplayScene implements Scene {
     }
   }
 
-  private drawHudDigitText(renderer: Renderer, text: string, x: number, y: number): void {
-    this.drawHudFontText(renderer, text, HUD_SMALL_COUNTER_FONT_ID, x, y, HUD_SMALL_COUNTER_COLOR);
-  }
-
-  private drawHudFontText(renderer: Renderer, text: string, fontId: string, x: number, y: number, color: string): void {
-    const font = mineFontMetadata.fonts.find((item) => item.id === fontId);
-    if (!font) {
-      renderer.drawPixelText(text, x, y, color);
-      return;
-    }
-
-    let cursorX = x;
-    for (const character of text) {
-      const glyph = font.glyphs.find((item) => item.char === character);
-      if (!glyph) {
-        cursorX += font.width;
-        continue;
-      }
-
-      for (let row = 0; row < font.height; row += 1) {
-        const bits = glyph.rows[row] ?? "";
-        for (let column = 0; column < font.width; column += 1) {
-          if (bits[column] === "1") {
-            renderer.fillRect(cursorX + column, y + row, 1, 1, color);
-          }
-        }
-      }
-      cursorX += font.width;
-    }
+  private drawHudDigitValue(renderer: Renderer, value: number, x: number, y: number): void {
+    drawHudSmallCounter(renderer, value, 2, x, y, {
+      fontId: HUD_SMALL_COUNTER_FONT_ID,
+      color: HUD_SMALL_COUNTER_COLOR
+    });
   }
 }
 
@@ -1383,6 +1422,3 @@ function decrementBcdCounter(value: number, digits: number): number {
   return Number.parseInt(nextDigits.join(""), 10);
 }
 
-function padNumber(value: number, size: number): string {
-  return Math.max(0, Math.floor(value)).toString().padStart(size, "0");
-}

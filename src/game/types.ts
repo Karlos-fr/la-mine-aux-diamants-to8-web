@@ -73,6 +73,29 @@ export interface HudState {
   diamonds: number;
 }
 
+export type RuntimeEvent =
+  | {
+      readonly type: "tileCleared";
+      readonly gridX: number;
+      readonly gridY: number;
+    }
+  | {
+      readonly type: "diamondCollected";
+      readonly gridX: number;
+      readonly gridY: number;
+      readonly score: number;
+    }
+  | {
+      readonly type: "exitOpened";
+      readonly gridX: number;
+      readonly gridY: number;
+    }
+  | {
+      readonly type: "levelCompleted";
+      readonly levelNumber: number;
+      readonly nextLevelId?: string;
+    };
+
 export interface LevelDefinition {
   readonly id: string;
   readonly name: string;
@@ -105,6 +128,7 @@ export interface GameState {
   entities: EntityState[];
   monsters: MonsterRuntimeState[];
   fallingObjects: FallingObjectRuntimeState[];
+  runtimeEvents: RuntimeEvent[];
   player: EntityState;
   hud: HudState;
   lives: number;

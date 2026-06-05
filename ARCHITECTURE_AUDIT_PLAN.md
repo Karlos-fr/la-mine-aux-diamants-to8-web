@@ -154,24 +154,43 @@ Dette connue:
 
 ## Phase 4 - Mutations et evenements runtime
 
-- [ ] Introduire un petit journal d'evenements runtime: `tileCleared`, `diamondCollected`, `exitOpened`, `levelCompleted`.
-- [ ] Faire emettre les evenements par les systems gameplay.
-- [ ] Faire consommer les evenements par le HUD et les transitions.
-- [ ] Eviter les doubles mutations d'une meme case pendant un tick.
-- [ ] Decider si les mutations doivent etre appliquees immediatement ou en fin de tick.
-- [ ] Conserver l'application a l'arrivee pour joueur et objets physiques.
-- [ ] Ajouter une structure pour les cellules deja traitees par tick si necessaire.
+- [x] Introduire un petit journal d'evenements runtime: `tileCleared`, `diamondCollected`, `exitOpened`, `levelCompleted`.
+- [x] Faire emettre les evenements par les systems gameplay.
+- [x] Faire consommer les evenements par le HUD et les transitions.
+- [x] Eviter les doubles mutations d'une meme case pendant un tick.
+- [x] Decider si les mutations doivent etre appliquees immediatement ou en fin de tick.
+- [x] Conserver l'application a l'arrivee pour joueur et objets physiques.
+- [x] Ajouter une structure pour les cellules deja traitees par tick si necessaire.
+
+### Notes Phase 4
+
+- `GameState.runtimeEvents` porte le journal d'evenements runtime.
+- `src/game/runtime-events.ts` fournit `emitRuntimeEvent` et `drainRuntimeEvents`.
+- Les mutations de grille restent appliquees immediatement afin de conserver le comportement discret actuel et l'ordre d'update deja stabilise.
+- Les effets derives passent par le journal: score/diamants HUD, ouverture de sortie et transition de niveau.
+- `GameplayScene` garde une protection locale `mutatedRuntimeTilesThisTick` pour eviter deux nettoyages concurrents de la meme cellule pendant un tick.
 
 ## Phase 5 - Rendu gameplay
 
-- [ ] Extraire un `LevelRenderer` pour la grille visible.
-- [ ] Extraire un `EntityRenderer` pour joueur, monstres, diamants et objets tombants.
-- [ ] Extraire un `HudRenderer` pour panneaux bois, compteurs et diamant HUD.
-- [ ] Extraire un `FontRenderer` TO8 pour les fontes generees.
+- [x] Extraire un `LevelRenderer` pour la grille visible.
+- [x] Extraire un `EntityRenderer` pour joueur, monstres, diamants et objets tombants.
+- [x] Extraire un `HudRenderer` pour panneaux bois, compteurs et diamant HUD.
+- [x] Extraire un `FontRenderer` TO8 pour les fontes generees.
 - [ ] Extraire un `StartupRenderer` ou simplifier les scenes startup.
-- [ ] Garder la couche rendu sans mutation de grille.
+- [x] Garder la couche rendu sans mutation de grille.
 - [ ] Remplacer les constructions de `TileFrame` en scene par un cache d'assets dedie.
 - [ ] Centraliser les URLs d'assets runtime.
+
+### Notes Phase 5
+
+- `src/rendering/font-renderer.ts` porte le rendu des fontes TO8 generees.
+- `src/rendering/hud-renderer.ts` porte le rendu texte HUD et les petits compteurs.
+- `src/rendering/level-renderer.ts` porte les calculs viewport -> ecran et culling de grille.
+- `src/rendering/entity-renderer.ts` porte le culling entite et l'interpolation visuelle des objets tombants.
+- `GameplayScene` reste l'orchestrateur du rendu pour conserver l'ordre ISO actuel: grille, objets/entites, HUD.
+- Le rendu extrait ne mute pas la grille runtime.
+- Le cache `TileFrame` reste temporairement dans `GameplayScene`; une extraction d'asset cache dediee est repoussee a la phase 6 pour eviter de melanger rendu et chemins d'assets.
+- Les URLs d'assets runtime restent a centraliser en phase 6, qui est explicitement dediee aux assets.
 
 ## Phase 6 - Assets runtime et extraction
 

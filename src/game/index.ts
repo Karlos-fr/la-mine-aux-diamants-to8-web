@@ -5,9 +5,11 @@ export type {
   GameState,
   HudState,
   LevelDefinition,
+  RuntimeEvent,
   TileCollision,
   TileDefinition
 } from "./types";
+export { drainRuntimeEvents, emitRuntimeEvent } from "./runtime-events";
 export type { ModernLevelJson, ModernTileType } from "./level-loader";
 export {
   LEVEL_COUNT,
