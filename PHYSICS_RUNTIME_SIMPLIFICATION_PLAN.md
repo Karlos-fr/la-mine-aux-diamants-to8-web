@@ -313,6 +313,29 @@ type PhysicsImpact =
 - La suppression complete de ces tuiles temporaires demandera d'abord que les systems non joueur consultent explicitement la liste des objets physiques actifs.
 - `GameplayScene` conserve encore des checks physiques d'orchestration; leur extraction complete est repoussee apres stabilisation des cas critiques de phase 9.
 
+### Mini-plan phase 8 - Decoupler `0x12/0x13` de la logique physique
+
+Objectif: ne plus faire dependre les collisions modernes des tuiles temporaires `0x12` et `0x13`, tout en evitant une suppression brutale qui casserait le rendu ou les systems encore branches sur la grille.
+
+- [x] Creer un petit systeme `physical-object-system` pour centraliser les checks sur les objets physiques actifs.
+- [x] Deplacer hors de `GameplayScene` le test d'occupation source/cible d'un objet actif.
+- [x] Deplacer hors de `GameplayScene` les decisions d'impact joueur/monstre quand un objet physique arrive.
+- [x] Adapter la collision joueur pour consulter explicitement les objets physiques actifs plutot que seulement les tuiles `0x12/0x13`.
+- [x] Adapter la logique monstre pour considerer les objets physiques actifs comme bloquants, meme si la grille ne porte plus de tuile temporaire.
+- [x] Adapter le rendu des rochers et diamants en mouvement pour s'appuyer prioritairement sur `state.fallingObjects`.
+- [x] Conserver provisoirement `0x12/0x13` comme marqueurs de compatibilite ASM/rendu tant que le rendu et les systems n'ont pas tous ete decouples.
+- [x] Une fois le decouplage termine, choisir explicitement entre deux options:
+- Option A retenue: garder `0x12/0x13` dans la grille runtime comme etats compatibles ASM, mais sans role de source de verite collision.
+- Option B: retirer `0x12/0x13` de la grille moderne pendant les mouvements, et les utiliser uniquement comme metadata/provenance ou frames de rendu.
+- [x] Documenter l'option retenue avec la raison ISO/moderne.
+
+Decision: l'option A est retenue a ce stade.
+
+- Raison ISO: `0x12` et `0x13` sont documentes comme etats runtime generes par les routines originales, donc les conserver dans la grille preserve une trace proche du comportement TO8.
+- Raison moderne: la source de verite collision/rendu actif devient `state.fallingObjects`; les tuiles `0x12/0x13` restent des marqueurs compatibles, pas le coeur de la logique.
+- Raison pragmatique: retirer totalement `0x12/0x13` obligerait a adapter plusieurs chemins de rendu/debug/provenance sans gain gameplay immediat.
+- Critere futur: l'option B pourra etre reconsideree uniquement si `0x12/0x13` provoquent un bug concret ou bloquent une evolution de rendu.
+
 ## Phase 9 - Verifier les cas critiques
 
 - [ ] Joueur creuse sous un rocher : pas de mort immediate.

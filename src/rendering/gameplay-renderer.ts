@@ -310,20 +310,16 @@ export class GameplayRenderer {
     }
 
     this.drawEntitiesByLayer(renderer, context, false);
-    this.drawFallingRockObjects(renderer, context);
+    this.drawPhysicalObjects(renderer, context);
     this.drawEntitiesByLayer(renderer, context, true);
   }
 
-  /** Rend les rochers en chute avec interpolation visuelle. */
-  private drawFallingRockObjects(renderer: Renderer, context: GameplayRenderContext): void {
+  /** Rend les objets physiques actifs avec interpolation visuelle. */
+  private drawPhysicalObjects(renderer: Renderer, context: GameplayRenderContext): void {
     const cullViewportX = Math.floor(context.viewport.x);
     const cullViewportY = Math.floor(context.viewport.y);
 
     for (const fallingObject of context.state.fallingObjects) {
-      if (fallingObject.kind !== "rock") {
-        continue;
-      }
-
       const progress = fallingObject.elapsed / fallingObject.duration;
       const { x: gridX, y: gridY } = getInterpolatedFallingObjectGridPosition(fallingObject, progress);
       if (
@@ -335,8 +331,11 @@ export class GameplayRenderer {
         continue;
       }
 
+      const frame = fallingObject.kind === "diamond"
+        ? context.getDiamondTileFrame()
+        : context.getTileFrame(context.tileIds.rock);
       renderer.drawTile(
-        context.getTileFrame(context.tileIds.rock),
+        frame,
         Math.round(context.boardOffsetX + (gridX - context.viewport.x) * context.tileSize),
         Math.round(context.boardOffsetY + (gridY - context.viewport.y) * context.tileSize)
       );
@@ -359,6 +358,10 @@ export class GameplayRenderer {
       }
 
       if (entity.kind === "rock") {
+        continue;
+      }
+
+      if (entity.kind === "diamond" && context.state.fallingObjects.some((object) => object.entityId === entity.id)) {
         continue;
       }
 

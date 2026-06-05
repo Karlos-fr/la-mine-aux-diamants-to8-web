@@ -29,6 +29,10 @@ import {
 import { isOpenExitCell as isOpenExitCellSystem } from "../game/systems/exit-system";
 import { resolveFallingObjectTarget as resolveFallingObjectTargetSystem } from "../game/systems/falling-object-system";
 import { advanceSingleMonsterRuntime as advanceSingleMonsterRuntimeSystem } from "../game/systems/monster-system";
+import {
+  hasPhysicalObjectAtGrid as hasPhysicalObjectAtGridSystem,
+  resolvePhysicalObjectImpact
+} from "../game/systems/physical-object-system";
 import { resolveRockPushTarget as resolveRockPushTargetSystem } from "../game/systems/rock-push-system";
 import {
   canPlayerEnterTile as canPlayerEnterTileSystem,
@@ -950,10 +954,7 @@ export class GameplayScene implements Scene {
 
   /** Returns whether an active physical object already targets or occupies the cell. */
   private hasPhysicalObjectAtGrid(gridX: number, gridY: number): boolean {
-    return this.state.fallingObjects.some((fallingObject) =>
-      (fallingObject.fromX === gridX && fallingObject.fromY === gridY) ||
-      (fallingObject.toX === gridX && fallingObject.toY === gridY)
-    );
+    return hasPhysicalObjectAtGridSystem(this.state.fallingObjects, gridX, gridY);
   }
 
   /** Opens the level exit when the diamond objective is completed. */
@@ -970,19 +971,22 @@ export class GameplayScene implements Scene {
 
   /** Applies deadly impact effects when a falling rock or diamond reaches its target cell. */
   private applyFallingObjectImpact(fallingObject: FallingObjectRuntimeState): "none" | "explosion" {
-    if (fallingObject.moveKind === "push") {
-      return "none";
-    }
+    const targetMonsterId = fallingObject.targetMonsterId ??
+      this.findMonsterRuntimeAtGrid(fallingObject.toX, fallingObject.toY)?.id;
+    const impact = resolvePhysicalObjectImpact(fallingObject, {
+      isPlayerAtTarget: this.isPlayerLogicalAtGrid(fallingObject.toX, fallingObject.toY),
+      targetMonsterId
+    });
 
-    if (this.isPlayerLogicalAtGrid(fallingObject.toX, fallingObject.toY)) {
+    if (impact.type === "hitPlayer") {
       this.startExplosion(fallingObject.toX, fallingObject.toY);
-      this.killPlayer(fallingObject.kind === "diamond" ? "fallingDiamond" : "fallingRock");
+      this.killPlayer(impact.objectKind === "diamond" ? "fallingDiamond" : "fallingRock");
       return "explosion";
     }
 
-    const monster = fallingObject.targetMonsterId
-      ? this.findMonsterRuntimeById(fallingObject.targetMonsterId)
-      : this.findMonsterRuntimeAtGrid(fallingObject.toX, fallingObject.toY);
+    const monster = impact.type === "hitMonster" && impact.monsterId
+      ? this.findMonsterRuntimeById(impact.monsterId)
+      : null;
     if (monster) {
       this.deactivateMonster(monster);
       this.startExplosion(fallingObject.toX, fallingObject.toY);
@@ -1245,7 +1249,9 @@ export class GameplayScene implements Scene {
   /** Advances one monster according to the original patrol-style movement rules. */
   private advanceSingleMonsterRuntime(monster: GameState["monsters"][number]): void {
     advanceSingleMonsterRuntimeSystem(monster, {
-      getTile: (x, y) => this.runtimeGrid.getTile(x, y),
+      getTile: (x, y) => this.hasPhysicalObjectAtGrid(x, y)
+        ? RUNTIME_GRID_FILL_TILE_ID
+        : this.runtimeGrid.getTile(x, y),
       setTile: (x, y, tileId) => this.runtimeMutations.setMonsterTile(x, y, tileId),
       runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
       runtimeStride: RUNTIME_GRID_STRIDE,
