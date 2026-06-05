@@ -10,6 +10,8 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 - le gameplay reste discret case par case;
 - les interpolations joueur/camera/monstres sont uniquement visuelles et ne doivent pas changer l'ordre logique original.
 
+Convention de documentation a respecter pendant les evolutions de ce plan: [CODE_DOCUMENTATION_CONVENTION.md](../../CODE_DOCUMENTATION_CONVENTION.md).
+
 ## Principes
 
 - La grille runtime est la source de verite logique.
@@ -30,6 +32,9 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 - [x] La tile de spawn temporaire est effacee apres apparition du joueur.
 - [x] La camera utilise les seuils ASM connus (`4/15`, `2/7`) avec interpolation visuelle.
 - [x] La recolte herbe/diamant est appliquee a l'arrivee complete du joueur sur la cellule.
+- [x] L'ordre d'update gameplay est orchestre par `src/game/gameplay-runtime.ts`.
+- [x] Les mutations de grille passent par `src/game/runtime-mutations.ts`.
+- [x] Le rendu gameplay est separe dans `src/rendering/gameplay-renderer.ts` et ne mute pas l'etat runtime.
 - [ ] Les rochers, diamants physiques, sorties et explosions restent a stabiliser par routines ASM.
 
 ## Tuiles runtime connues a stabiliser
@@ -61,7 +66,9 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 ## Phase 2 - Mutations de terrain et HUD
 
-- [x] Centraliser les mutations de grille dans des methodes explicites: `setRuntimeTile`, `clearRuntimeTile`, `digRuntimeTile`, `collectRuntimeDiamond`.
+Note architecture actuelle: les anciens noms `setRuntimeTile`, `clearRuntimeTile`, `digRuntimeTile`, `collectRuntimeDiamond` ont ete remplaces par l'API dediee `RuntimeMutations`. Les intentions restent les memes, mais les mutations sont maintenant nommees par domaine: joueur, spawn, monstres et objets physiques.
+
+- [x] Centraliser les mutations de grille dans `src/game/runtime-mutations.ts`.
 - [x] Separer la decision logique d'entree (`canEnter`) de l'effet applique a l'arrivee (`onArrive`).
 - [x] Garantir que les mutations actuellement declenchees par le joueur, les monstres et le spawn passent par la meme API runtime.
 - [x] Mettre a jour `hud.diamonds` lors de la collecte.
@@ -91,12 +98,18 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 ## Phase 4 - Poussee des rochers
 
-- [ ] Analyser les routines joueur qui poussent un rocher horizontalement.
-- [ ] Autoriser la poussee gauche/droite uniquement si la case derriere le rocher est vide.
-- [ ] Interdire la poussee verticale.
-- [ ] Synchroniser animation joueur, rocher et grille runtime.
-- [ ] Verifier si la poussee declenche un etat special `0x12`.
-- [ ] Conserver une poussee logique d'une case entiere, avec interpolation visuelle du rocher.
+- [x] Analyser les routines joueur qui poussent un rocher horizontalement.
+- [x] Autoriser la poussee gauche/droite uniquement si la case derriere le rocher est vide.
+- [x] Interdire la poussee verticale.
+- [x] Synchroniser animation joueur, rocher et grille runtime.
+- [x] Verifier si la poussee declenche un etat special `0x12`.
+- [x] Conserver une poussee logique d'une case entiere, avec interpolation visuelle du rocher.
+
+Notes phase 4:
+
+- Preuve locale: `docs/extraction/mine-levels.json` et `tools/decode-mine-levels.mjs` referencent `KIT.BIN:$BC84 allows 0x00 movement/push behavior`.
+- La poussee moderne utilise `0x12` comme tuile temporaire de rocher en mouvement, coherente avec les metadata sprites qui documentent `KIT.BIN:$CB89/$CBDD generate 0x12 from rock state`.
+- La poussee reste horizontale uniquement; la case derriere le rocher doit etre `0x05` et libre d'entite/runtime object.
 
 ## Phase 5 - Collisions mortelles
 
@@ -115,12 +128,13 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 ## Phase 7 - Integration boucle runtime
 
-- [ ] Ordonner les updates selon le runtime original: joueur, terrain, objets physiques, monstres, animations, explosions.
-- [ ] Eviter les doubles updates d'une meme case pendant une frame.
+- [x] Ordonner les updates selon le runtime actuel conserve: spawn/HUD, joueur, camera, objets physiques, monstres, evenements, animations.
+- [x] Eviter les doubles updates joueur d'une meme case pendant une frame via `RuntimeMutations`.
 - [ ] Ajouter des marqueurs d'etat pour les cases deja traitees si l'ASM utilise des tuiles temporaires.
 - [ ] Documenter chaque divergence volontaire entre ASM et portage moderne.
-- [ ] Definir une file d'evenements runtime par tick: entree joueur, arrivee joueur, objets physiques, monstres, explosions, HUD.
-- [ ] Eviter que le rendu fluide puisse modifier l'ordre des mutations logiques.
+- [x] Definir une file d'evenements runtime par tick pour les evenements deja portes: `tileCleared`, `diamondCollected`, `exitOpened`, `levelCompleted`.
+- [x] Eviter que le rendu fluide puisse modifier l'ordre des mutations logiques pour joueur, camera, monstres et objets physiques deja portes.
+- [ ] Etendre la file d'evenements runtime aux explosions, morts et reset niveau quand ces gameplay seront implementes.
 
 ## Phase 8 - Sortie et progression niveau
 
@@ -132,6 +146,9 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 ## Notes de prudence
 
+- `GameplayRuntime` est maintenant l'autorite moderne pour l'ordre d'update; ne pas reintroduire un ordre concurrent dans `GameplayScene`.
+- `RuntimeMutations` est maintenant l'autorite moderne pour les mutations de grille; ne pas ajouter de mutation directe dans les renderers.
+- `GameplayRenderer` est lecture seule; tout nouvel effet visuel doit recevoir ses donnees depuis le runtime.
 - Ne pas afficher directement `0x17` et `0x80` tant que leur rendu exact n'est pas stabilise.
 - Ne pas supposer que la fixture PNG globale est le gameplay; elle reste une extraction de carte, pas la vue runtime.
 - Ne pas convertir `0x01` en obstacle definitif: l'utilisateur signale que le joueur doit couper la herbe et laisser une case noire.

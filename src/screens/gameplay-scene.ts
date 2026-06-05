@@ -128,6 +128,8 @@ const MONSTER_GRID_MOVE_DURATION = 0.18;
 const FALLING_OBJECT_SCAN_INTERVAL = 0.16;
 /** Duree d'interpolation d'un objet physique. */
 const FALLING_OBJECT_GRID_MOVE_DURATION = 0.18;
+/** Duree d'interpolation d'un rocher pousse, synchronisee avec le pas joueur. */
+const PUSHED_ROCK_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 /** Tile runtime temporaire du monstre actif. */
 const MONSTER_RUNTIME_ACTIVE_TILE_ID = RUNTIME_TILE.monsterActive;
 /** Trace runtime de monstre, traitee comme vide par plusieurs systems. */
@@ -318,7 +320,18 @@ export class GameplayScene implements Scene {
         const toY = fromY + moveY;
         const targetRuntimeX = toX;
         const targetRuntimeY = toY;
-        const collision = this.resolvePlayerMove(targetRuntimeX, targetRuntimeY);
+        let collision = this.resolvePlayerMove(targetRuntimeX, targetRuntimeY);
+        const pushedRockTarget =
+          !collision.canEnter && collision.tileId === ROCK_TILE_ID && moveY === 0
+            ? this.resolvePushedRockTarget(targetRuntimeX, targetRuntimeY, moveX)
+            : null;
+        if (pushedRockTarget) {
+          collision = {
+            canEnter: true,
+            tileId: RUNTIME_EMPTY_TILE_ID,
+            arrivalEffect: "none"
+          };
+        }
 
         if (moveX < 0) {
           this.playerFacing = "left";
@@ -333,6 +346,9 @@ export class GameplayScene implements Scene {
         if (collision.canEnter) {
           this.clearPlayerHeldMoveFrame();
           this.advanceCameraAfterPlayerStep(fromX, fromY, moveX, moveY);
+          if (pushedRockTarget) {
+            this.startPushedRock(targetRuntimeX, targetRuntimeY, pushedRockTarget.x, pushedRockTarget.y);
+          }
           this.playerMove = {
             fromX,
             fromY,
@@ -569,6 +585,33 @@ export class GameplayScene implements Scene {
     return getPlayerArrivalEffectSystem(tileId, this.getPlayerCollisionTiles());
   }
 
+  /** Resolves a horizontal rock push target, or `null` if the push is invalid. */
+  private resolvePushedRockTarget(
+    rockGridX: number,
+    rockGridY: number,
+    moveX: number
+  ): { readonly x: number; readonly y: number } | null {
+    if (moveX === 0) {
+      return null;
+    }
+
+    const targetX = rockGridX + moveX;
+    const targetY = rockGridY;
+    if (this.runtimeGrid.getTile(targetX, targetY) !== RUNTIME_EMPTY_TILE_ID) {
+      return null;
+    }
+
+    if (
+      this.findEntityAtGrid(targetX, targetY) ||
+      this.findMonsterRuntimeAtGrid(targetX, targetY) ||
+      this.hasFallingObjectAtGrid(targetX, targetY)
+    ) {
+      return null;
+    }
+
+    return { x: targetX, y: targetY };
+  }
+
   /** Returns whether the player can enter the runtime tile. */
   private canPlayerEnterTile(tileId: number): boolean {
     return canPlayerEnterTileSystem(tileId, this.getPlayerCollisionTiles());
@@ -738,7 +781,14 @@ export class GameplayScene implements Scene {
   }
 
   /** Starts a smooth falling-object move and updates the runtime grid immediately. */
-  private startFallingObject(fromX: number, fromY: number, toX: number, toY: number, tileId: number): void {
+  private startFallingObject(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    tileId: number,
+    duration = FALLING_OBJECT_GRID_MOVE_DURATION
+  ): void {
     const kind = tileId === DIAMOND_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
     const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
     const entity = kind === "diamond" ? this.findEntityKindAtGrid("diamond", fromX, fromY) : null;
@@ -753,12 +803,30 @@ export class GameplayScene implements Scene {
       toX,
       toY,
       elapsed: 0,
-      duration: FALLING_OBJECT_GRID_MOVE_DURATION
+      duration
     };
 
     this.runtimeMutations.clearFallingObjectSource(fromX, fromY);
     this.runtimeMutations.setFallingObjectMovingTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
+  }
+
+  /** Starts a horizontal rock push with the same temporary marker as moving rocks. */
+  private startPushedRock(fromX: number, fromY: number, toX: number, toY: number): void {
+    this.runtimeMutations.clearPushedRockSource(fromX, fromY);
+    this.runtimeMutations.setPushedRockMovingTile(toX, toY, FALLING_ROCK_TILE_ID);
+    this.state.fallingObjects.push({
+      id: `pushed-rock-${fromX}-${fromY}-${Date.now()}`,
+      kind: "rock",
+      tileId: ROCK_TILE_ID,
+      movingTileId: FALLING_ROCK_TILE_ID,
+      fromX,
+      fromY,
+      toX,
+      toY,
+      elapsed: 0,
+      duration: PUSHED_ROCK_GRID_MOVE_DURATION
+    });
   }
 
   /** Finalizes a falling object once its smooth movement reaches the destination. */

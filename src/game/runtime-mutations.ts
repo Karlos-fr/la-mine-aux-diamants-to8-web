@@ -118,6 +118,16 @@ export class RuntimeMutations {
     this.setTile(gridX, gridY, tileId);
   }
 
+  /** Vide la cellule source d'un rocher pousse sans evenement joueur. */
+  clearPushedRockSource(gridX: number, gridY: number): void {
+    this.clearFallingObjectSource(gridX, gridY);
+  }
+
+  /** Place la tuile temporaire `0x12` d'un rocher pousse horizontalement. */
+  setPushedRockMovingTile(gridX: number, gridY: number, tileId: number): void {
+    this.setFallingObjectMovingTile(gridX, gridY, tileId);
+  }
+
   /** Ecrit une tuile de monstre ou de trace `0x80` directement dans la grille. */
   setMonsterTile(gridX: number, gridY: number, tileId: number): void {
     this.setTile(gridX, gridY, tileId);
