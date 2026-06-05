@@ -252,14 +252,26 @@ Dette connue:
 
 ## Phase 9 - Code mort et dette technique
 
-- [ ] Rechercher les exports non utilises.
-- [ ] Rechercher les fichiers non importes.
-- [ ] Rechercher les constantes obsoletes.
-- [ ] Rechercher les types generiques inutilises: `ladder`, `door`, `marker`, `effect`, etc.
-- [ ] Rechercher les fallbacks temporaires de frames et les documenter.
-- [ ] Rechercher les textes de chargement temporaires.
-- [ ] Rechercher les logs ou fichiers de dev commites par erreur.
-- [ ] Supprimer uniquement apres preuve d'inutilisation.
+- [x] Rechercher les exports non utilises.
+- [x] Rechercher les fichiers non importes.
+- [x] Rechercher les constantes obsoletes.
+- [x] Rechercher les types generiques inutilises: `ladder`, `door`, `marker`, `effect`, etc.
+- [x] Rechercher les fallbacks temporaires de frames et les documenter.
+- [x] Rechercher les textes de chargement temporaires.
+- [x] Rechercher les logs ou fichiers de dev commites par erreur.
+- [x] Supprimer uniquement apres preuve d'inutilisation.
+
+### Notes Phase 9
+
+- `TileCollision` ne contient plus `ladder`, absent du gameplay et des conversions de niveau modernes.
+- `EntityKind` ne contient plus `door`, `marker`, `effect`, absents des niveaux modernes et des factories d'entites.
+- La branche de rendu `entity.kind === "door"` a ete supprimee avec le type mort correspondant.
+- `src/assets/generated/thomson-8-bit-font.ts` a ete supprime: aucune importation runtime/provenance ne le reference et la police externe n'est pas utilisee dans le portage.
+- `tools/generated-thomson-8-bit-font.mjs` est conserve car `tools/extract-mine-startup.mjs` l'importe encore pour l'extraction startup.
+- Les exports de facade `src/game/index.ts`, `src/engine/index.ts`, `src/game/state.ts`, `LEVEL1_DEFINITION` et `createGameShellState` sont conserves comme compatibilite publique temporaire, meme s'ils sont peu utilises en interne.
+- Les fallbacks de frames dans `GameplayScene` sont conserves comme filet de securite si les metadata generees sont absentes ou incompletes.
+- Le texte `CHARGEMENT...` de `StartupInfogramScene` est conserve comme etat transitoire utile pendant le chargement de l'image ISO.
+- Aucun log de debug applicatif n'a ete trouve dans `src`; les `console.log` restants sont dans les outils d'extraction/verifications CLI.
 
 ## Phase 10 - Robustesse TypeScript
 

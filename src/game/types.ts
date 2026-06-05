@@ -1,13 +1,10 @@
-export type TileCollision = "empty" | "solid" | "ladder" | "hazard" | "exit";
+export type TileCollision = "empty" | "solid" | "hazard" | "exit";
 
 export type EntityKind =
   | "player"
   | "diamond"
   | "rock"
-  | "monster"
-  | "door"
-  | "marker"
-  | "effect";
+  | "monster";
 
 export interface TileDefinition {
   readonly id: number;

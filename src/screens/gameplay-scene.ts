@@ -468,7 +468,7 @@ export class GameplayScene implements Scene {
         continue;
       }
 
-      if (entity.kind === "rock" || entity.kind === "door") {
+      if (entity.kind === "rock") {
         continue;
       }
 
