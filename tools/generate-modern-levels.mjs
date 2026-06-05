@@ -83,7 +83,7 @@ function buildModernLevel(sourceLevel) {
     defaultTile: "empty",
     time: parseRuntimeTime(sourceLevel.headerMeta?.time?.bcdString),
     scoreStep: parseHexByte(sourceLevel.headerMeta?.levelFlags?.param2, 0x0f),
-    requiredDiamonds: Number(sourceLevel.counts?.["0x03"] ?? 0),
+    requiredDiamonds: parseRequiredDiamonds(sourceLevel.headerMeta?.raw),
     playerSpawn: {
       x: sourceLevel.playerStart.x,
       y: sourceLevel.playerStart.y
@@ -95,6 +95,24 @@ function buildModernLevel(sourceLevel) {
     tiles,
     entities
   };
+}
+
+function parseRequiredDiamonds(rawHeader) {
+  if (!Array.isArray(rawHeader) || rawHeader.length < 2) {
+    return 0;
+  }
+
+  // Preuve ASM:
+  // - KIT.BIN:$DA20 lit header[0..1].
+  // - KIT.BIN:$DA22 stocke ces deux octets en $C738/$C739.
+  // - KIT.BIN:$C222 affiche le compteur droit depuis $C738.
+  return parseBcdDigitPair(rawHeader[0], rawHeader[1]);
+}
+
+function parseBcdDigitPair(highDigit, lowDigit) {
+  const high = parseHexByte(highDigit, 0);
+  const low = parseHexByte(lowDigit, 0);
+  return high * 10 + low;
 }
 
 function parseRows(rows) {

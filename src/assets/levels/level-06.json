@@ -8,7 +8,7 @@
   "defaultTile": "empty",
   "time": 250,
   "scoreStep": 10,
-  "requiredDiamonds": 21,
+  "requiredDiamonds": 50,
   "playerSpawn": {
     "x": 19,
     "y": 13
