@@ -9,6 +9,7 @@ import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { EntityState, FallingObjectRuntimeState, GameState, RuntimeExplosionState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
+import { debugOptions } from "../debug-options";
 import { createGameLevelState } from "../game/game-state-factory";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
 import { GameplayRuntime } from "../game/gameplay-runtime";
@@ -611,6 +612,14 @@ export class GameplayScene implements Scene {
       };
     }
 
+    if (debugOptions.ghostMode) {
+      const tileId = this.runtimeGrid.getTile(gridX, gridY);
+      return {
+        canEnter: true,
+        tileId,
+        arrivalEffect: this.getGhostPlayerArrivalEffect(gridX, gridY, tileId)
+      };
+    }
 
     if (this.hasPhysicalObjectAtGrid(gridX, gridY)) {
       return {
@@ -655,6 +664,27 @@ export class GameplayScene implements Scene {
   /** Maps a runtime tile id to the effect triggered after player arrival. */
   private getPlayerArrivalEffect(tileId: number): RuntimeTileArrivalEffect {
     return getPlayerArrivalEffectSystem(tileId, this.getPlayerCollisionTiles());
+  }
+
+  /** Maps a runtime tile to the non-deadly arrival effect used by ghost debug mode. */
+  private getGhostPlayerArrivalEffect(gridX: number, gridY: number, tileId: number): RuntimeTileArrivalEffect {
+    if (this.findEntityKindAtGrid("diamond", gridX, gridY) !== null || tileId === DIAMOND_TILE_ID) {
+      return "collectDiamond";
+    }
+
+    if (tileId === PLAYER_DIGGABLE_TILE_ID) {
+      return "dig";
+    }
+
+    if (tileId === MONSTER_RUNTIME_TRAIL_TILE_ID) {
+      return "clearTrail";
+    }
+
+    if (this.isOpenExitCell(gridX, gridY)) {
+      return "enterExit";
+    }
+
+    return "none";
   }
 
   /** Resolves a horizontal rock push target, or `null` if the push is invalid. */
@@ -996,6 +1026,9 @@ export class GameplayScene implements Scene {
 
   /** Applies deadly impact effects when a falling rock or diamond reaches its target cell. */
   private applyFallingObjectImpact(fallingObject: FallingObjectRuntimeState): "none" | "explosion" {
+    if (debugOptions.ghostMode && this.isPlayerLogicalAtGrid(fallingObject.toX, fallingObject.toY)) {
+      return "none";
+    }
 
     const targetMonsterId = fallingObject.targetMonsterId ??
       this.findMonsterRuntimeAtGrid(fallingObject.toX, fallingObject.toY)?.id;
@@ -1041,7 +1074,7 @@ export class GameplayScene implements Scene {
     this.state.explosions.push(explosion);
     this.applyExplosionFrame(explosion);
     this.deactivateEntitiesInExplosion(explosion);
-    if (explosion.cells.some((cell) => this.isPlayerLogicalAtGrid(cell.x, cell.y))) {
+    if (!debugOptions.ghostMode && explosion.cells.some((cell) => this.isPlayerLogicalAtGrid(cell.x, cell.y))) {
       this.killPlayer("explosion");
     }
   }
@@ -1212,7 +1245,7 @@ export class GameplayScene implements Scene {
     }
 
     const playerCell = this.getPlayerLogicalCell();
-    if (this.findMonsterRuntimeAtGrid(playerCell.x, playerCell.y)) {
+    if (!debugOptions.ghostMode && this.findMonsterRuntimeAtGrid(playerCell.x, playerCell.y)) {
       this.startExplosion(playerCell.x, playerCell.y);
       this.killPlayer("monsterContact");
     }

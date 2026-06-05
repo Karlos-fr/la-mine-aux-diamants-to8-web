@@ -1,5 +1,6 @@
 import "./styles.css";
 
+import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { createGameApp } from "./engine/game-app";
 import { StartupInfogramScene } from "./screens/startup-screens";
@@ -37,6 +38,20 @@ if (mode === "gallery") {
     canvas.setAttribute("aria-label", "Ecran du jeu");
     root.append(canvas);
   }
+
+  /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
+  const ghostButton = document.createElement("button");
+  ghostButton.className = "debug-ghost-button";
+  ghostButton.type = "button";
+  ghostButton.textContent = "Ghost: off";
+  ghostButton.setAttribute("aria-pressed", "false");
+  ghostButton.addEventListener("click", () => {
+    debugOptions.ghostMode = !debugOptions.ghostMode;
+    ghostButton.textContent = debugOptions.ghostMode ? "Ghost: on" : "Ghost: off";
+    ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
+    canvas.focus();
+  });
+  root.append(ghostButton);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
   const app = createGameApp({
