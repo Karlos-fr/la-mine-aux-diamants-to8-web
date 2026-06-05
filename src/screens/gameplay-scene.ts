@@ -169,6 +169,7 @@ export class GameplayScene implements Scene {
   private readonly state: GameState;
   private readonly levelNumber: number;
   private readonly runtimeGrid: LevelRuntimeGrid;
+  private readonly createNextLevelScene: (currentLevelNumber: number) => Scene;
   private readonly tileFrames = new Map<number, TileFrame>();
   private readonly diamondFrames = new Map<number, TileFrame>();
   private readonly monsterFrames = new Map<number, TileFrame>();
@@ -216,8 +217,9 @@ export class GameplayScene implements Scene {
   private atlasError: string | null = null;
   private levelTransitionQueued = false;
 
-  constructor(levelNumber = 1) {
+  constructor(levelNumber: number, createNextLevelScene: (currentLevelNumber: number) => Scene) {
     this.levelNumber = levelNumber;
+    this.createNextLevelScene = createNextLevelScene;
     this.state = createGameLevelState(levelNumber);
     this.runtimeGrid = new LevelRuntimeGrid(
       this.state.level.tiles,
@@ -921,7 +923,7 @@ export class GameplayScene implements Scene {
 
     this.levelTransitionQueued = true;
     if (this.levelNumber < LAST_LEVEL_NUMBER) {
-      this.context?.setScene(new GameplayScene(this.levelNumber + 1));
+      this.context?.setScene(this.createNextLevelScene(this.levelNumber));
     }
   }
 

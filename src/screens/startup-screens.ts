@@ -4,8 +4,8 @@ import { TO8_PALETTE } from "../assets/palette";
 import { loadImage } from "../engine/image-loader";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
-import { GameplayScene } from "./gameplay-scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
+import { createGameplayScene } from "./scene-factory";
 
 interface DecodedFrame {
   readonly path: string;
@@ -143,7 +143,7 @@ export class StartupTitleScene implements Scene {
     }
 
     if (input.justPressed.confirm || input.justPressed.action) {
-      this.context?.setScene(new GameplayScene(1));
+      this.context?.setScene(createGameplayScene(1));
     }
   }
 

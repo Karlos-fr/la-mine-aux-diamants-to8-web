@@ -11,7 +11,7 @@ Ce document est un plan de realisation. Il ne remplace pas les plans gameplay ex
 - `LevelRuntimeGrid` est defini dans `gameplay-scene.ts`, alors que c'est une brique de domaine runtime.
 - Les systemes joueur, monstres, objets tombants, HUD et camera commencent a avoir des frontieres naturelles.
 - Les assets extraits/provenance et les assets runtime modernes sont mieux separes qu'avant, mais les references directes a `docs/extraction` restent nombreuses dans les scenes.
-- `src/screens/title-scene.ts` semble etre une ancienne scene de titre non utilisee par le flux moderne, a confirmer avant suppression.
+- `src/screens/title-scene.ts` etait une ancienne scene de titre non utilisee par le flux moderne; elle a ete supprimee en phase 7.
 - `animation-gallery.ts` embarque a la fois un viewer d'assets et un montage du jeu, ce qui est utile mais separe du runtime principal.
 - Les interpolations visuelles sont melangees avec la logique discrete dans certains endroits; il faut les isoler sans changer le comportement.
 - Les constantes ASM/runtime sont actuellement dispersees dans `gameplay-scene.ts`.
@@ -54,7 +54,7 @@ Modules runtime modernes utilises:
 
 Modules historiques, temporaires ou suspects:
 
-- `src/screens/title-scene.ts`: ancienne scene titre non referencee par `main.ts`, `startup-screens.ts` ou `animation-gallery.ts`; candidate a suppression apres confirmation finale.
+- `src/screens/title-scene.ts`: ancienne scene titre supprimee en phase 7 apres confirmation d'absence de reference runtime.
 - `src/animation-gallery.ts`: viewer dev utile, mais a separer plus nettement du runtime jeu.
 - `src/game/index.ts` et `src/engine/index.ts`: facades exports, a conserver seulement si elles restent utiles apres extraction.
 - Fallbacks de frames dans `gameplay-scene.ts`: utiles en securite, mais a documenter par groupe.
@@ -213,14 +213,23 @@ Dette connue:
 
 ## Phase 7 - Scenes et navigation
 
-- [ ] Confirmer si `src/screens/title-scene.ts` est mort.
-- [ ] Supprimer `title-scene.ts` si aucune route ne l'utilise.
-- [ ] Clarifier le role de `StartupInfogramScene`.
-- [ ] Clarifier le role de `StartupTitleScene`.
+- [x] Confirmer si `src/screens/title-scene.ts` est mort.
+- [x] Supprimer `title-scene.ts` si aucune route ne l'utilise.
+- [x] Clarifier le role de `StartupInfogramScene`.
+- [x] Clarifier le role de `StartupTitleScene`.
 - [ ] Introduire une scene ou transition dediee pour le passage de niveau si l'ASM le justifie.
-- [ ] Eviter que `GameplayScene` instancie directement la scene suivante sans passer par une intention de navigation.
-- [ ] Ajouter une petite abstraction de scene factory si utile.
-- [ ] Garder le flux startup ISO comme reference.
+- [x] Eviter que `GameplayScene` instancie directement la scene suivante sans passer par une intention de navigation.
+- [x] Ajouter une petite abstraction de scene factory si utile.
+- [x] Garder le flux startup ISO comme reference.
+
+### Notes Phase 7
+
+- `src/screens/title-scene.ts` etait l'ancien ecran titre temporaire: il n'etait reference par aucun flux runtime moderne.
+- `StartupInfogramScene` reste le premier ecran ISO: affichage Infogrames/presente, passage automatique ou par action vers le titre.
+- `StartupTitleScene` reste le second ecran ISO anime: titre principal, attente action/espace, puis lancement du niveau 1.
+- `src/screens/scene-factory.ts` centralise la creation des scenes gameplay et injecte la factory de niveau suivant pour eviter les cycles d'import.
+- `GameplayScene` ne construit plus directement la scene suivante dans le flux normal; il utilise la factory injectee par `createGameplayScene`.
+- La transition dediee de galerie/niveau reste non implementee tant que la sequence ASM n'est pas analysee plus finement.
 
 ## Phase 8 - Viewer et outils developpeur
 
