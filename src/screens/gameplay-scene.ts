@@ -1,7 +1,7 @@
 import { TO8_PALETTE } from "../assets/palette";
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
-import type { EntityState, GameState } from "../game/types";
+import type { EntityState, FallingObjectRuntimeState, GameState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
 import { createGameLevelState } from "../game/state";
 import { loadImage } from "../engine/image-loader";
@@ -63,11 +63,15 @@ const CAMERA_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
 const MONSTER_MOVE_INTERVAL = 0.28;
 const MONSTER_GRID_MOVE_DURATION = 0.18;
+const FALLING_OBJECT_SCAN_INTERVAL = 0.16;
+const FALLING_OBJECT_GRID_MOVE_DURATION = 0.18;
 const MONSTER_RUNTIME_ACTIVE_TILE_ID = 0x17;
 const MONSTER_RUNTIME_TRAIL_TILE_ID = 0x80;
 const PLAYER_DIGGABLE_TILE_ID = 0x01;
 const ROCK_TILE_ID = 0x00;
 const DIAMOND_TILE_ID = 0x03;
+const FALLING_ROCK_TILE_ID = 0x12;
+const FALLING_DIAMOND_TILE_ID = 0x13;
 const RUNTIME_EMPTY_TILE_ID = 0x05;
 const PLATFORM_TILE_ID = 0x06;
 const HUD_TIMER_TICK_SECONDS = 1;
@@ -200,6 +204,7 @@ export class GameplayScene implements Scene {
   private spawnElapsed = 0;
   private spawnTileCleared = false;
   private monsterMoveElapsed = 0;
+  private fallingObjectScanElapsed = 0;
   private hudTimeAccumulator = 0;
   private playerMove: GridMoveState | null = null;
   private playerHeldMoveFrameId: number | null = null;
@@ -314,6 +319,7 @@ export class GameplayScene implements Scene {
 
     this.state.player.x = this.state.player.gridX * this.state.level.tileSize;
     this.state.player.y = this.state.player.gridY * this.state.level.tileSize;
+    this.advanceFallingObjects(dt);
     this.advanceMonsterRuntime(dt);
     this.advanceMonsterMoves(dt);
     this.syncMonsterEntitiesFromRuntimeState();
@@ -332,7 +338,7 @@ export class GameplayScene implements Scene {
   render(renderer: Renderer): void {
     renderer.clear(TO8_PALETTE.black);
     this.drawPlayfield(renderer);
-    this.drawEntities(renderer);
+    this.drawEntitiesAndObjects(renderer);
     this.drawHud(renderer);
   }
 
@@ -355,7 +361,12 @@ export class GameplayScene implements Scene {
         const screenX = Math.round(this.boardOffsetX + (levelX - renderViewportX) * this.tileSize);
         const screenY = Math.round(this.boardOffsetY + (levelY - renderViewportY) * this.tileSize);
         const tileId = this.runtimeGrid.getRuntimeTile(levelX, levelY);
-        const isDynamicTile = tileId === 2 || tileId === 3 || tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID;
+        const isDynamicTile =
+          tileId === 2 ||
+          tileId === 3 ||
+          tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID ||
+          tileId === FALLING_ROCK_TILE_ID ||
+          tileId === FALLING_DIAMOND_TILE_ID;
         const hasDynamicEntity = isDynamicTile && (
           this.findEntityAtGrid(levelX, levelY) !== null ||
           (tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID && this.findMonsterRuntimeAtGrid(levelX, levelY) !== null)
@@ -377,6 +388,8 @@ export class GameplayScene implements Scene {
         const renderTileId =
           tileId === MONSTER_RUNTIME_TRAIL_TILE_ID || tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID
             ? 0x05
+            : tileId === FALLING_ROCK_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID
+            ? 0x05
             : tileId;
         const frame = this.getTileFrame(spawnBlinkTileId ?? renderTileId);
         if ((hasDynamicEntity || hasPlayerEntity) && spawnBlinkTileId === undefined) {
@@ -392,13 +405,46 @@ export class GameplayScene implements Scene {
     }
   }
 
-  private drawEntities(renderer: Renderer): void {
+  private drawEntitiesAndObjects(renderer: Renderer): void {
     if (!this.atlasImage) {
       return;
     }
 
     this.drawEntitiesByLayer(renderer, false);
+    this.drawFallingRockObjects(renderer);
     this.drawEntitiesByLayer(renderer, true);
+  }
+
+  private drawFallingRockObjects(renderer: Renderer): void {
+    const renderViewportX = this.getRenderViewportX();
+    const renderViewportY = this.getRenderViewportY();
+    const cullViewportX = Math.floor(renderViewportX);
+    const cullViewportY = Math.floor(renderViewportY);
+
+    for (const fallingObject of this.state.fallingObjects) {
+      if (fallingObject.kind !== "rock") {
+        continue;
+      }
+
+      const progress = clamp(fallingObject.elapsed / fallingObject.duration, 0, 1);
+      const easedProgress = smoothStep(progress);
+      const gridX = lerp(fallingObject.fromX, fallingObject.toX, easedProgress);
+      const gridY = lerp(fallingObject.fromY, fallingObject.toY, easedProgress);
+      if (
+        gridX < cullViewportX - 1 ||
+        gridX >= cullViewportX + this.viewport.columns + 2 ||
+        gridY < cullViewportY - 1 ||
+        gridY >= cullViewportY + this.viewport.rows + 2
+      ) {
+        continue;
+      }
+
+      renderer.drawTile(
+        this.getTileFrame(ROCK_TILE_ID),
+        Math.round(this.boardOffsetX + (gridX - renderViewportX) * this.tileSize),
+        Math.round(this.boardOffsetY + (gridY - renderViewportY) * this.tileSize)
+      );
+    }
   }
 
   private drawEntitiesByLayer(renderer: Renderer, playerLayer: boolean): void {
@@ -661,6 +707,10 @@ export class GameplayScene implements Scene {
       return true;
     }
 
+    if (tileId === FALLING_ROCK_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID) {
+      return false;
+    }
+
     if (tileId === ROCK_TILE_ID || tileId === RUNTIME_GRID_FILL_TILE_ID || tileId === PLATFORM_TILE_ID) {
       return false;
     }
@@ -708,6 +758,149 @@ export class GameplayScene implements Scene {
     this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
     this.deactivateEntityAtGrid("diamond", gridX, gridY);
     this.updateLevelExitStateAfterDiamondCollection();
+  }
+
+  private advanceFallingObjects(dt: number): void {
+    this.advanceActiveFallingObjects(dt);
+
+    this.fallingObjectScanElapsed += dt;
+    if (this.fallingObjectScanElapsed < FALLING_OBJECT_SCAN_INTERVAL) {
+      return;
+    }
+
+    this.fallingObjectScanElapsed %= FALLING_OBJECT_SCAN_INTERVAL;
+    this.startReadyFallingObjects();
+  }
+
+  private advanceActiveFallingObjects(dt: number): void {
+    for (let index = this.state.fallingObjects.length - 1; index >= 0; index -= 1) {
+      const fallingObject = this.state.fallingObjects[index];
+      fallingObject.elapsed += dt;
+      this.syncFallingObjectEntity(fallingObject);
+
+      if (fallingObject.elapsed < fallingObject.duration) {
+        continue;
+      }
+
+      this.completeFallingObject(fallingObject);
+      this.state.fallingObjects.splice(index, 1);
+    }
+  }
+
+  private startReadyFallingObjects(): void {
+    for (let y = this.levelHeight - 2; y >= 0; y -= 1) {
+      for (let x = 0; x < this.levelWidth; x += 1) {
+        const tileId = this.runtimeGrid.getRuntimeTile(x, y);
+        if (!this.isPhysicalFallingTile(tileId)) {
+          continue;
+        }
+
+        const target = this.resolveFallingObjectTarget(x, y);
+        if (!target) {
+          continue;
+        }
+
+        this.startFallingObject(x, y, target.x, target.y, tileId);
+      }
+    }
+  }
+
+  private resolveFallingObjectTarget(
+    gridX: number,
+    gridY: number
+  ): { readonly x: number; readonly y: number } | null {
+    const belowY = gridY + 1;
+    if (this.canFallingObjectMoveTo(gridX, belowY)) {
+      return { x: gridX, y: belowY };
+    }
+
+    const playerGridX = Math.round(this.state.player.gridX);
+    const horizontalDirections = playerGridX < gridX ? [-1, 1] : playerGridX > gridX ? [1, -1] : [-1, 1];
+    for (const direction of horizontalDirections) {
+      const sideX = gridX + direction;
+      if (
+        this.canFallingObjectMoveTo(sideX, gridY) &&
+        this.canFallingObjectMoveTo(sideX, belowY)
+      ) {
+        return { x: sideX, y: belowY };
+      }
+    }
+
+    return null;
+  }
+
+  private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {
+    return (
+      this.runtimeGrid.getRuntimeTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
+      !this.hasFallingObjectAtGrid(gridX, gridY) &&
+      !this.isPlayerRenderedAtGrid(gridX, gridY)
+    );
+  }
+
+  private startFallingObject(fromX: number, fromY: number, toX: number, toY: number, tileId: number): void {
+    const kind = tileId === DIAMOND_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
+    const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
+    const entity = kind === "diamond" ? this.findEntityKindAtGrid("diamond", fromX, fromY) : null;
+    const fallingObject: FallingObjectRuntimeState = {
+      id: `falling-${kind}-${fromX}-${fromY}-${Date.now()}`,
+      kind,
+      tileId: kind === "diamond" ? DIAMOND_TILE_ID : ROCK_TILE_ID,
+      movingTileId,
+      entityId: entity?.id,
+      fromX,
+      fromY,
+      toX,
+      toY,
+      elapsed: 0,
+      duration: FALLING_OBJECT_GRID_MOVE_DURATION
+    };
+
+    this.clearRuntimeTile(fromX, fromY);
+    this.setRuntimeTile(toX, toY, movingTileId);
+    this.state.fallingObjects.push(fallingObject);
+  }
+
+  private completeFallingObject(fallingObject: FallingObjectRuntimeState): void {
+    this.setRuntimeTile(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
+
+    if (fallingObject.entityId) {
+      const entity = this.state.entities.find((item) => item.id === fallingObject.entityId);
+      if (entity) {
+        entity.gridX = fallingObject.toX;
+        entity.gridY = fallingObject.toY;
+        entity.x = entity.gridX * this.state.level.tileSize;
+        entity.y = entity.gridY * this.state.level.tileSize;
+      }
+    }
+  }
+
+  private syncFallingObjectEntity(fallingObject: FallingObjectRuntimeState): void {
+    if (!fallingObject.entityId) {
+      return;
+    }
+
+    const entity = this.state.entities.find((item) => item.id === fallingObject.entityId);
+    if (!entity) {
+      return;
+    }
+
+    const progress = clamp(fallingObject.elapsed / fallingObject.duration, 0, 1);
+    const easedProgress = smoothStep(progress);
+    entity.gridX = lerp(fallingObject.fromX, fallingObject.toX, easedProgress);
+    entity.gridY = lerp(fallingObject.fromY, fallingObject.toY, easedProgress);
+    entity.x = entity.gridX * this.state.level.tileSize;
+    entity.y = entity.gridY * this.state.level.tileSize;
+  }
+
+  private isPhysicalFallingTile(tileId: number): boolean {
+    return tileId === ROCK_TILE_ID || tileId === DIAMOND_TILE_ID;
+  }
+
+  private hasFallingObjectAtGrid(gridX: number, gridY: number): boolean {
+    return this.state.fallingObjects.some((fallingObject) =>
+      (fallingObject.fromX === gridX && fallingObject.fromY === gridY) ||
+      (fallingObject.toX === gridX && fallingObject.toY === gridY)
+    );
   }
 
   private updateLevelExitStateAfterDiamondCollection(): void {

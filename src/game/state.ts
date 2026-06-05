@@ -108,6 +108,7 @@ export function createGameLevelState(levelNumber = 1): GameState {
     level: levelDefinition,
     entities,
     monsters,
+    fallingObjects: [],
     player,
     hud: {
       score: 0,

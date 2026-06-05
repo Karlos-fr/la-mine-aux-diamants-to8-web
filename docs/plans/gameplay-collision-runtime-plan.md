@@ -77,15 +77,17 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 ## Phase 3 - Rochers et diamants physiques
 
-- [ ] Analyser les routines de chute/glissement des objets `0x00`, `0x03`, `0x12`, `0x13`.
-- [ ] Introduire un `FallingObjectRuntimeState` pour rochers et diamants.
-- [ ] Faire tomber un rocher si la case dessous est vide.
-- [ ] Faire tomber un diamant si la case dessous est vide.
-- [ ] Gerer le glissement lateral seulement apres preuve ASM.
-- [ ] Conserver un rendu fluide entre cases, sans changer la logique discrete.
-- [ ] Appliquer les mutations de grille a la fin du pas physique, pas au debut de l'interpolation visuelle.
-- [ ] Verifier si `0x12` et `0x13` sont des marqueurs temporaires en grille, des frames de rendu, ou les deux.
-- [ ] Garantir que les mutations declenchees par les objets physiques passent par la meme API runtime.
+- [x] Analyser les routines de chute verticale des objets `0x00`, `0x03`, `0x12`, `0x13`.
+- [x] Introduire un `FallingObjectRuntimeState` pour rochers et diamants.
+- [x] Faire tomber un rocher si la case dessous est vide.
+- [x] Faire tomber un diamant si la case dessous est vide.
+- [x] Gerer le glissement lateral minimal: si le dessous est bloque et qu'un cote + sa diagonale basse sont vides, l'objet glisse sur ce cote.
+- [x] Prioriser le cote du joueur quand les deux directions de glissement sont possibles.
+- [x] Conserver un rendu fluide entre cases, sans changer la logique discrete.
+- [x] Poser la tile finale a la fin du pas physique, avec `0x12/0x13` comme marqueurs runtime temporaires pendant le mouvement.
+- [x] Verifier que `0x12` et `0x13` sont des etats runtime generes partageant la famille visuelle rocher/diamant.
+- [x] Garantir que les mutations declenchees par les objets physiques passent par la meme API runtime.
+- [ ] Raffiner si besoin la priorite exacte gauche/droite contre la routine ASM complete.
 
 ## Phase 4 - Poussee des rochers
 

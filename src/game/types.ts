@@ -56,6 +56,20 @@ export interface MonsterRuntimeState {
   };
 }
 
+export interface FallingObjectRuntimeState {
+  readonly id: string;
+  readonly kind: "rock" | "diamond";
+  readonly tileId: number;
+  readonly movingTileId: number;
+  readonly entityId?: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  elapsed: number;
+  readonly duration: number;
+}
+
 export interface HudState {
   score: number;
   time: number;
@@ -95,6 +109,7 @@ export interface GameState {
   level: LevelDefinition;
   entities: EntityState[];
   monsters: MonsterRuntimeState[];
+  fallingObjects: FallingObjectRuntimeState[];
   player: EntityState;
   hud: HudState;
   lives: number;
