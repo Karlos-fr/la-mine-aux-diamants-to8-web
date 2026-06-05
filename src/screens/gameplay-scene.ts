@@ -171,6 +171,29 @@ const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: 16 }, (_, inde
 /** Dernier niveau actuellement disponible. */
 const LAST_LEVEL_NUMBER = 16;
 
+/** Cree le viewport initial autour du spawn joueur en respectant les marges ASM connues. */
+function createInitialViewportForSpawn(
+  playerStartX: number,
+  playerStartY: number,
+  levelWidth: number,
+  levelHeight: number
+): ViewportState {
+  return {
+    x: clamp(
+      playerStartX - CAMERA_LEFT_MARGIN,
+      CAMERA_MIN_X,
+      Math.max(CAMERA_MIN_X, levelWidth - VIEWPORT_COLUMNS)
+    ),
+    y: clamp(
+      playerStartY - CAMERA_TOP_MARGIN,
+      CAMERA_MIN_Y,
+      Math.max(CAMERA_MIN_Y, levelHeight - VIEWPORT_ROWS)
+    ),
+    columns: VIEWPORT_COLUMNS,
+    rows: VIEWPORT_ROWS
+  };
+}
+
 export class GameplayScene implements Scene {
   /** Contexte de navigation fourni par le routeur de scenes. */
   private context: SceneContext | undefined;
@@ -204,12 +227,7 @@ export class GameplayScene implements Scene {
   /** Decalage vertical de la zone de jeu. */
   private readonly boardOffsetY = 0;
   /** Viewport logique courant sur le niveau global. */
-  private readonly viewport: ViewportState = {
-    x: INITIAL_VIEWPORT_X,
-    y: INITIAL_VIEWPORT_Y,
-    columns: VIEWPORT_COLUMNS,
-    rows: VIEWPORT_ROWS
-  };
+  private readonly viewport: ViewportState;
   /** Largeur totale du niveau courant en cellules. */
   private readonly levelWidth: number;
   /** Hauteur totale du niveau courant en cellules. */
@@ -271,6 +289,12 @@ export class GameplayScene implements Scene {
     this.createNextLevelScene = createNextLevelScene;
     this.recreateLevelScene = recreateLevelScene;
     this.state = createGameLevelState(levelNumber);
+    this.viewport = createInitialViewportForSpawn(
+      this.state.level.playerStart.x,
+      this.state.level.playerStart.y,
+      this.state.level.width,
+      this.state.level.height
+    );
     this.runtimeGrid = new LevelRuntimeGrid(
       this.state.level.tiles,
       this.state.level.width,
@@ -586,6 +610,7 @@ export class GameplayScene implements Scene {
         arrivalEffect: "none"
       };
     }
+
 
     if (this.hasPhysicalObjectAtGrid(gridX, gridY)) {
       return {
@@ -971,6 +996,7 @@ export class GameplayScene implements Scene {
 
   /** Applies deadly impact effects when a falling rock or diamond reaches its target cell. */
   private applyFallingObjectImpact(fallingObject: FallingObjectRuntimeState): "none" | "explosion" {
+
     const targetMonsterId = fallingObject.targetMonsterId ??
       this.findMonsterRuntimeAtGrid(fallingObject.toX, fallingObject.toY)?.id;
     const impact = resolvePhysicalObjectImpact(fallingObject, {
