@@ -1,7 +1,7 @@
 /**
  * Role: Gere la sequence visuelle de spawn joueur.
  * Scope: Calcule la duree du blink et la tuile a rendre pendant cette phase.
- * ISO: Reproduit la sequence moderne convenue: bordure puis noir plusieurs fois avant apparition.
+ * ISO: Reproduit `KIT.BIN:$BE68`: 6 demi-etapes, donc 3 cycles `0x04` puis noir.
  * Notes: Le nettoyage de grille reste orchestre hors de ce system.
  */
 

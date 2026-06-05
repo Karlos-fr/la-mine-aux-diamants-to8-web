@@ -114,8 +114,8 @@ const CAMERA_BOTTOM_MARGIN = 0x07;
 const CAMERA_MIN_X = INITIAL_VIEWPORT_X;
 /** Borne minimale verticale camera. */
 const CAMERA_MIN_Y = INITIAL_VIEWPORT_Y;
-/** Nombre de repetitions tile/noir avant apparition joueur. */
-const PLAYER_SPAWN_BLINK_REPETITIONS = 4;
+/** Nombre de cycles `0x04`/noir prouves par le compteur `6` de `KIT.BIN:$BE68`. */
+const PLAYER_SPAWN_BLINK_REPETITIONS = 3;
 /** Duree d'un demi-pas de blink spawn. */
 const PLAYER_SPAWN_BLINK_STEP_DURATION = 0.25;
 /** Duree moderne du mouvement joueur fluide d'une cellule. */

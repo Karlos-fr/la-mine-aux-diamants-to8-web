@@ -4,7 +4,7 @@
 
 
 
-- Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
+- Sequence apparition joueur validee via `KIT.BIN:$BE68`: 6 demi-etapes, donc 3 cycles `0x04`/noir avant affichage joueur.
 - Implementer les animations de l'ecran 2
 
 
