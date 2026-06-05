@@ -9,9 +9,28 @@ import {
   RUNTIME_GRID_BASE_ADDRESS,
   RUNTIME_GRID_FILL_TILE_ID,
   RUNTIME_GRID_STRIDE,
-  RUNTIME_TILE,
-  isMonsterWalkableRuntimeTile
+  RUNTIME_TILE
 } from "../game/runtime-tiles";
+import {
+  advanceCameraAfterPlayerStep as advanceCameraAfterPlayerStepSystem,
+  advanceCameraMove as advanceCameraMoveSystem,
+  getRenderViewportX as getRenderViewportXSystem,
+  getRenderViewportY as getRenderViewportYSystem
+} from "../game/systems/camera-system";
+import { isOpenExitCell as isOpenExitCellSystem } from "../game/systems/exit-system";
+import { resolveFallingObjectTarget as resolveFallingObjectTargetSystem } from "../game/systems/falling-object-system";
+import { advanceSingleMonsterRuntime as advanceSingleMonsterRuntimeSystem } from "../game/systems/monster-system";
+import {
+  canPlayerEnterTile as canPlayerEnterTileSystem,
+  getPlayerArrivalEffect as getPlayerArrivalEffectSystem,
+  resolvePressedPlayerMove,
+  type PlayerMoveResolution,
+  type RuntimeTileArrivalEffect
+} from "../game/systems/player-system";
+import {
+  getPlayerSpawnBlinkTileId as getPlayerSpawnBlinkTileIdSystem,
+  isPlayerSpawning as isPlayerSpawningSystem
+} from "../game/systems/spawn-system";
 import { loadImage } from "../engine/image-loader";
 import type { TileFrame } from "../engine/render-types";
 import { mineFontMetadata } from "../assets/generated/mine-fonts";
@@ -40,14 +59,6 @@ interface GridMoveState {
 }
 
 type CameraMoveState = GridMoveState;
-type RuntimeTileArrivalEffect = "none" | "dig" | "collectDiamond" | "clearTrail" | "enterExit";
-
-interface PlayerMoveResolution {
-  readonly canEnter: boolean;
-  readonly tileId: number;
-  readonly arrivalEffect: RuntimeTileArrivalEffect;
-}
-
 const PLAYFIELD_HEIGHT = 160;
 const RENDER_TILE_SIZE = 16;
 const VIEWPORT_COLUMNS = 20;
@@ -288,8 +299,7 @@ export class GameplayScene implements Scene {
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       this.advancePlayerHeldMoveFrame(dt);
-      const moveX = input.pressed.left ? -1 : input.pressed.right ? 1 : 0;
-      const moveY = moveX === 0 ? input.pressed.up ? -1 : input.pressed.down ? 1 : 0 : 0;
+      const { x: moveX, y: moveY } = resolvePressedPlayerMove(input.pressed);
       if (moveX !== 0 || moveY !== 0) {
         const fromX = Math.round(this.state.player.gridX);
         const fromY = Math.round(this.state.player.gridY);
@@ -589,73 +599,29 @@ export class GameplayScene implements Scene {
   }
 
   private advanceCameraAfterPlayerStep(fromX: number, fromY: number, moveX: number, moveY: number): void {
-    const screenX = fromX - this.viewport.x;
-    const screenY = fromY - this.viewport.y;
-    const previousViewportX = this.viewport.x;
-    const previousViewportY = this.viewport.y;
-
-    const cameraMaxX = this.getCameraMaxX();
-    const cameraMaxY = this.getCameraMaxY();
-
-    if (moveX > 0 && screenX === CAMERA_RIGHT_MARGIN && this.viewport.x < cameraMaxX) {
-      this.viewport.x += 1;
-    } else if (moveX < 0 && screenX === CAMERA_LEFT_MARGIN && this.viewport.x > CAMERA_MIN_X) {
-      this.viewport.x -= 1;
-    }
-
-    if (moveY > 0 && screenY === CAMERA_BOTTOM_MARGIN && this.viewport.y < cameraMaxY) {
-      this.viewport.y += 1;
-    } else if (moveY < 0 && screenY === CAMERA_TOP_MARGIN && this.viewport.y > CAMERA_MIN_Y) {
-      this.viewport.y -= 1;
-    }
-
-    if (this.viewport.x !== previousViewportX || this.viewport.y !== previousViewportY) {
-      this.cameraMove = {
-        fromX: previousViewportX,
-        fromY: previousViewportY,
-        toX: this.viewport.x,
-        toY: this.viewport.y,
-        elapsed: 0,
-        duration: CAMERA_GRID_MOVE_DURATION
-      };
-    }
+    this.cameraMove = advanceCameraAfterPlayerStepSystem(this.viewport, fromX, fromY, moveX, moveY, {
+      leftMargin: CAMERA_LEFT_MARGIN,
+      rightMargin: CAMERA_RIGHT_MARGIN,
+      topMargin: CAMERA_TOP_MARGIN,
+      bottomMargin: CAMERA_BOTTOM_MARGIN,
+      minX: CAMERA_MIN_X,
+      minY: CAMERA_MIN_Y,
+      levelWidth: this.levelWidth,
+      levelHeight: this.levelHeight,
+      moveDuration: CAMERA_GRID_MOVE_DURATION
+    }) ?? this.cameraMove;
   }
 
   private advanceCameraMove(dt: number): void {
-    if (!this.cameraMove) {
-      return;
-    }
-
-    this.cameraMove.elapsed += dt;
-    if (this.cameraMove.elapsed >= this.cameraMove.duration) {
-      this.cameraMove = null;
-    }
-  }
-
-  private getCameraMaxX(): number {
-    return Math.max(CAMERA_MIN_X, this.levelWidth - this.viewport.columns);
-  }
-
-  private getCameraMaxY(): number {
-    return Math.max(CAMERA_MIN_Y, this.levelHeight - this.viewport.rows);
+    this.cameraMove = advanceCameraMoveSystem(this.cameraMove, dt);
   }
 
   private getRenderViewportX(): number {
-    if (!this.cameraMove) {
-      return this.viewport.x;
-    }
-
-    const progress = clamp(this.cameraMove.elapsed / this.cameraMove.duration, 0, 1);
-    return lerp(this.cameraMove.fromX, this.cameraMove.toX, smoothStep(progress));
+    return getRenderViewportXSystem(this.viewport, this.cameraMove);
   }
 
   private getRenderViewportY(): number {
-    if (!this.cameraMove) {
-      return this.viewport.y;
-    }
-
-    const progress = clamp(this.cameraMove.elapsed / this.cameraMove.duration, 0, 1);
-    return lerp(this.cameraMove.fromY, this.cameraMove.toY, smoothStep(progress));
+    return getRenderViewportYSystem(this.viewport, this.cameraMove);
   }
 
   private resolvePlayerMove(gridX: number, gridY: number): PlayerMoveResolution {
@@ -692,39 +658,25 @@ export class GameplayScene implements Scene {
   }
 
   private getPlayerArrivalEffect(tileId: number): RuntimeTileArrivalEffect {
-    if (tileId === PLAYER_DIGGABLE_TILE_ID) {
-      return "dig";
-    }
-
-    if (tileId === DIAMOND_TILE_ID) {
-      return "collectDiamond";
-    }
-
-    if (tileId === MONSTER_RUNTIME_TRAIL_TILE_ID) {
-      return "clearTrail";
-    }
-
-    return "none";
+    return getPlayerArrivalEffectSystem(tileId, this.getPlayerCollisionTiles());
   }
 
   private canPlayerEnterTile(tileId: number): boolean {
-    if (tileId === RUNTIME_EMPTY_TILE_ID || tileId === PLAYER_DIGGABLE_TILE_ID || tileId === DIAMOND_TILE_ID) {
-      return true;
-    }
+    return canPlayerEnterTileSystem(tileId, this.getPlayerCollisionTiles());
+  }
 
-    if (tileId === MONSTER_RUNTIME_TRAIL_TILE_ID) {
-      return true;
-    }
-
-    if (tileId === FALLING_ROCK_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID) {
-      return false;
-    }
-
-    if (tileId === ROCK_TILE_ID || tileId === RUNTIME_GRID_FILL_TILE_ID || tileId === PLATFORM_TILE_ID) {
-      return false;
-    }
-
-    return false;
+  private getPlayerCollisionTiles() {
+    return {
+      empty: RUNTIME_EMPTY_TILE_ID,
+      diggable: PLAYER_DIGGABLE_TILE_ID,
+      diamond: DIAMOND_TILE_ID,
+      monsterTrail: MONSTER_RUNTIME_TRAIL_TILE_ID,
+      fallingRock: FALLING_ROCK_TILE_ID,
+      fallingDiamond: FALLING_DIAMOND_TILE_ID,
+      rock: ROCK_TILE_ID,
+      border: RUNTIME_GRID_FILL_TILE_ID,
+      platform: PLATFORM_TILE_ID
+    };
   }
 
   private applyPlayerArrivalEffect(gridX: number, gridY: number, effect: RuntimeTileArrivalEffect): void {
@@ -818,36 +770,15 @@ export class GameplayScene implements Scene {
     gridX: number,
     gridY: number
   ): { readonly x: number; readonly y: number } | null {
-    const belowY = gridY + 1;
-    if (this.canFallingObjectMoveTo(gridX, belowY)) {
-      return { x: gridX, y: belowY };
-    }
-
-    if (!this.isFallingObjectStaticTile(this.runtimeGrid.getTile(gridX, belowY))) {
-      return null;
-    }
-
-    const playerGridX = Math.round(this.state.player.gridX);
-    const horizontalDirections = playerGridX < gridX ? [-1, 1] : playerGridX > gridX ? [1, -1] : [-1, 1];
-    for (const direction of horizontalDirections) {
-      const sideX = gridX + direction;
-      if (
-        this.hasTwoEmptyCellsInSideColumn(gridX, gridY, direction) &&
-        this.canFallingObjectMoveTo(sideX, gridY + 1)
-      ) {
-        return { x: sideX, y: belowY };
-      }
-    }
-
-    return null;
-  }
-
-  private hasTwoEmptyCellsInSideColumn(gridX: number, gridY: number, direction: -1 | 1): boolean {
-    const sideX = gridX + direction;
-    return (
-      this.isFallingObjectClearanceCellEmpty(sideX, gridY) &&
-      this.isFallingObjectClearanceCellEmpty(sideX, gridY + 1)
-    );
+    return resolveFallingObjectTargetSystem({
+      gridX,
+      gridY,
+      playerGridX: Math.round(this.state.player.gridX),
+      getTile: (x, y) => this.runtimeGrid.getTile(x, y),
+      canMoveTo: (x, y) => this.canFallingObjectMoveTo(x, y),
+      isStaticFallingObjectTile: (tileId) => this.isFallingObjectStaticTile(tileId),
+      isClearanceCellEmpty: (x, y) => this.isFallingObjectClearanceCellEmpty(x, y)
+    });
   }
 
   private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
@@ -943,10 +874,12 @@ export class GameplayScene implements Scene {
   }
 
   private isOpenExitCell(gridX: number, gridY: number): boolean {
-    return (
-      this.state.exitOpen &&
-      gridX === this.state.level.exit.x &&
-      gridY === this.state.level.exit.y
+    return isOpenExitCellSystem(
+      this.state.exitOpen,
+      this.state.level.exit.x,
+      this.state.level.exit.y,
+      gridX,
+      gridY
     );
   }
 
@@ -1033,35 +966,15 @@ export class GameplayScene implements Scene {
   }
 
   private advanceSingleMonsterRuntime(monster: GameState["monsters"][number]): void {
-    let direction = monster.direction;
-
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const delta = monsterDirectionToDelta(direction);
-      const targetX = monster.gridX + delta.x;
-      const targetY = monster.gridY + delta.y;
-
-      if (isMonsterWalkableRuntimeTile(this.runtimeGrid.getTile(targetX, targetY))) {
-        this.setTile(monster.gridX, monster.gridY, MONSTER_RUNTIME_TRAIL_TILE_ID);
-        this.setTile(targetX, targetY, MONSTER_RUNTIME_ACTIVE_TILE_ID);
-        monster.movement = {
-          fromX: monster.gridX,
-          fromY: monster.gridY,
-          toX: targetX,
-          toY: targetY,
-          elapsed: 0,
-          duration: MONSTER_GRID_MOVE_DURATION
-        };
-        monster.gridX = targetX;
-        monster.gridY = targetY;
-        monster.direction = direction;
-        monster.runtimePointer = RUNTIME_GRID_BASE_ADDRESS + targetY * RUNTIME_GRID_STRIDE + targetX;
-        return;
-      }
-
-      direction = decrementMonsterDirection(direction);
-    }
-
-    monster.direction = direction;
+    advanceSingleMonsterRuntimeSystem(monster, {
+      getTile: (x, y) => this.runtimeGrid.getTile(x, y),
+      setTile: (x, y, tileId) => this.setTile(x, y, tileId),
+      runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
+      runtimeStride: RUNTIME_GRID_STRIDE,
+      activeTileId: MONSTER_RUNTIME_ACTIVE_TILE_ID,
+      trailTileId: MONSTER_RUNTIME_TRAIL_TILE_ID,
+      moveDuration: MONSTER_GRID_MOVE_DURATION
+    });
   }
 
   private advanceMonsterMoves(dt: number): void {
@@ -1078,7 +991,11 @@ export class GameplayScene implements Scene {
   }
 
   private isPlayerSpawning(): boolean {
-    return this.spawnElapsed < PLAYER_SPAWN_BLINK_REPETITIONS * 2 * PLAYER_SPAWN_BLINK_STEP_DURATION;
+    return isPlayerSpawningSystem(
+      this.spawnElapsed,
+      PLAYER_SPAWN_BLINK_REPETITIONS,
+      PLAYER_SPAWN_BLINK_STEP_DURATION
+    );
   }
 
   private clearSpawnBlinkTileAfterSpawn(): void {
@@ -1094,12 +1011,13 @@ export class GameplayScene implements Scene {
   }
 
   private getPlayerSpawnBlinkTileId(gridX: number, gridY: number): number | null | undefined {
-    if (!this.isPlayerSpawning() || !this.isPlayerRenderedAtGrid(gridX, gridY)) {
-      return undefined;
-    }
-
-    const step = Math.floor(this.spawnElapsed / PLAYER_SPAWN_BLINK_STEP_DURATION);
-    return step % 2 === 0 ? RUNTIME_GRID_FILL_TILE_ID : null;
+    return getPlayerSpawnBlinkTileIdSystem(
+      this.spawnElapsed,
+      PLAYER_SPAWN_BLINK_STEP_DURATION,
+      RUNTIME_GRID_FILL_TILE_ID,
+      this.isPlayerSpawning(),
+      this.isPlayerRenderedAtGrid(gridX, gridY)
+    );
   }
 
   private isPlayerRenderedAtGrid(gridX: number, gridY: number): boolean {
@@ -1438,26 +1356,6 @@ function rgbToHex(red: number, green: number, blue: number): string {
 
 function hexByte(value: number): string {
   return value.toString(16).padStart(2, "0");
-}
-
-function decrementMonsterDirection(direction: 1 | 2 | 3 | 4): 1 | 2 | 3 | 4 {
-  return direction === 1 ? 4 : ((direction - 1) as 1 | 2 | 3 | 4);
-}
-
-function monsterDirectionToDelta(direction: 1 | 2 | 3 | 4): { readonly x: number; readonly y: number } {
-  if (direction === 1) {
-    return { x: -1, y: 0 };
-  }
-
-  if (direction === 2) {
-    return { x: 0, y: -1 };
-  }
-
-  if (direction === 3) {
-    return { x: 1, y: 0 };
-  }
-
-  return { x: 0, y: 1 };
 }
 
 function incrementBcdCounter(value: number, amount: number, digits: number): number {

@@ -131,15 +131,26 @@ Dette connue:
 
 ## Phase 3 - Systems gameplay
 
-- [ ] Extraire un `PlayerSystem` pour input, mouvement case par case et effets d'arrivee.
-- [ ] Extraire un `CameraSystem` pour seuils ASM, bornes et interpolation visuelle.
-- [ ] Extraire un `MonsterSystem` pour direction, marqueurs `0x17/0x80`, interpolation et sync entite.
-- [ ] Extraire un `FallingObjectSystem` pour rochers/diamants physiques.
-- [ ] Extraire un `SpawnSystem` pour blink spawn et nettoyage de la tile temporaire.
-- [ ] Extraire un `ExitSystem` pour ouverture sortie et transition niveau.
-- [ ] Definir l'ordre d'update des systems dans un seul endroit.
-- [ ] Documenter l'ordre d'update attendu par rapport au runtime original.
-- [ ] Interdire qu'un system modifie directement le rendu.
+- [x] Extraire un `PlayerSystem` pour input, mouvement case par case et effets d'arrivee.
+- [x] Extraire un `CameraSystem` pour seuils ASM, bornes et interpolation visuelle.
+- [x] Extraire un `MonsterSystem` pour direction, marqueurs `0x17/0x80`, interpolation et sync entite.
+- [x] Extraire un `FallingObjectSystem` pour rochers/diamants physiques.
+- [x] Extraire un `SpawnSystem` pour blink spawn et nettoyage de la tile temporaire.
+- [x] Extraire un `ExitSystem` pour ouverture sortie et transition niveau.
+- [x] Definir l'ordre d'update des systems dans un seul endroit.
+- [x] Documenter l'ordre d'update attendu par rapport au runtime original.
+- [x] Interdire qu'un system modifie directement le rendu.
+
+### Notes Phase 3
+
+- Les systems extraits vivent dans `src/game/systems/` et restent sans dependance renderer/canvas.
+- `GameplayScene.update` conserve l'ordre d'orchestration actuel: spawn/HUD, joueur, camera, objets physiques, monstres, sync entites, animations.
+- `PlayerSystem` porte la decision collision/effet d'arrivee; l'orchestration input et interpolation reste temporairement dans la scene pour eviter de modifier le comportement case-par-case.
+- `CameraSystem` porte les seuils ASM, bornes de viewport et interpolation visuelle.
+- `FallingObjectSystem` porte la resolution de cible rocher/diamant, dont chute verticale directe et bascule laterale sous contrainte de support physique.
+- `MonsterSystem` porte la direction, la rotation de direction et les marqueurs runtime `0x17`/`0x80`.
+- `SpawnSystem` porte la sequence blink; le nettoyage effectif de tile reste orchestre par la scene via la grille runtime.
+- `ExitSystem` porte la reconnaissance de cellule de sortie ouverte; la navigation de scene reste volontairement dans `GameplayScene`.
 
 ## Phase 4 - Mutations et evenements runtime
 
