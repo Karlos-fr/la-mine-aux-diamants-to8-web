@@ -1,7 +1,5 @@
 import { mineSpriteMetadata } from "./assets/generated/mine-sprites";
 import { VIEWER_ASSET_URLS } from "./assets/runtime-assets";
-import { createGameApp } from "./engine/game-app";
-import { StartupInfogramScene } from "./screens/startup-screens";
 
 const ATLAS_URLS: Record<string, string> = VIEWER_ASSET_URLS;
 
@@ -28,84 +26,58 @@ type Player = {
   playing: boolean;
 };
 
-export function mountAnimationGallery(root: HTMLElement): void {
+export function mountDevAnimationGallery(root: HTMLElement): void {
   root.innerHTML = "";
-  root.className = "page-shell";
+  root.className = "dev-gallery-shell";
 
   const page = document.createElement("section");
-  page.className = "animation-page";
+  page.className = "dev-gallery-page";
 
   const header = document.createElement("header");
-  header.className = "animation-header";
+  header.className = "dev-gallery-header";
   header.innerHTML = `
     <div>
-      <p class="eyebrow">La Mine aux Diamants</p>
-      <h1>Animations decodees</h1>
-    </div>
-    <div class="view-actions">
-      <button class="mode-button mode-button-active" type="button" data-view="animations">Animations</button>
-      <button class="mode-button" type="button" data-view="game">Jeu</button>
+      <p class="dev-gallery-eyebrow">La Mine aux Diamants</p>
+      <h1 class="dev-gallery-title">Animations decodees</h1>
+      <p class="dev-gallery-help">Viewer developpeur: ouvrir avec <code>?mode=gallery</code>.</p>
     </div>
   `;
 
   const gallery = document.createElement("div");
-  gallery.className = "animation-grid";
+  gallery.className = "dev-gallery-grid";
 
-  const gameMount = document.createElement("div");
-  gameMount.className = "game-mount hidden";
-  gameMount.innerHTML = `<canvas id="game-screen" width="320" height="200" tabindex="0" aria-label="Ecran du jeu"></canvas>`;
-
-  page.append(header, gallery, gameMount);
+  page.append(header, gallery);
   root.append(page);
 
   const players = createCards(gallery);
-  let gameStarted = false;
-  let stopGame: (() => void) | null = null;
-
-  header.querySelectorAll<HTMLButtonElement>(".mode-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const view = button.dataset.view;
-      header.querySelectorAll(".mode-button").forEach((candidate) => {
-        candidate.classList.toggle("mode-button-active", candidate === button);
-      });
-      gallery.classList.toggle("hidden", view !== "animations");
-      gameMount.classList.toggle("hidden", view !== "game");
-      if (view === "game" && !gameStarted) {
-        stopGame = mountGame(gameMount);
-        gameStarted = true;
-      }
-    });
-  });
 
   const tick = (time: number) => {
     animatePlayers(players, time);
     window.requestAnimationFrame(tick);
   };
   window.requestAnimationFrame(tick);
-
-  window.addEventListener("beforeunload", () => stopGame?.(), { once: true });
 }
 
 function createCards(container: HTMLElement): Player[] {
   const animations = collectAnimations();
   return animations.map((item) => {
     const card = document.createElement("article");
-    card.className = "animation-card";
+    card.className = "dev-gallery-card";
 
     const canvas = document.createElement("canvas");
     canvas.width = 16;
     canvas.height = 16;
-    canvas.className = "sprite-preview";
+    canvas.className = "dev-gallery-sprite-preview";
 
     const title = document.createElement("div");
-    title.className = "card-title";
+    title.className = "dev-gallery-card-title";
     title.innerHTML = `
       <span>${label(item.group.id)} / ${label(item.animation.id)}</span>
-      <span class="status-pill">${item.animation.status}</span>
+      <span class="dev-gallery-status-pill">${item.animation.status}</span>
     `;
 
     const strip = document.createElement("div");
-    strip.className = "frame-strip";
+    strip.className = "dev-gallery-frame-strip";
     item.frames.forEach((frame) => {
       const chip = document.createElement("span");
       chip.textContent = `${frame.hexId} ${frame.name}`;
@@ -113,11 +85,11 @@ function createCards(container: HTMLElement): Player[] {
     });
 
     const evidence = document.createElement("p");
-    evidence.className = "evidence";
+    evidence.className = "dev-gallery-evidence";
     evidence.textContent = item.animation.evidence?.[0] ?? item.group.evidence?.[0] ?? "";
 
     const controls = document.createElement("div");
-    controls.className = "card-controls";
+    controls.className = "dev-gallery-card-controls";
     const playButton = document.createElement("button");
     playButton.type = "button";
     playButton.textContent = "Pause";
@@ -130,7 +102,7 @@ function createCards(container: HTMLElement): Player[] {
     controls.append(playButton, speed);
 
     const atlas = document.createElement("img");
-    atlas.className = "atlas-preview";
+    atlas.className = "dev-gallery-atlas-preview";
     atlas.src = item.atlasUrl;
     atlas.alt = `${item.group.id} atlas`;
 
@@ -212,18 +184,6 @@ function animatePlayers(players: Player[], time: number): void {
 function drawFrame(ctx: CanvasRenderingContext2D, image: HTMLImageElement, frame: SpriteFrame): void {
   ctx.clearRect(0, 0, 16, 16);
   ctx.drawImage(image, frame.atlasX, frame.atlasY, frame.width, frame.height, 0, 0, 16, 16);
-}
-
-function mountGame(gameMount: HTMLElement): () => void {
-  const canvas = gameMount.querySelector<HTMLCanvasElement>("#game-screen");
-  if (!canvas) throw new Error("Canvas #game-screen introuvable.");
-  const app = createGameApp({
-    canvas,
-    initialScene: () => new StartupInfogramScene()
-  });
-  app.start();
-  canvas.focus();
-  return () => app.stop();
 }
 
 function label(value: string): string {

@@ -1,6 +1,6 @@
 import "./styles.css";
 
-import { mountAnimationGallery } from "./animation-gallery";
+import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { createGameApp } from "./engine/game-app";
 import { StartupInfogramScene } from "./screens/startup-screens";
 
@@ -13,7 +13,7 @@ if (!root) {
 const mode = new URLSearchParams(window.location.search).get("mode");
 
 if (mode === "gallery") {
-  mountAnimationGallery(root);
+  mountDevAnimationGallery(root);
 } else {
   const existingCanvas = root.querySelector<HTMLCanvasElement>("#game-screen");
   const canvas = existingCanvas ?? document.createElement("canvas");

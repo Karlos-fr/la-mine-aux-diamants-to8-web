@@ -12,7 +12,7 @@ Ce document est un plan de realisation. Il ne remplace pas les plans gameplay ex
 - Les systemes joueur, monstres, objets tombants, HUD et camera commencent a avoir des frontieres naturelles.
 - Les assets extraits/provenance et les assets runtime modernes sont mieux separes qu'avant, mais les references directes a `docs/extraction` restent nombreuses dans les scenes.
 - `src/screens/title-scene.ts` etait une ancienne scene de titre non utilisee par le flux moderne; elle a ete supprimee en phase 7.
-- `animation-gallery.ts` embarque a la fois un viewer d'assets et un montage du jeu, ce qui est utile mais separe du runtime principal.
+- `dev-animation-gallery.ts` expose le viewer developpeur d'animations via `?mode=gallery`, sans montage interne du jeu.
 - Les interpolations visuelles sont melangees avec la logique discrete dans certains endroits; il faut les isoler sans changer le comportement.
 - Les constantes ASM/runtime sont actuellement dispersees dans `gameplay-scene.ts`.
 
@@ -55,7 +55,7 @@ Modules runtime modernes utilises:
 Modules historiques, temporaires ou suspects:
 
 - `src/screens/title-scene.ts`: ancienne scene titre supprimee en phase 7 apres confirmation d'absence de reference runtime.
-- `src/animation-gallery.ts`: viewer dev utile, mais a separer plus nettement du runtime jeu.
+- `src/dev-animation-gallery.ts`: viewer dev utile, separe du runtime jeu.
 - `src/game/index.ts` et `src/engine/index.ts`: facades exports, a conserver seulement si elles restent utiles apres extraction.
 - Fallbacks de frames dans `gameplay-scene.ts`: utiles en securite, mais a documenter par groupe.
 
@@ -63,7 +63,7 @@ References directes a `docs/extraction` dans le runtime:
 
 - `src/screens/gameplay-scene.ts`: atlas tuiles, diamants, monstres, panneaux HUD.
 - `src/screens/startup-screens.ts`: ecrans startup et animations titre.
-- `src/animation-gallery.ts`: atlas viewer.
+- `src/dev-animation-gallery.ts`: atlas viewer.
 
 Constantes ASM/runtime actuellement dispersees:
 
@@ -233,13 +233,22 @@ Dette connue:
 
 ## Phase 8 - Viewer et outils developpeur
 
-- [ ] Separer clairement `animation-gallery.ts` du runtime jeu.
-- [ ] Renommer le viewer si necessaire en `dev-animation-gallery`.
-- [ ] Isoler les styles du viewer des styles runtime.
-- [ ] Verifier que le viewer continue d'exposer les animations utiles.
+- [x] Separer clairement `animation-gallery.ts` du runtime jeu.
+- [x] Renommer le viewer si necessaire en `dev-animation-gallery`.
+- [x] Isoler les styles du viewer des styles runtime.
+- [x] Verifier que le viewer continue d'exposer les animations utiles.
 - [ ] Ajouter si besoin un viewer de tuiles runtime et de niveaux JSON.
-- [ ] Documenter comment utiliser `?mode=gallery`.
-- [ ] Eviter que le viewer impose des dependances au bundle jeu principal si possible.
+- [x] Documenter comment utiliser `?mode=gallery`.
+- [x] Eviter que le viewer impose des dependances au bundle jeu principal si possible.
+
+### Notes Phase 8
+
+- `src/animation-gallery.ts` a ete remplace par `src/dev-animation-gallery.ts`.
+- Le viewer developpeur n'embarque plus un montage interne du jeu; le choix viewer/jeu reste uniquement dans `src/main.ts`.
+- Les styles du viewer sont prefixes `dev-gallery-*` pour eviter les collisions avec le runtime jeu.
+- Le viewer reste accessible via `http://localhost:5173/?mode=gallery`.
+- Le viewer expose toujours les animations issues de `mineSpriteMetadata` et les atlas `VIEWER_ASSET_URLS`.
+- Un viewer de tuiles runtime / niveaux JSON reste optionnel et non implemente pour le moment.
 
 ## Phase 9 - Code mort et dette technique
 
