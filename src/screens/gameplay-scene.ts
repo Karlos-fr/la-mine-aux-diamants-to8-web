@@ -470,6 +470,7 @@ export class GameplayScene implements Scene {
         monster: MONSTER_TILE_ID,
         diamond: DIAMOND_TILE_ID,
         monsterActive: MONSTER_RUNTIME_ACTIVE_TILE_ID,
+        specialCreature: RUNTIME_TILE.specialCreature,
         monsterTrail: MONSTER_RUNTIME_TRAIL_TILE_ID,
         rock: ROCK_TILE_ID,
         fallingRock: FALLING_ROCK_TILE_ID,
@@ -491,7 +492,7 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Finds the first active visual entity occupying the given grid cell. */
+  /** Trouve la premiere entite visuelle active occupant la cellule de grille donnee. */
   private findEntityAtGrid(gridX: number, gridY: number): EntityState | null {
     for (const entity of this.state.entities) {
       if (!entity.active) {
@@ -506,7 +507,7 @@ export class GameplayScene implements Scene {
     return null;
   }
 
-  /** Finds the runtime monster occupying the given grid cell. */
+  /** Trouve le monstre runtime occupant la cellule de grille donnee. */
   private findMonsterRuntimeAtGrid(gridX: number, gridY: number): GameState["monsters"][number] | null {
     for (const monster of this.state.monsters) {
       if (monster.gridX === gridX && monster.gridY === gridY) {
@@ -525,12 +526,12 @@ export class GameplayScene implements Scene {
     return null;
   }
 
-  /** Returns whether an entity covers the given grid cell after runtime offsets. */
+  /** Indique si une entite couvre la cellule donnee apres application des offsets runtime. */
   private isEntityAtGrid(entity: EntityState, gridX: number, gridY: number): boolean {
     return Math.round(entity.gridX) === gridX && Math.round(entity.gridY) === gridY;
   }
 
-  /** Advances the smooth player step currently in progress. */
+  /** Avance le pas joueur fluide actuellement en cours. */
   private advancePlayerMove(dt: number): void {
     if (!this.playerMove) {
       return;
@@ -555,7 +556,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Keeps the walking frame cycling while a direction key remains held. */
+  /** Maintient le cycle de marche tant qu'une touche directionnelle reste pressee. */
   private advancePlayerHeldMoveFrame(dt: number): void {
     if (this.playerHeldMoveFrameId === null) {
       return;
@@ -567,7 +568,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Holds the last walking frame when continuous movement is about to continue. */
+  /** Conserve la derniere frame de marche lorsqu'un mouvement continu va s'enchainer. */
   private holdPlayerFinalMoveFrame(): void {
     const frames = this.getPlayerDirectionalFrames();
     if (!frames || frames.length === 0) {
@@ -578,18 +579,18 @@ export class GameplayScene implements Scene {
     this.playerHeldMoveFrameElapsed = 0;
   }
 
-  /** Clears the held walking frame when directional input stops. */
+  /** Efface la frame de marche maintenue quand l'input directionnel s'arrete. */
   private clearPlayerHeldMoveFrame(): void {
     this.playerHeldMoveFrameId = null;
     this.playerHeldMoveFrameElapsed = 0;
   }
 
-  /** Resets the inactivity timer while the player is moving or pressing a direction. */
+  /** Reinitialise le timer d'inactivite quand le joueur bouge ou presse une direction. */
   private resetPlayerIdleDelay(): void {
     this.playerIdleElapsed = 0;
   }
 
-  /** Advances the inactivity timer and switches to the proven ASM idle cycle after a delay. */
+  /** Avance le timer d'inactivite et bascule vers le cycle idle ASM prouve apres delai. */
   private advancePlayerIdleDelay(dt: number): void {
     if (this.playerFacing === "idle") {
       return;
@@ -605,7 +606,7 @@ export class GameplayScene implements Scene {
     this.resetPlayerAnimationClock("player");
   }
 
-  /** Restarts an animation clock from its first frame. */
+  /** Redemarre une horloge d'animation depuis sa premiere frame. */
   private resetPlayerAnimationClock(animationKey: string): void {
     const clock = this.animationState.get(animationKey);
     if (!clock) {
@@ -616,7 +617,7 @@ export class GameplayScene implements Scene {
     clock.accumulator = 0;
   }
 
-  /** Starts a smooth camera scroll when the player crosses the ASM viewport margin. */
+  /** Demarre un scroll camera fluide quand le joueur franchit la marge viewport ASM. */
   private advanceCameraAfterPlayerStep(fromX: number, fromY: number, moveX: number, moveY: number): void {
     this.cameraMove = advanceCameraAfterPlayerStepSystem(this.viewport, fromX, fromY, moveX, moveY, {
       leftMargin: CAMERA_LEFT_MARGIN,
@@ -631,22 +632,22 @@ export class GameplayScene implements Scene {
     }) ?? this.cameraMove;
   }
 
-  /** Advances the camera interpolation toward its target viewport origin. */
+  /** Avance l'interpolation camera vers l'origine viewport cible. */
   private advanceCameraMove(dt: number): void {
     this.cameraMove = advanceCameraMoveSystem(this.cameraMove, dt);
   }
 
-  /** Returns the interpolated viewport X used for rendering. */
+  /** Retourne le X de viewport interpole utilise pour le rendu. */
   private getRenderViewportX(): number {
     return getRenderViewportXSystem(this.viewport, this.cameraMove);
   }
 
-  /** Returns the interpolated viewport Y used for rendering. */
+  /** Retourne le Y de viewport interpole utilise pour le rendu. */
   private getRenderViewportY(): number {
     return getRenderViewportYSystem(this.viewport, this.cameraMove);
   }
 
-  /** Resolves whether the player can enter a target cell and which arrival effect applies. */
+  /** Resout si le joueur peut entrer dans une cellule cible et quel effet d'arrivee appliquer. */
   private resolvePlayerMove(gridX: number, gridY: number): PlayerMoveResolution {
     if (gridX < 0 || gridY < 0) {
       return {
@@ -681,10 +682,19 @@ export class GameplayScene implements Scene {
       };
     }
 
-    if (this.findMonsterRuntimeAtGrid(gridX, gridY) !== null) {
+    const targetMonster = this.findMonsterRuntimeAtGrid(gridX, gridY);
+    if (targetMonster !== null) {
       return {
         canEnter: true,
-        tileId: MONSTER_TILE_ID,
+        tileId: targetMonster.kind === "specialCreature" ? RUNTIME_TILE.specialCreature : MONSTER_TILE_ID,
+        arrivalEffect: "hitMonster"
+      };
+    }
+
+    if (this.findEntityKindAtGrid("specialCreature", gridX, gridY) !== null) {
+      return {
+        canEnter: true,
+        tileId: RUNTIME_TILE.specialCreature,
         arrivalEffect: "hitMonster"
       };
     }
@@ -705,12 +715,12 @@ export class GameplayScene implements Scene {
     };
   }
 
-  /** Maps a runtime tile id to the effect triggered after player arrival. */
+  /** Associe un tile id runtime a l'effet declenche apres l'arrivee joueur. */
   private getPlayerArrivalEffect(tileId: number): RuntimeTileArrivalEffect {
     return getPlayerArrivalEffectSystem(tileId, this.getPlayerCollisionTiles());
   }
 
-  /** Maps a runtime tile to the non-deadly arrival effect used by ghost debug mode. */
+  /** Associe une tuile runtime a l'effet non mortel utilise par le mode debug ghost. */
   private getGhostPlayerArrivalEffect(gridX: number, gridY: number, tileId: number): RuntimeTileArrivalEffect {
     if (this.findEntityKindAtGrid("diamond", gridX, gridY) !== null || tileId === DIAMOND_TILE_ID) {
       return "collectDiamond";
@@ -731,7 +741,7 @@ export class GameplayScene implements Scene {
     return "none";
   }
 
-  /** Resolves a horizontal rock push target, or `null` if the push is invalid. */
+  /** Resout la cible d'une poussee horizontale de rocher, ou `null` si elle est invalide. */
   private resolvePushedRockTarget(
     rockGridX: number,
     rockGridY: number,
@@ -746,12 +756,12 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Returns whether the player can enter the runtime tile. */
+  /** Indique si le joueur peut entrer dans la tuile runtime. */
   private canPlayerEnterTile(tileId: number): boolean {
     return canPlayerEnterTileSystem(tileId, this.getPlayerCollisionTiles());
   }
 
-  /** Returns runtime tile ids that block the player's movement. */
+  /** Retourne les tile ids runtime qui bloquent le mouvement joueur. */
   private getPlayerCollisionTiles() {
     return {
       empty: RUNTIME_EMPTY_TILE_ID,
@@ -762,11 +772,12 @@ export class GameplayScene implements Scene {
       fallingDiamond: FALLING_DIAMOND_TILE_ID,
       rock: ROCK_TILE_ID,
       border: RUNTIME_GRID_FILL_TILE_ID,
-      platform: PLATFORM_TILE_ID
+      platform: PLATFORM_TILE_ID,
+      transformerBlock: RUNTIME_TILE.transformerBlock
     };
   }
 
-  /** Applies grass digging, diamond collection, or exit completion after arrival. */
+  /** Applique creusement, collecte de diamant ou fin de niveau apres l'arrivee. */
   private applyPlayerArrivalEffect(gridX: number, gridY: number, effect: RuntimeTileArrivalEffect): void {
     if (effect === "dig") {
       this.digRuntimeTile(gridX, gridY);
@@ -798,12 +809,12 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Writes a runtime tile mutation and records it for same-tick systems. */
+  /** Ecrit une mutation de tuile runtime et l'enregistre pour les systems du meme tick. */
   private setTile(gridX: number, gridY: number, tileId: number): void {
     this.runtimeMutations.setTile(gridX, gridY, tileId);
   }
 
-  /** Clears a runtime tile, optionally emitting the gameplay tile-cleared event. */
+  /** Efface une tuile runtime, avec emission optionnelle de l'evenement gameplay associe. */
   private clearRuntimeTile(gridX: number, gridY: number, emitEvent = true): void {
     if (!emitEvent) {
       this.runtimeMutations.clearFallingObjectSource(gridX, gridY);
@@ -813,12 +824,12 @@ export class GameplayScene implements Scene {
     this.runtimeMutations.clearPlayerTile(gridX, gridY);
   }
 
-  /** Removes a diggable runtime tile from the level grid. */
+  /** Retire une tuile creusable runtime de la grille du niveau. */
   private digRuntimeTile(gridX: number, gridY: number): void {
     this.runtimeMutations.digPlayerTile(gridX, gridY);
   }
 
-  /** Removes a runtime diamond tile and emits score/progression data. */
+  /** Retire une tuile diamant runtime et emet les donnees de score/progression. */
   private collectRuntimeDiamond(gridX: number, gridY: number): void {
     this.runtimeMutations.collectDiamond({
       gridX,
@@ -828,7 +839,7 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Advances falling-object scans and active smooth falling animations. */
+  /** Avance les scans d'objets en chute et leurs animations fluides actives. */
   private advanceFallingObjects(dt: number): void {
     this.advanceActiveFallingObjects(dt);
 
@@ -841,7 +852,7 @@ export class GameplayScene implements Scene {
     this.startReadyFallingObjects();
   }
 
-  /** Advances objects already falling toward their destination cells. */
+  /** Avance les objets deja en chute vers leurs cellules de destination. */
   private advanceActiveFallingObjects(dt: number): void {
     for (let index = this.state.fallingObjects.length - 1; index >= 0; index -= 1) {
       const fallingObject = this.state.fallingObjects[index];
@@ -859,7 +870,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Scans the runtime grid and starts eligible rock or diamond falls. */
+  /** Scanne la grille runtime et demarre les chutes de rochers ou diamants eligibles. */
   private startReadyFallingObjects(): void {
     for (let y = this.levelHeight - 2; y >= 0; y -= 1) {
       for (let x = 0; x < this.levelWidth; x += 1) {
@@ -875,16 +886,21 @@ export class GameplayScene implements Scene {
           continue;
         }
 
-        this.startFallingObject(x, y, target.x, target.y, tileId, target.moveKind);
+        this.startFallingObject(x, y, target.x, target.y, tileId, target.moveKind, target.transformedTileId);
       }
     }
   }
 
-  /** Resolves the next falling target using vertical fall and side-roll rules. */
+  /** Resout la prochaine cible de chute avec chute verticale et regles de bascule laterale. */
   private resolveFallingObjectTarget(
     gridX: number,
     gridY: number
-  ): { readonly x: number; readonly y: number; readonly moveKind: "fall" | "slide" } | null {
+  ): {
+    readonly x: number;
+    readonly y: number;
+    readonly moveKind: "fall" | "slide";
+    readonly transformedTileId?: number;
+  } | null {
     return resolveFallingObjectTargetSystem({
       gridX,
       gridY,
@@ -892,11 +908,26 @@ export class GameplayScene implements Scene {
       getTile: (x, y) => this.runtimeGrid.getTile(x, y),
       canMoveTo: (x, y) => this.canFallingObjectMoveTo(x, y),
       isStaticFallingObjectTile: (tileId) => this.isFallingObjectStaticTile(tileId),
-      isClearanceCellEmpty: (x, y) => this.isFallingObjectClearanceCellEmpty(x, y)
+      isClearanceCellEmpty: (x, y) => this.isFallingObjectClearanceCellEmpty(x, y),
+      transformerBlockTileId: RUNTIME_TILE.transformerBlock,
+      transformFallingTile: (tileId) => this.getTransformerResultTileId(tileId)
     });
   }
 
-  /** Returns whether a side-roll clearance cell is empty enough for falling physics. */
+  /** Retourne le tile final apres traversee ASM du bloc transformateur `0x18`. */
+  private getTransformerResultTileId(tileId: number): number {
+    if (tileId === ROCK_TILE_ID || tileId === FALLING_ROCK_TILE_ID) {
+      return DIAMOND_TILE_ID;
+    }
+
+    if (tileId === DIAMOND_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID) {
+      return ROCK_TILE_ID;
+    }
+
+    return tileId;
+  }
+
+  /** Indique si une cellule de degagement lateral est suffisamment vide pour la physique. */
   private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
     return (
       this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
@@ -905,23 +936,24 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Returns whether a static tile can support side-roll falling rules. */
+  /** Indique si une tuile statique peut servir de support aux regles de bascule laterale. */
   private isFallingObjectStaticTile(tileId: number): boolean {
     return tileId === ROCK_TILE_ID || tileId === DIAMOND_TILE_ID;
   }
 
-  /** Returns whether a falling object may occupy the target cell. */
+  /** Indique si un objet en chute peut occuper la cellule cible. */
   private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {
     return (
       (
         this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) ||
-        this.findMonsterRuntimeAtGrid(gridX, gridY) !== null
+        this.findMonsterRuntimeAtGrid(gridX, gridY) !== null ||
+        this.findEntityKindAtGrid("specialCreature", gridX, gridY) !== null
       ) &&
       !this.hasPhysicalObjectAtGrid(gridX, gridY)
     );
   }
 
-  /** Returns whether a static gravity object is intentionally held while the player stands below it. */
+  /** Indique si un objet soumis a la gravite est volontairement retenu quand le joueur est dessous. */
   private isFallingObjectBlockedByPlayer(gridX: number, gridY: number): boolean {
     return (
       this.isPlayerLogicalAtGrid(gridX, gridY + 1) ||
@@ -932,12 +964,12 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Returns whether a runtime tile is empty for falling-object movement. */
+  /** Indique si une tuile runtime est vide pour le mouvement d'un objet en chute. */
   private isFallingObjectEmptyRuntimeTile(tileId: number): boolean {
     return tileId === RUNTIME_EMPTY_TILE_ID || tileId === MONSTER_RUNTIME_TRAIL_TILE_ID;
   }
 
-  /** Starts a smooth falling-object move and updates the runtime grid immediately. */
+  /** Demarre un mouvement fluide d'objet en chute et met immediatement la grille runtime a jour. */
   private startFallingObject(
     fromX: number,
     fromY: number,
@@ -945,11 +977,13 @@ export class GameplayScene implements Scene {
     toY: number,
     tileId: number,
     moveKind: "fall" | "slide",
+    finalTileId = tileId,
     duration = FALLING_OBJECT_GRID_MOVE_DURATION
   ): void {
-    const kind = tileId === DIAMOND_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
+    const kind = finalTileId === DIAMOND_TILE_ID || finalTileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
     const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
-    const entity = kind === "diamond" ? this.findEntityKindAtGrid("diamond", fromX, fromY) : null;
+    const sourceDiamondEntity = this.findEntityKindAtGrid("diamond", fromX, fromY);
+    const entity = kind === "diamond" ? sourceDiamondEntity : null;
     const targetMonster = this.findMonsterRuntimeAtGrid(toX, toY);
     const fallingObject: FallingObjectRuntimeState = {
       id: `falling-${kind}-${fromX}-${fromY}-${Date.now()}`,
@@ -967,12 +1001,16 @@ export class GameplayScene implements Scene {
       duration
     };
 
+    if (sourceDiamondEntity && kind === "rock") {
+      sourceDiamondEntity.active = false;
+    }
+
     this.runtimeMutations.clearFallingObjectSource(fromX, fromY);
     this.runtimeMutations.setFallingObjectMovingTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
   }
 
-  /** Starts a horizontal rock push as a non-deadly physical move. */
+  /** Demarre une poussee horizontale de rocher comme mouvement physique non mortel. */
   private startPushedRockMove(fromX: number, fromY: number, toX: number, toY: number): void {
     this.runtimeMutations.clearPushedRockSource(fromX, fromY);
     this.runtimeMutations.setPushedRockMovingTile(toX, toY, FALLING_ROCK_TILE_ID);
@@ -991,7 +1029,7 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Finalizes a physical object once its smooth movement reaches the destination. */
+  /** Finalise un objet physique quand son mouvement fluide atteint la destination. */
   private completeFallingObject(fallingObject: FallingObjectRuntimeState): boolean {
     const impact = this.applyFallingObjectImpact(fallingObject);
     if (impact === "explosion") {
@@ -1008,6 +1046,8 @@ export class GameplayScene implements Scene {
         entity.x = entity.gridX * this.state.level.tileSize;
         entity.y = entity.gridY * this.state.level.tileSize;
       }
+    } else if (fallingObject.kind === "diamond") {
+      this.createRuntimeDiamondEntity(fallingObject.toX, fallingObject.toY);
     }
 
     if (fallingObject.moveKind !== "push") {
@@ -1019,7 +1059,8 @@ export class GameplayScene implements Scene {
           nextTarget.x,
           nextTarget.y,
           fallingObject.tileId,
-          nextTarget.moveKind
+          nextTarget.moveKind,
+          nextTarget.transformedTileId
         );
       }
     }
@@ -1027,7 +1068,27 @@ export class GameplayScene implements Scene {
     return true;
   }
 
-  /** Synchronizes the visual entity matching a falling runtime tile. */
+  /** Cree une entite diamant runtime lorsqu'un rocher est transforme par le bloc `0x18`. */
+  private createRuntimeDiamondEntity(gridX: number, gridY: number): void {
+    if (this.findEntityKindAtGrid("diamond", gridX, gridY)) {
+      return;
+    }
+
+    this.state.entities.push({
+      id: `diamond-runtime-${gridX}-${gridY}-${Date.now()}`,
+      kind: "diamond",
+      gridX,
+      gridY,
+      x: gridX * this.state.level.tileSize,
+      y: gridY * this.state.level.tileSize,
+      width: this.state.level.tileSize,
+      height: this.state.level.tileSize,
+      spriteFrameId: "tile:3",
+      active: true
+    });
+  }
+
+  /** Synchronise l'entite visuelle correspondant a une tuile runtime en chute. */
   private syncFallingObjectEntity(fallingObject: FallingObjectRuntimeState): void {
     if (!fallingObject.entityId) {
       return;
@@ -1046,17 +1107,17 @@ export class GameplayScene implements Scene {
     entity.y = entity.gridY * this.state.level.tileSize;
   }
 
-  /** Returns whether the tile participates in rock/diamond gravity. */
+  /** Indique si la tuile participe a la gravite rocher/diamant. */
   private isPhysicalFallingTile(tileId: number): boolean {
     return tileId === ROCK_TILE_ID || tileId === DIAMOND_TILE_ID;
   }
 
-  /** Returns whether an active physical object already targets or occupies the cell. */
+  /** Indique si un objet physique actif cible ou occupe deja la cellule. */
   private hasPhysicalObjectAtGrid(gridX: number, gridY: number): boolean {
     return hasPhysicalObjectAtGridSystem(this.state.fallingObjects, gridX, gridY);
   }
 
-  /** Opens the level exit when the diamond objective is completed. */
+  /** Ouvre la sortie du niveau quand l'objectif de diamants est atteint. */
   private updateLevelExitStateAfterDiamondCollection(): void {
     if (this.state.hud.diamonds === 0) {
       this.state.exitOpen = true;
@@ -1068,7 +1129,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Applies deadly impact effects when a falling rock or diamond reaches its target cell. */
+  /** Applique les effets d'impact mortels quand un rocher ou diamant atteint sa cible. */
   private applyFallingObjectImpact(fallingObject: FallingObjectRuntimeState): "none" | "explosion" {
     if (debugOptions.ghostMode && this.isPlayerLogicalAtGrid(fallingObject.toX, fallingObject.toY)) {
       return "none";
@@ -1092,15 +1153,26 @@ export class GameplayScene implements Scene {
       : null;
     if (monster) {
       this.deactivateMonster(monster);
-      this.startExplosion(fallingObject.toX, fallingObject.toY);
+      this.startExplosion(
+        fallingObject.toX,
+        fallingObject.toY,
+        monster.kind === "specialCreature" ? "diamonds" : "clear"
+      );
+      return "explosion";
+    }
+
+    const specialCreature = this.findEntityKindAtGrid("specialCreature", fallingObject.toX, fallingObject.toY);
+    if (specialCreature) {
+      this.deactivateSpecialCreature(specialCreature);
+      this.startExplosion(fallingObject.toX, fallingObject.toY, "diamonds");
       return "explosion";
     }
 
     return "none";
   }
 
-  /** Starts the proven 3x3 explosion sequence around a target cell. */
-  private startExplosion(centerX: number, centerY: number): void {
+  /** Demarre la sequence d'explosion 3x3 prouvee autour d'une cellule cible. */
+  private startExplosion(centerX: number, centerY: number, result: RuntimeExplosionState["result"] = "clear"): void {
     const cells = this.getExplosionCells(centerX, centerY);
     if (cells.length === 0) {
       return;
@@ -1113,7 +1185,8 @@ export class GameplayScene implements Scene {
       cells,
       frameIndex: 0,
       elapsed: 0,
-      frameDuration: EXPLOSION_FRAME_DURATION
+      frameDuration: EXPLOSION_FRAME_DURATION,
+      result
     };
     this.state.explosions.push(explosion);
     this.applyExplosionFrame(explosion);
@@ -1123,7 +1196,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Returns the 3x3 explosion cells, preserving protected border cells `0x04`. */
+  /** Retourne les cellules d'explosion 3x3 en preservant les bordures protegees `0x04`. */
   private getExplosionCells(centerX: number, centerY: number): RuntimeExplosionState["cells"] {
     const cells: Array<{ readonly x: number; readonly y: number }> = [];
     for (let y = centerY - 1; y <= centerY + 1; y += 1) {
@@ -1139,7 +1212,7 @@ export class GameplayScene implements Scene {
     return cells;
   }
 
-  /** Advances active explosions and removes them after the final empty frame. */
+  /** Avance les explosions actives et les retire apres la derniere frame vide. */
   private advanceExplosions(dt: number): void {
     for (let index = this.state.explosions.length - 1; index >= 0; index -= 1) {
       const explosion = this.state.explosions[index];
@@ -1149,6 +1222,7 @@ export class GameplayScene implements Scene {
         explosion.frameIndex += 1;
         this.applyExplosionFrame(explosion);
         if (explosion.frameIndex >= EXPLOSION_TILE_SEQUENCE.length - 1) {
+          this.applyExplosionResult(explosion);
           this.state.explosions.splice(index, 1);
           break;
         }
@@ -1156,7 +1230,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Applies the current explosion tile frame to every non-protected cell. */
+  /** Applique la frame de tuile d'explosion courante a chaque cellule non protegee. */
   private applyExplosionFrame(explosion: RuntimeExplosionState): void {
     const tileId = EXPLOSION_TILE_SEQUENCE[Math.min(explosion.frameIndex, EXPLOSION_TILE_SEQUENCE.length - 1)];
     for (const cell of explosion.cells) {
@@ -1164,7 +1238,30 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Deactivates entities covered by an explosion; monster removal is handled separately. */
+  /** Applique le resultat final d'une explosion apres la derniere frame visuelle. */
+  private applyExplosionResult(explosion: RuntimeExplosionState): void {
+    if (explosion.result !== "diamonds") {
+      return;
+    }
+
+    let createdDiamonds = 0;
+    for (const cell of explosion.cells) {
+      if (this.isOpenExitCell(cell.x, cell.y)) {
+        continue;
+      }
+
+      this.runtimeMutations.setTile(cell.x, cell.y, DIAMOND_TILE_ID);
+      this.createRuntimeDiamondEntity(cell.x, cell.y);
+      createdDiamonds += 1;
+    }
+
+    this.state.hud.diamonds += createdDiamonds;
+    if (createdDiamonds > 0) {
+      this.state.exitOpen = false;
+    }
+  }
+
+  /** Desactive les entites couvertes par une explosion; les monstres sont retires separement. */
   private deactivateEntitiesInExplosion(explosion: RuntimeExplosionState): void {
     for (const entity of this.state.entities) {
       if (!entity.active || entity.kind === "player") {
@@ -1177,7 +1274,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Applies side effects produced by the decoupled runtime event queue. */
+  /** Applique les effets de bord produits par la file d'evenements runtime decouplee. */
   private consumeRuntimeEvents(): void {
     for (const event of drainRuntimeEvents(this.state)) {
       if (event.type === "diamondCollected") {
@@ -1194,7 +1291,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Returns whether the given cell is the currently opened exit. */
+  /** Indique si la cellule donnee est la sortie actuellement ouverte. */
   private isOpenExitCell(gridX: number, gridY: number): boolean {
     return isOpenExitCellSystem(
       this.state.exitOpen,
@@ -1205,7 +1302,7 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Returns the blinking visual tile for the active exit without mutating the runtime grid. */
+  /** Retourne la tuile visuelle clignotante de la sortie active sans muter la grille runtime. */
   private getExitBlinkTileId(gridX: number, gridY: number): number | undefined {
     if (!this.isOpenExitCell(gridX, gridY)) {
       return undefined;
@@ -1215,7 +1312,7 @@ export class GameplayScene implements Scene {
     return frameIndex % 2 === 0 ? RUNTIME_GRID_FILL_TILE_ID : RUNTIME_EMPTY_TILE_ID;
   }
 
-  /** Queues the direct next-level transition once the player reaches an open exit. */
+  /** Programme la transition directe vers le niveau suivant quand le joueur atteint la sortie ouverte. */
   private queueNextLevelTransition(): void {
     if (this.levelTransitionQueued) {
       return;
@@ -1227,7 +1324,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Advances time, score, and panel counters; game-over navigation remains deferred. */
+  /** Avance temps, score et compteurs de panneaux; la navigation game-over reste differee. */
   private advanceHudCounters(dt: number, playerSpawning: boolean): void {
     if (playerSpawning || this.state.gameOver || this.state.levelComplete || this.state.hud.time <= 0) {
       return;
@@ -1243,13 +1340,13 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Increments the current BCD-like score counter by a gameplay reward. */
+  /** Incremente le compteur de score pseudo-BCD avec une recompense gameplay. */
   private incrementScore(amount: number): void {
     this.state.hud.score = incrementBcdCounter(this.state.hud.score, amount, 6);
     this.state.hud.record = Math.max(this.state.hud.record, this.state.hud.score);
   }
 
-  /** Deactivates the first entity of a kind found at the given grid cell. */
+  /** Desactive la premiere entite d'un type trouvee a la cellule de grille donnee. */
   private deactivateEntityAtGrid(kind: EntityState["kind"], gridX: number, gridY: number): void {
     const entity = this.findEntityKindAtGrid(kind, gridX, gridY);
 
@@ -1258,7 +1355,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Finds the first active entity of a kind at the given grid cell. */
+  /** Trouve la premiere entite active d'un type donne a la cellule de grille donnee. */
   private findEntityKindAtGrid(kind: EntityState["kind"], gridX: number, gridY: number): EntityState | null {
     return this.state.entities.find((item) =>
       item.kind === kind &&
@@ -1268,7 +1365,7 @@ export class GameplayScene implements Scene {
     ) ?? null;
   }
 
-  /** Mirrors runtime monster positions into their visual entity records. */
+  /** Repercute les positions des monstres runtime dans leurs entites visuelles. */
   private syncMonsterEntitiesFromRuntimeState(): void {
     for (const monster of this.state.monsters) {
       const entity = this.state.entities.find((item) => item.id === monster.entityId);
@@ -1292,7 +1389,7 @@ export class GameplayScene implements Scene {
     this.resolvePlayerMonsterContact();
   }
 
-  /** Ends the current life when the player and a monster share a cell. */
+  /** Termine la vie courante quand le joueur et un monstre partagent une cellule. */
   private resolvePlayerMonsterContact(): void {
     if (!this.state.player.active || this.state.gameOver || this.isPlayerSpawning()) {
       return;
@@ -1305,7 +1402,13 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Deactivates a monster hit by a falling object; explosion visuals are deferred to phase 6. */
+  /** Desactive une creature speciale touchee par un objet en chute; le burst diamant est gere separement. */
+  private deactivateSpecialCreature(entity: EntityState): void {
+    entity.active = false;
+    this.runtimeMutations.setTile(entity.gridX, entity.gridY, RUNTIME_EMPTY_TILE_ID);
+  }
+
+  /** Desactive un monstre touche par un objet en chute; le visuel d'explosion est gere separement. */
   private deactivateMonster(monster: GameState["monsters"][number]): void {
     const entity = this.state.entities.find((item) => item.id === monster.entityId);
     if (entity) {
@@ -1318,12 +1421,12 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Finds a runtime monster by stable id, even if it moved after an impact was targeted. */
+  /** Trouve un monstre runtime par id stable, meme s'il a bouge apres ciblage de l'impact. */
   private findMonsterRuntimeById(monsterId: string): GameState["monsters"][number] | null {
     return this.state.monsters.find((monster) => monster.id === monsterId) ?? null;
   }
 
-  /** Marks the player as dead for the current incomplete life/reset implementation. */
+  /** Marque le joueur comme mort pour l'implementation actuelle de vie/reset. */
   private killPlayer(_reason: "fallingRock" | "fallingDiamond" | "monsterContact" | "explosion"): void {
     if (this.state.gameOver) {
       return;
@@ -1335,7 +1438,7 @@ export class GameplayScene implements Scene {
     this.clearPlayerHeldMoveFrame();
   }
 
-  /** Recharges the current level after the proven death explosion sequence has completed. */
+  /** Recharge le niveau courant apres la fin de la sequence d'explosion de mort prouvee. */
   private queueDeathResetAfterExplosions(): void {
     if (!this.state.gameOver || this.deathResetQueued || this.state.explosions.length > 0) {
       return;
@@ -1345,7 +1448,7 @@ export class GameplayScene implements Scene {
     this.context?.setScene(this.recreateLevelScene(this.levelNumber));
   }
 
-  /** Advances monster decision timing and requests new moves when due. */
+  /** Avance le timing de decision des monstres et demande de nouveaux mouvements quand necessaire. */
   private advanceMonsterRuntime(dt: number): void {
     this.monsterMoveElapsed += dt;
     if (this.monsterMoveElapsed < MONSTER_MOVE_INTERVAL) {
@@ -1359,7 +1462,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Advances one monster according to the original patrol-style movement rules. */
+  /** Avance un monstre selon les regles de mouvement de patrouille originales. */
   private advanceSingleMonsterRuntime(monster: GameState["monsters"][number]): void {
     advanceSingleMonsterRuntimeSystem(monster, {
       getTile: (x, y) => this.hasPhysicalObjectAtGrid(x, y)
@@ -1368,13 +1471,13 @@ export class GameplayScene implements Scene {
       setTile: (x, y, tileId) => this.runtimeMutations.setMonsterTile(x, y, tileId),
       runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
       runtimeStride: RUNTIME_GRID_STRIDE,
-      activeTileId: MONSTER_RUNTIME_ACTIVE_TILE_ID,
+      activeTileId: monster.kind === "specialCreature" ? RUNTIME_TILE.specialCreature : MONSTER_RUNTIME_ACTIVE_TILE_ID,
       trailTileId: MONSTER_RUNTIME_TRAIL_TILE_ID,
       moveDuration: MONSTER_GRID_MOVE_DURATION
     });
   }
 
-  /** Advances active smooth monster moves and commits completed steps. */
+  /** Avance les mouvements fluides actifs des monstres et valide les pas termines. */
   private advanceMonsterMoves(dt: number): void {
     for (const monster of this.state.monsters) {
       if (!monster.movement) {
@@ -1388,7 +1491,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Returns whether the initial spawn blink sequence is still running. */
+  /** Indique si la sequence initiale de clignotement spawn est encore en cours. */
   private isPlayerSpawning(): boolean {
     return isPlayerSpawningSystem(
       this.spawnElapsed,
@@ -1397,7 +1500,7 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Clears the temporary border tile used by the spawn blink effect. */
+  /** Efface la tuile de bordure temporaire utilisee par le clignotement spawn. */
   private clearSpawnBlinkTileAfterSpawn(): void {
     if (this.spawnTileCleared || this.isPlayerSpawning()) {
       return;
@@ -1410,7 +1513,7 @@ export class GameplayScene implements Scene {
     this.spawnTileCleared = true;
   }
 
-  /** Returns the temporary spawn tile id or black frame for the blink animation. */
+  /** Retourne le tile id temporaire de spawn ou la frame noire du clignotement. */
   private getPlayerSpawnBlinkTileId(gridX: number, gridY: number): number | null | undefined {
     return getPlayerSpawnBlinkTileIdSystem(
       this.spawnElapsed,
@@ -1421,7 +1524,7 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Returns whether the player sprite currently visually covers a grid cell. */
+  /** Indique si le sprite joueur couvre visuellement une cellule de grille. */
   private isPlayerRenderedAtGrid(gridX: number, gridY: number): boolean {
     return (
       Math.round(this.state.player.gridX) === gridX &&
@@ -1429,7 +1532,7 @@ export class GameplayScene implements Scene {
     );
   }
 
-  /** Returns the player's discrete gameplay cell, independent from visual interpolation. */
+  /** Retourne la cellule gameplay discrete du joueur, independante de l'interpolation visuelle. */
   private getPlayerLogicalCell(): { readonly x: number; readonly y: number } {
     if (this.playerMove) {
       return {
@@ -1444,13 +1547,13 @@ export class GameplayScene implements Scene {
     };
   }
 
-  /** Returns whether the player logically occupies a grid cell for physics decisions. */
+  /** Indique si le joueur occupe logiquement une cellule pour les decisions physiques. */
   private isPlayerLogicalAtGrid(gridX: number, gridY: number): boolean {
     const playerCell = this.getPlayerLogicalCell();
     return playerCell.x === gridX && playerCell.y === gridY;
   }
 
-  /** Resolves a default tile-frame id for a non-player entity kind. */
+  /** Resout un tile-frame id par defaut pour un type d'entite non joueur. */
   private getEntityTileFrameId(kind: string): number {
     if (kind === "player") {
       const movingFrames = this.getPlayerDirectionalFrames();
@@ -1487,7 +1590,7 @@ export class GameplayScene implements Scene {
     return 0;
   }
 
-  /** Returns the walking frame set that matches the current player facing. */
+  /** Retourne le jeu de frames de marche correspondant a l'orientation joueur courante. */
   private getPlayerDirectionalFrames(): readonly number[] | null {
     if (!this.playerMove && this.playerFacing === "idle") {
       return null;
@@ -1504,7 +1607,7 @@ export class GameplayScene implements Scene {
     return null;
   }
 
-  /** Picks the current player walking frame from a movement frame set. */
+  /** Selectionne la frame de marche joueur courante dans un jeu de frames de mouvement. */
   private getPlayerMoveFrameId(frames: readonly number[]): number {
     if (frames.length === 0) {
       return this.playerAnimationFrames[0];
@@ -1526,7 +1629,7 @@ export class GameplayScene implements Scene {
     return frames[frameIndex];
   }
 
-  /** Advances a named looping animation clock and returns its current frame id. */
+  /** Avance une horloge d'animation cyclique nommee et retourne sa frame courante. */
   private advanceAnimation(
     animationKey: string,
     frames: readonly number[],
@@ -1549,12 +1652,12 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Gets the cached atlas frame for a regular level tile id. */
+  /** Recupere la frame d'atlas cachee pour un tile id de niveau standard. */
   private getTileFrame(tileId: number): TileFrame {
     return this.tileFrameCache.getTileFrame(this.getTileAtlasImage(), tileId);
   }
 
-  /** Gets the current animated diamond atlas frame for level diamonds. */
+  /** Recupere la frame d'atlas animee courante pour les diamants du niveau. */
   private getDiamondTileFrame(): TileFrame {
     const diamondAnimation = this.animationState.get("diamond");
     const frameIndex = diamondAnimation
@@ -1567,7 +1670,7 @@ export class GameplayScene implements Scene {
     return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.diamondAtlas, `diamond-${frameIndex}`, frameIndex);
   }
 
-  /** Gets the current animated monster atlas frame. */
+  /** Recupere la frame d'atlas animee courante du monstre. */
   private getMonsterTileFrame(): TileFrame {
     const monsterAnimation = this.animationState.get("monster");
     const frameIndex = monsterAnimation
@@ -1580,13 +1683,13 @@ export class GameplayScene implements Scene {
     return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.monsterAtlas, `monster-${frameIndex}`, frameIndex);
   }
 
-  /** Returns the loaded tile atlas or throws a user-facing loading error. */
+  /** Retourne l'atlas de tuiles charge ou leve une erreur lisible utilisateur. */
   private getTileAtlasImage(): HTMLImageElement {
     return this.runtimeAssets.requireTileAtlas();
   }
 }
 
-/** Extracts animation frame ids from metadata, preserving a fallback for incomplete data. */
+/** Extrait les ids de frames d'animation depuis les metadata, avec fallback si les donnees sont incompletes. */
 function extractFrameIdsFromMetadata(
   groupId: string,
   animationId: string,
@@ -1602,28 +1705,28 @@ function extractFrameIdsFromMetadata(
   return [...fallbackFrames];
 }
 
-/** Clamps a numeric value between inclusive bounds. */
+/** Contraint une valeur numerique entre deux bornes inclusives. */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** Linearly interpolates between two numeric values. */
+/** Interpole lineairement entre deux valeurs numeriques. */
 function lerp(from: number, to: number, progress: number): number {
   return from + (to - from) * progress;
 }
 
-/** Applies a smooth-step easing curve for camera interpolation. */
+/** Applique une courbe d'easing smooth-step pour l'interpolation camera. */
 function smoothStep(progress: number): number {
   return progress * progress * (3 - 2 * progress);
 }
 
-/** Increments a decimal counter with wraparound at the configured digit count. */
+/** Incremente un compteur decimal avec retour a zero selon le nombre de chiffres configure. */
 function incrementBcdCounter(value: number, amount: number, digits: number): number {
   const maxValue = 10 ** digits;
   return (Math.max(0, Math.floor(value)) + Math.max(0, Math.floor(amount))) % maxValue;
 }
 
-/** Decrements a decimal counter without going below zero. */
+/** Decremente un compteur decimal sans passer sous zero. */
 function decrementBcdCounter(value: number, digits: number): number {
   const current = Math.max(0, Math.floor(value));
   if (current <= 0) {

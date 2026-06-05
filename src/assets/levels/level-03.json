@@ -2311,57 +2311,57 @@
     {
       "x": 4,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 5,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 6,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 7,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 8,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 9,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 10,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 11,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 12,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 13,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 14,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 15,
@@ -3949,61 +3949,6 @@
       "x": 4,
       "y": 8,
       "type": "diamond"
-    },
-    {
-      "x": 4,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 5,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 6,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 7,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 8,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 9,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 10,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 11,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 12,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 13,
-      "y": 10,
-      "type": "monster"
-    },
-    {
-      "x": 14,
-      "y": 10,
-      "type": "monster"
     },
     {
       "x": 32,

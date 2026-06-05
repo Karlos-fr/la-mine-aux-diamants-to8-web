@@ -45,20 +45,21 @@ export function createGameLevelState(levelNumber = 1): GameState {
   };
 }
 
-/** Cree les etats runtime specialises des monstres a partir des entites de niveau. */
+/** Cree les etats runtime mobiles des monstres et creatures speciales a partir des entites de niveau. */
 function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRuntimeState[] {
   /** Direction initiale moderne conservee pour tous les monstres au chargement. */
   const initialDirection: MonsterRuntimeState["direction"] = 2;
   return entities
-    .filter((entity) => entity.kind === "monster")
+    .filter((entity) => entity.kind === "monster" || entity.kind === "specialCreature")
     .map((entity) => ({
+      kind: entity.kind,
       id: `runtime-${entity.id}`,
       entityId: entity.id,
       runtimePointer: RUNTIME_GRID_BASE_ADDRESS + entity.gridY * RUNTIME_GRID_STRIDE + entity.gridX,
       direction: initialDirection,
       gridX: entity.gridX,
       gridY: entity.gridY,
-      animationKey: "monsterBlink",
+      animationKey: entity.kind === "specialCreature" ? "specialCreature" : "monsterBlink",
       movement: null
     }));
 }

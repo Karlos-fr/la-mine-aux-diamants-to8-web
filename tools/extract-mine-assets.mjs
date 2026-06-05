@@ -367,9 +367,9 @@ function writeNamedSpriteAssets(outDir, generatedDir, tileImages, tiles, memory)
         { name: "exit_block", tileId: 0x04, status: "confirmed" },
         { name: "empty", tileId: 0x05, status: "confirmed" },
         { name: "platform", tileId: 0x06, status: "suspected" },
-        { name: "special_target", tileId: 0x17, status: "confirmed" },
-        { name: "unknown_18", tileId: 0x18, status: "unidentified" },
-        { name: "unknown_19", tileId: 0x19, status: "unidentified" },
+        { name: "special_creature", tileId: 0x17, status: "confirmed" },
+        { name: "transformer_block", tileId: 0x18, status: "confirmed" },
+        { name: "graphic_candidate_19", tileId: 0x19, status: "unidentified" },
         { name: "unknown_1a", tileId: 0x1a, status: "unidentified" }
       ],
       animations: [
@@ -387,8 +387,9 @@ function writeNamedSpriteAssets(outDir, generatedDir, tileImages, tiles, memory)
       evidence: [
         "static and special tiles grouped separately from player/diamond/rocks",
         "tile 0x02 is animated by KIT.BIN:$D1BB and checked against $DAF4 by KIT.BIN:$CC5B-$CC88",
-        "tile 0x18 remains unconfirmed and is not treated as the monster",
-        "KIT.BIN:$D1BB also swaps the shape planes $D7D8-$D7F7 and $D858-$D877 for tileIds 0x17 and 0x1A",
+        "tile 0x17 is a special creature tracked separately from monster 0x02",
+        "tile 0x18 is a transformer block used by KIT.BIN:$CB3B for rock/diamond conversion",
+        "tile 0x19 is not emitted by decoded level grids and remains outside direct gameplay",
         "unidentified tiles remain explicitly unconfirmed"
       ]
     }

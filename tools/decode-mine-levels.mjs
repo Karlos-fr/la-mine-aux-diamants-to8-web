@@ -112,12 +112,21 @@ const TILE_IDENTIFICATIONS = {
     ]
   },
   "0x17": {
-    name: "special_target",
+    name: "special_creature",
     status: "confirmed",
     evidence: [
       "KIT.BIN:$DA10 branches to KIT.BIN:$BC07 when decoding 0x17",
       "KIT.BIN:$BC07 records the grid address and stores 0x02 marker metadata",
       "KIT.BIN:$CC57 checks 0x17 against the related special-position table"
+    ]
+  },
+  "0x18": {
+    name: "transformer_block",
+    status: "confirmed",
+    evidence: [
+      "KIT.BIN:$CB3B checks 0x18 below falling rocks or diamonds",
+      "falling rock writes 0x83, which resolves to diamond 0x03 after high-bit masking",
+      "falling diamond writes 0x80, which resolves to rock 0x00 after high-bit masking"
     ]
   }
 };

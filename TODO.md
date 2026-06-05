@@ -1,15 +1,8 @@
 ﻿- Faire un audit de l'archi, code mort, découpage logique, ...
 
+- Vérifier l'IA des créatures
 
 
-Il est possible de traverser une rocher qui tombe.
-Si le personnage creuse sous un diamant qui monte il doit récolter le diamant
-
-
-- Au changement de niveau, le point de spawn animé ainsi que le personnage n'apparaissent pas
-- L'écrasement des monstres ne marchent pas
-- Animation IDL
-- Changement de niveau
 
 - Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
 - Implementer les animations de l'ecran 2

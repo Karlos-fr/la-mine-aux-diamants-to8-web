@@ -1556,7 +1556,7 @@
     {
       "x": 8,
       "y": 6,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 9,
@@ -1996,7 +1996,7 @@
     {
       "x": 34,
       "y": 8,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 35,
@@ -2106,7 +2106,7 @@
     {
       "x": 21,
       "y": 9,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 23,
@@ -3356,7 +3356,7 @@
     {
       "x": 11,
       "y": 16,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 12,
@@ -4208,7 +4208,7 @@
     {
       "x": 8,
       "y": 6,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 24,
@@ -4253,12 +4253,12 @@
     {
       "x": 34,
       "y": 8,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 21,
       "y": 9,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 5,
@@ -4289,11 +4289,6 @@
       "x": 7,
       "y": 15,
       "type": "diamond"
-    },
-    {
-      "x": 11,
-      "y": 16,
-      "type": "monster"
     },
     {
       "x": 22,

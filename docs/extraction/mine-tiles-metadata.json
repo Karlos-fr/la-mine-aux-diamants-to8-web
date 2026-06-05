@@ -547,8 +547,8 @@
     {
       "tileId": 23,
       "hexId": "0x17",
-      "name": null,
-      "status": "unidentified",
+      "name": "special_creature",
+      "status": "confirmed",
       "address": "0xD7D8",
       "endAddress": "0xD817",
       "sizeBytes": 64,
@@ -564,13 +564,18 @@
         "shapePlane": "bytes 0..31",
         "colorPlane": "bytes 32..63",
         "rendererFormula": "$D218 + tileId * $40"
-      }
+      },
+      "evidence": [
+        "KIT.BIN:$DA10 branches to KIT.BIN:$BC07 when decoding 0x17",
+        "KIT.BIN:$BC07 records the grid address in the special table",
+        "KIT.BIN:$BB24 and KIT.BIN:$CC4F track 0x17 through table $DB4F"
+      ]
     },
     {
       "tileId": 24,
       "hexId": "0x18",
-      "name": null,
-      "status": "unidentified",
+      "name": "transformer_block",
+      "status": "confirmed",
       "address": "0xD818",
       "endAddress": "0xD857",
       "sizeBytes": 64,
@@ -586,12 +591,17 @@
         "shapePlane": "bytes 0..31",
         "colorPlane": "bytes 32..63",
         "rendererFormula": "$D218 + tileId * $40"
-      }
+      },
+      "evidence": [
+        "KIT.BIN:$CB3B checks 0x18 below falling rocks or diamonds",
+        "rock crossing 0x18 becomes diamond 0x03 via 0x83 high-bit marker",
+        "diamond crossing 0x18 becomes rock 0x00 via 0x80 high-bit marker"
+      ]
     },
     {
       "tileId": 25,
       "hexId": "0x19",
-      "name": null,
+      "name": "graphic_candidate_19",
       "status": "unidentified",
       "address": "0xD858",
       "endAddress": "0xD897",
@@ -608,7 +618,11 @@
         "shapePlane": "bytes 0..31",
         "colorPlane": "bytes 32..63",
         "rendererFormula": "$D218 + tileId * $40"
-      }
+      },
+      "evidence": [
+        "extracted from the object atlas but not emitted by decoded level grids",
+        "kept outside direct gameplay until an ASM role is confirmed"
+      ]
     },
     {
       "tileId": 26,

@@ -629,7 +629,7 @@ export const mineSpriteMetadata = {
           "rgbaSha256": "548689e3f82af822cc85a4912afb7e9486132ad61225bbc64a1b5dbe01222605"
         },
         {
-          "name": "special_target",
+          "name": "special_creature",
           "tileId": 23,
           "status": "confirmed",
           "hexId": "0x17",
@@ -641,7 +641,7 @@ export const mineSpriteMetadata = {
           "rgbaSha256": "697dff24fc430b99967ef10b5913af4d12ba64c8fb48e0c1c6a5938a9de45c4c"
         },
         {
-          "name": "unknown_18",
+          "name": "transformer_block",
           "tileId": 24,
           "status": "unidentified",
           "hexId": "0x18",
@@ -653,7 +653,7 @@ export const mineSpriteMetadata = {
           "rgbaSha256": "9667b08cc5b88241338efed844771ab24e5ea6abc0ec6fccdfd40e27af0c63c1"
         },
         {
-          "name": "unknown_19",
+          "name": "graphic_candidate_19",
           "tileId": 25,
           "status": "unidentified",
           "hexId": "0x19",
@@ -695,8 +695,8 @@ export const mineSpriteMetadata = {
       "evidence": [
         "static and special tiles grouped separately from player/diamond/rocks",
         "tile 0x02 is animated by KIT.BIN:$D1BB and checked against $DAF4 by KIT.BIN:$CC5B-$CC88",
-        "tile 0x18 remains unconfirmed and is not treated as the monster",
-        "KIT.BIN:$D1BB also swaps the shape planes $D7D8-$D7F7 and $D858-$D877 for tileIds 0x17 and 0x1A",
+        "tile 0x18 is the transformer block used by KIT.BIN:$CB3B for rock/diamond conversion",
+        "tile 0x19 is not emitted by decoded level grids and remains outside direct gameplay",
         "unidentified tiles remain explicitly unconfirmed"
       ],
       "atlas": "sprites/objects-atlas.png",

@@ -14,11 +14,15 @@ const TILE_TYPES = {
   0x04: "border",
   0x05: "empty",
   0x06: "platform",
-  0x17: "monster",
-  0x18: "monster"
+  // ASM evidence:
+  // - 0x17 is decoded through KIT.BIN:$BC07 and tracked in the $DB4F special table.
+  // - 0x18 is tested by the falling-object routine around KIT.BIN:$CB3B as a fixed transformer block.
+  // - 0x19 is not emitted by decoded level grids; it remains a graphic/alternate frame candidate only.
+  0x17: "specialCreature",
+  0x18: "transformerBlock"
 };
 
-const ENTITY_TILE_TYPES = new Set(["diamond", "monster"]);
+const ENTITY_TILE_TYPES = new Set(["diamond", "monster", "specialCreature"]);
 
 function main() {
   const extraction = JSON.parse(readFileSync(SOURCE_LEVELS_PATH, "utf8"));

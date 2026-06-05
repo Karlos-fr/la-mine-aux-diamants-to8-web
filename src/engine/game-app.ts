@@ -25,6 +25,9 @@ export interface GameApp {
   /** Lance la boucle de jeu. */
   start(): void;
 
+  /** Remplace la scene active par une nouvelle scene de jeu. */
+  setScene(scene: Scene): void;
+
   /** Arrete la boucle de jeu et libere les ressources d'input. */
   stop(): void;
 }
@@ -49,6 +52,9 @@ export function createGameApp(options: GameAppOptions): GameApp {
   return {
     start() {
       loop.start();
+    },
+    setScene(scene) {
+      scenes.setScene(scene);
     },
     stop() {
       loop.stop();

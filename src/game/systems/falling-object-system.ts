@@ -21,6 +21,10 @@ export interface FallingObjectTargetContext {
   readonly isStaticFallingObjectTile: (tileId: number) => boolean;
   /** Verifie si une cellule laterale compte comme vide pour la bascule. */
   readonly isClearanceCellEmpty: (gridX: number, gridY: number) => boolean;
+  /** Tile id du bloc transformateur fixe `0x18`, ou `undefined` si non gere par le contexte. */
+  readonly transformerBlockTileId?: number;
+  /** Transforme le tile id d'un objet traversant le bloc transformateur. */
+  readonly transformFallingTile?: (tileId: number) => number;
 }
 
 /** Cible resolue pour un objet physique et nature logique du mouvement. */
@@ -31,6 +35,8 @@ export interface FallingObjectResolvedTarget {
   readonly y: number;
   /** Nature physique du mouvement resolu. */
   readonly moveKind: "fall" | "slide";
+  /** Tile id final apres traversee d'un bloc transformateur. */
+  readonly transformedTileId?: number;
 }
 
 /** Calcule la prochaine cellule cible d'un rocher/diamant, ou `null` si l'objet reste immobile. */
@@ -40,6 +46,20 @@ export function resolveFallingObjectTarget(
   const belowY = context.gridY + 1;
   if (context.canMoveTo(context.gridX, belowY)) {
     return { x: context.gridX, y: belowY, moveKind: "fall" };
+  }
+
+  if (
+    context.transformerBlockTileId !== undefined &&
+    context.transformFallingTile !== undefined &&
+    context.getTile(context.gridX, belowY) === context.transformerBlockTileId &&
+    context.canMoveTo(context.gridX, context.gridY + 2)
+  ) {
+    return {
+      x: context.gridX,
+      y: context.gridY + 2,
+      moveKind: "fall",
+      transformedTileId: context.transformFallingTile(context.getTile(context.gridX, context.gridY))
+    };
   }
 
   if (!context.isStaticFallingObjectTile(context.getTile(context.gridX, belowY))) {

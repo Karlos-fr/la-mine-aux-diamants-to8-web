@@ -628,7 +628,7 @@
           "rgbaSha256": "548689e3f82af822cc85a4912afb7e9486132ad61225bbc64a1b5dbe01222605"
         },
         {
-          "name": "special_target",
+          "name": "special_creature",
           "tileId": 23,
           "status": "confirmed",
           "hexId": "0x17",
@@ -640,9 +640,9 @@
           "rgbaSha256": "697dff24fc430b99967ef10b5913af4d12ba64c8fb48e0c1c6a5938a9de45c4c"
         },
         {
-          "name": "unknown_18",
+          "name": "transformer_block",
           "tileId": 24,
-          "status": "unidentified",
+          "status": "confirmed",
           "hexId": "0x18",
           "sourceAddress": "0xD818",
           "atlasX": 96,
@@ -652,7 +652,7 @@
           "rgbaSha256": "9667b08cc5b88241338efed844771ab24e5ea6abc0ec6fccdfd40e27af0c63c1"
         },
         {
-          "name": "unknown_19",
+          "name": "graphic_candidate_19",
           "tileId": 25,
           "status": "unidentified",
           "hexId": "0x19",
@@ -699,7 +699,12 @@
         "unidentified tiles remain explicitly unconfirmed"
       ],
       "atlas": "sprites/objects-atlas.png",
-      "controlPng": "sprites/objects-control.png"
+      "controlPng": "sprites/objects-control.png",
+      "notes": [
+        "tile 0x17 is the special creature tracked separately from monster 0x02",
+        "tile 0x18 is the transformer block used by KIT.BIN:$CB3B for rock/diamond conversion",
+        "tile 0x19 is not emitted by decoded level grids and remains outside direct gameplay"
+      ]
     },
     {
       "id": "monster",

@@ -269,19 +269,29 @@
       ]
     },
     "0x17": {
-      "name": "special_target",
+      "name": "special_creature",
       "status": "confirmed",
       "evidence": [
-        "KIT.BIN:$DA10 branches to KIT.BIN:$BC07 when decoding 0x17",
-        "KIT.BIN:$BC07 records the grid address and stores 0x02 marker metadata",
-        "KIT.BIN:$CC57 checks 0x17 against the related special-position table"
+        "KIT.BIN:$BC07 tests tile 0x17 as a dedicated creature/entity distinct from monster 0x02.",
+        "KIT.BIN:$DB4F copies the graphic planes for tile 0x17.",
+        "Video reference confirms tile 0x17 is the blue tile with four yellow squares that explodes into diamonds."
       ]
     },
     "0x18": {
-      "name": null,
+      "name": "transformer_block",
+      "status": "confirmed",
+      "evidence": [
+        "KIT.BIN:$CB3B tests tile 0x18 as the fixed transformer block.",
+        "KIT.BIN high-bit conversions 0x83/0x80 show rock/diamond transformation behavior through this block.",
+        "Video reference confirms tile 0x18 is the blue spiral block."
+      ]
+    },
+    "0x19": {
+      "name": "graphic_candidate_19",
       "status": "unidentified",
       "evidence": [
-        "appears in decoded levels or generated atlas, no role proof yet"
+        "Graphic tile extracted from KIT.BIN, but not emitted by decoded level grids.",
+        "No gameplay role confirmed; kept out of the modern runtime."
       ]
     }
   },

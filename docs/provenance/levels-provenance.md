@@ -30,4 +30,4 @@ Pour chaque niveau:
 ### Rejets
 
 - Aucun niveau rejeté.
-- `tileId` non attribués (ex. `0x18`) marqués `unidentified`, utilisés en mode non actif en attendant confirmation de rôle.
+- `tileId` non attribués conservés hors gameplay direct quand leur rôle n'est pas confirmé. `0x17` est maintenant traité comme creature speciale, `0x18` comme bloc transformateur; `0x19`/`0x1A` restent non actifs.

@@ -861,7 +861,7 @@
     {
       "x": 11,
       "y": 2,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 12,
@@ -2266,7 +2266,7 @@
     {
       "x": 7,
       "y": 10,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 10,
@@ -2481,7 +2481,7 @@
     {
       "x": 20,
       "y": 11,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 22,
@@ -2616,42 +2616,42 @@
     {
       "x": 15,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 16,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 17,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 18,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 19,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 20,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 21,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 22,
       "y": 12,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 23,
@@ -3306,7 +3306,7 @@
     {
       "x": 14,
       "y": 16,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 15,
@@ -4063,7 +4063,7 @@
     {
       "x": 11,
       "y": 2,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 18,
@@ -4088,7 +4088,7 @@
     {
       "x": 7,
       "y": 10,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 11,
@@ -4098,50 +4098,10 @@
     {
       "x": 20,
       "y": 11,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 10,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 15,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 16,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 17,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 18,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 19,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 20,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 21,
-      "y": 12,
-      "type": "monster"
-    },
-    {
-      "x": 22,
       "y": 12,
       "type": "monster"
     },
@@ -4174,11 +4134,6 @@
       "x": 38,
       "y": 15,
       "type": "diamond"
-    },
-    {
-      "x": 14,
-      "y": 16,
-      "type": "monster"
     },
     {
       "x": 36,

@@ -18,7 +18,9 @@ Objectif: reproduire le chargement/runtime du niveau a partir des preuves du cod
 - Pointeur joueur runtime: `$D034`.
 - Animation idle joueur: `KIT.BIN:$CED9`, table `$D036-$D069`, ecrit la frame courante a l'adresse pointee par `$D034`.
 - Diamants: `tileId 0x03`, animation couleur par `KIT.BIN:$D1E0`, rotation du plan couleur `$D2F8-$D317`.
-- Monstres: `tileId 0x02`, positions speciales detectees par `KIT.BIN:$DA10` et routines `BC07/CC5B`.
+- Monstres: `tileId 0x02`, positions speciales detectees par `KIT.BIN:$DA10` et routines `CC5B`.
+- Creature speciale: `tileId 0x17`, detectee par `KIT.BIN:$DA10`, enregistree par `BC07` et suivie via la table `$DB4F`.
+- Bloc transformateur: `tileId 0x18`, tuile fixe utilisee par la physique `CB3B` pour convertir rocher <-> diamant.
 - Animation monstre: `KIT.BIN:$D1BB`, inversion/complement du plan forme `$D298-$D2B7`.
 
 ## Architecture runtime a ajouter

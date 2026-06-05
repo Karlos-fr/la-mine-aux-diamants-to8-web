@@ -2356,7 +2356,7 @@
     {
       "x": 6,
       "y": 10,
-      "type": "monster"
+      "type": "transformerBlock"
     },
     {
       "x": 7,
@@ -4544,11 +4544,6 @@
       "x": 32,
       "y": 9,
       "type": "diamond"
-    },
-    {
-      "x": 6,
-      "y": 10,
-      "type": "monster"
     },
     {
       "x": 26,

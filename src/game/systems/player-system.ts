@@ -38,6 +38,8 @@ export interface PlayerCollisionTiles {
   readonly border: number;
   /** Plateforme solide. */
   readonly platform: number;
+  /** Bloc transformateur fixe, solide pour le joueur hors mode ghost. */
+  readonly transformerBlock: number;
 }
 
 /** Etat des directions pressees par l'input. */
@@ -75,7 +77,12 @@ export function canPlayerEnterTile(tileId: number, tiles: PlayerCollisionTiles):
     return false;
   }
 
-  if (tileId === tiles.rock || tileId === tiles.border || tileId === tiles.platform) {
+  if (
+    tileId === tiles.rock ||
+    tileId === tiles.border ||
+    tileId === tiles.platform ||
+    tileId === tiles.transformerBlock
+  ) {
     return false;
   }
 

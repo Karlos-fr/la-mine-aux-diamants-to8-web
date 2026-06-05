@@ -33,4 +33,4 @@ Tous les fichiers de provenance de famille sont dans `docs/provenance/` et point
 ## Notes de rejet explicite
 
 - Rejeté: toute réutilisation directe des assets `SAPHIR.*`, `FBI.*`, `ANDROIDE.*` pour `La Mine Aux Diamants`.
-- Rejeté (provisoire): objets `tileId` `0x18`, `0x19`, `0x1A` tant que leur rôle n’est pas encore confirmé (`unidentified` dans la métrologie courante).
+- Rejeté (provisoire): objets `tileId` `0x19`, `0x1A` tant que leur rôle n’est pas encore confirmé (`unidentified` dans la métrologie courante). `0x17` et `0x18` sont désormais distingués: creature speciale et bloc transformateur.

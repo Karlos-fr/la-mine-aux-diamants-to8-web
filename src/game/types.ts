@@ -13,7 +13,8 @@ export type EntityKind =
   | "player"
   | "diamond"
   | "rock"
-  | "monster";
+  | "monster"
+  | "specialCreature";
 
 /** Definition descriptive d'une tuile presente dans un niveau charge. */
 export interface TileDefinition {
@@ -60,6 +61,8 @@ export interface EntityState {
 
 /** Etat runtime propre aux monstres, incluant pointeur grille compatible TO8. */
 export interface MonsterRuntimeState {
+  /** Famille mobile portee par cette entree runtime. */
+  readonly kind: "monster" | "specialCreature";
   /** Identifiant runtime du monstre. */
   readonly id: string;
   /** Identifiant de l'entite visuelle associee. */
@@ -73,7 +76,7 @@ export interface MonsterRuntimeState {
   /** Position grille discrete du monstre. */
   gridY: number;
   /** Cle d'animation utilisee par le rendu. */
-  readonly animationKey: "monsterBlink";
+  readonly animationKey: "monsterBlink" | "specialCreature";
   /** Mouvement interpole en cours, ou aucun mouvement. */
   movement: null | {
     /** Case de depart du mouvement. */
@@ -145,6 +148,8 @@ export interface RuntimeExplosionState {
   elapsed: number;
   /** Duree d'une frame d'explosion. */
   readonly frameDuration: number;
+  /** Resultat final applique quand l'animation d'explosion se termine. */
+  readonly result: "clear" | "diamonds";
 }
 
 /** Etat des compteurs HUD gameplay. */

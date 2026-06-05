@@ -3,6 +3,8 @@ import "./styles.css";
 import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { createGameApp } from "./engine/game-app";
+import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
+import { createGameplayScene } from "./screens/scene-factory";
 import { StartupInfogramScene } from "./screens/startup-screens";
 
 /**
@@ -39,6 +41,28 @@ if (mode === "gallery") {
     root.append(canvas);
   }
 
+  /** Barre de controles debug gardee hors canvas pour ne pas polluer le rendu ISO. */
+  const debugToolbar = document.createElement("div");
+  debugToolbar.className = "debug-toolbar";
+
+  /** Libelle accessible du select de niveau. */
+  const levelSelectLabel = document.createElement("label");
+  levelSelectLabel.className = "debug-level-label";
+  levelSelectLabel.htmlFor = "debug-level-select";
+  levelSelectLabel.textContent = "Niveau";
+
+  /** Liste de selection directe des niveaux modernes disponibles. */
+  const levelSelect = document.createElement("select");
+  levelSelect.id = "debug-level-select";
+  levelSelect.className = "debug-level-select";
+  for (let levelNumber = 1; levelNumber <= LEVEL_COUNT; levelNumber += 1) {
+    const levelSource = getModernLevelSource(levelNumber);
+    const option = document.createElement("option");
+    option.value = String(levelNumber);
+    option.textContent = levelSource ? `${levelNumber} - ${levelSource.label}` : `Niveau ${levelNumber}`;
+    levelSelect.append(option);
+  }
+
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
   ghostButton.className = "debug-ghost-button";
@@ -51,7 +75,8 @@ if (mode === "gallery") {
     ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
     canvas.focus();
   });
-  root.append(ghostButton);
+  debugToolbar.append(levelSelectLabel, levelSelect, ghostButton);
+  root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
   const app = createGameApp({
@@ -59,6 +84,11 @@ if (mode === "gallery") {
     initialScene: () => {
       return new StartupInfogramScene();
     }
+  });
+  levelSelect.addEventListener("change", () => {
+    const levelNumber = Number(levelSelect.value);
+    app.setScene(createGameplayScene(levelNumber));
+    canvas.focus();
   });
   app.start();
   canvas.focus();

@@ -36,7 +36,8 @@ body {
 
 /* Heritage typographique pour les controles du viewer. */
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -256,17 +257,47 @@ button:hover {
   place-items: center;
 }
 
-/* Bouton debug pour activer le mode fantome pendant les tests de niveaux. */
-.debug-ghost-button {
+/* Barre debug externe au canvas pour selectionner un niveau et activer les aides de test. */
+.debug-toolbar {
   position: fixed;
   top: 12px;
   right: 12px;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(103, 255, 104, 0.28);
+  border-radius: 4px;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+/* Libelle compact du select de niveau debug. */
+.debug-level-label {
+  color: #67ff68;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+/* Liste de selection des niveaux modernes disponibles. */
+.debug-level-select {
+  min-height: 28px;
+  border: 1px solid rgba(103, 255, 104, 0.45);
+  border-radius: 4px;
+  padding: 4px 7px;
+  color: #67ff68;
+  background: #020402;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+/* Bouton debug pour activer le mode fantome pendant les tests de niveaux. */
+.debug-ghost-button {
   min-height: 28px;
   border-color: rgba(103, 255, 104, 0.45);
   padding: 4px 9px;
   color: #67ff68;
-  background: rgba(0, 0, 0, 0.72);
+  background: #020402;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
   font-size: 12px;
 }

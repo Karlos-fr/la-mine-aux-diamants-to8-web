@@ -49,7 +49,8 @@ Convention de documentation a respecter pendant les evolutions de ce plan: [CODE
 - `0x12`: etat derive de rocher en chute/glissement.
 - `0x13`: etat derive de diamant en chute/glissement.
 - `0x14`, `0x15`, `0x16`: explosion.
-- `0x17`: marqueur runtime actif/special, utilise par les routines de monstres; ne pas afficher directement pour l'instant.
+- `0x17`: creature speciale distincte du monstre standard `0x02`, affichee comme entite `specialCreature`.
+- `0x18`: bloc transformateur fixe `transformerBlock`, utilise par la physique rocher/diamant.
 - `0x80`: marqueur runtime temporaire; ne pas afficher directement.
 
 ## Phase 1 - Moteur de collision joueur
@@ -168,7 +169,7 @@ Notes phase 6:
 - `GameplayRuntime` est maintenant l'autorite moderne pour l'ordre d'update; ne pas reintroduire un ordre concurrent dans `GameplayScene`.
 - `RuntimeMutations` est maintenant l'autorite moderne pour les mutations de grille; ne pas ajouter de mutation directe dans les renderers.
 - `GameplayRenderer` est lecture seule; tout nouvel effet visuel doit recevoir ses donnees depuis le runtime.
-- Ne pas afficher directement `0x17` et `0x80` tant que leur rendu exact n'est pas stabilise.
+- Ne pas afficher directement `0x80` tant que son rendu exact n'est pas stabilise. `0x17` est desormais rendu via l'entite `specialCreature`.
 - Ne pas supposer que la fixture PNG globale est le gameplay; elle reste une extraction de carte, pas la vue runtime.
 - Ne pas convertir `0x01` en obstacle definitif: l'utilisateur signale que le joueur doit couper la herbe et laisser une case noire.
 - Ne pas supprimer une tile collectable au debut d'un mouvement fluide: la mutation visible doit arriver quand le joueur occupe completement la case.

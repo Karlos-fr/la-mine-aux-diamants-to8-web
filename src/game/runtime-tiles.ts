@@ -38,6 +38,26 @@ export const RUNTIME_TILE = {
   explosion3: 0x16,
   /** Marqueur runtime de monstre actif. */
   monsterActive: 0x17,
+  /**
+   * Creature speciale placee dans certains niveaux.
+   *
+   * Preuves ASM: `DA10` route `0x17` vers `BC07`, puis les routines `BB24`/`CC4F`
+   * la suivent via la table dediee `$DB4F`, distincte des monstres `0x02`.
+   */
+  specialCreature: 0x17,
+  /**
+   * Bloc transformateur fixe.
+   *
+   * Preuve ASM: la physique des rochers/diamants autour de `CB3B` teste explicitement
+   * `CMPA #$18` sous l'objet en chute.
+   */
+  transformerBlock: 0x18,
+  /**
+   * Tuile graphique extraite mais non placee dans les niveaux decodes.
+   *
+   * `0x19` reste exclue du gameplay direct tant que son role exact n'est pas confirme.
+   */
+  specialCreatureGraphicCandidate: 0x19,
   /** Trace runtime de monstre, rendue et traitee comme vide dans certains systems. */
   monsterTrail: 0x80
 } as const;

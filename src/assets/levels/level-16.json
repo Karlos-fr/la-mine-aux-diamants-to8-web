@@ -2096,7 +2096,7 @@
     {
       "x": 37,
       "y": 9,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 38,
@@ -2276,7 +2276,7 @@
     {
       "x": 3,
       "y": 11,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 6,
@@ -4123,7 +4123,7 @@
     {
       "x": 37,
       "y": 9,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 17,
@@ -4148,7 +4148,7 @@
     {
       "x": 3,
       "y": 11,
-      "type": "monster"
+      "type": "specialCreature"
     },
     {
       "x": 6,

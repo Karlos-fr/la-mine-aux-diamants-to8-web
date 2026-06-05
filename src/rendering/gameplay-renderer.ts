@@ -136,6 +136,9 @@ export interface GameplayRenderTileIds {
   /** Tuile monstre actif. */
   readonly monsterActive: number;
 
+  /** Tuile creature speciale `0x17`, distincte du monstre standard `0x02`. */
+  readonly specialCreature: number;
+
   /** Tuile trace monstre. */
   readonly monsterTrail: number;
 
@@ -385,7 +388,9 @@ export class GameplayRenderer {
         ? context.getDiamondTileFrame()
         : entity.kind === "monster"
           ? context.getMonsterTileFrame()
-          : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+          : entity.kind === "specialCreature"
+            ? context.getTileFrame(context.tileIds.specialCreature)
+            : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
       renderer.drawTile(
         frame,
         Math.round(context.boardOffsetX + (entityGridX - context.viewport.x) * context.tileSize),
