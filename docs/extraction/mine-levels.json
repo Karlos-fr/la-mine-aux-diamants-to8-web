@@ -14,97 +14,81 @@
     {
       "levelNumber": 1,
       "json": "levels/mine-level-01.json",
-      "ts": "levels/mine-level-01.ts",
       "png": "levels/mine-level-01.png"
     },
     {
       "levelNumber": 2,
       "json": "levels/mine-level-02.json",
-      "ts": "levels/mine-level-02.ts",
       "png": "levels/mine-level-02.png"
     },
     {
       "levelNumber": 3,
       "json": "levels/mine-level-03.json",
-      "ts": "levels/mine-level-03.ts",
       "png": "levels/mine-level-03.png"
     },
     {
       "levelNumber": 4,
       "json": "levels/mine-level-04.json",
-      "ts": "levels/mine-level-04.ts",
       "png": "levels/mine-level-04.png"
     },
     {
       "levelNumber": 5,
       "json": "levels/mine-level-05.json",
-      "ts": "levels/mine-level-05.ts",
       "png": "levels/mine-level-05.png"
     },
     {
       "levelNumber": 6,
       "json": "levels/mine-level-06.json",
-      "ts": "levels/mine-level-06.ts",
       "png": "levels/mine-level-06.png"
     },
     {
       "levelNumber": 7,
       "json": "levels/mine-level-07.json",
-      "ts": "levels/mine-level-07.ts",
       "png": "levels/mine-level-07.png"
     },
     {
       "levelNumber": 8,
       "json": "levels/mine-level-08.json",
-      "ts": "levels/mine-level-08.ts",
       "png": "levels/mine-level-08.png"
     },
     {
       "levelNumber": 9,
       "json": "levels/mine-level-09.json",
-      "ts": "levels/mine-level-09.ts",
       "png": "levels/mine-level-09.png"
     },
     {
       "levelNumber": 10,
       "json": "levels/mine-level-10.json",
-      "ts": "levels/mine-level-10.ts",
       "png": "levels/mine-level-10.png"
     },
     {
       "levelNumber": 11,
       "json": "levels/mine-level-11.json",
-      "ts": "levels/mine-level-11.ts",
       "png": "levels/mine-level-11.png"
     },
     {
       "levelNumber": 12,
       "json": "levels/mine-level-12.json",
-      "ts": "levels/mine-level-12.ts",
       "png": "levels/mine-level-12.png"
     },
     {
       "levelNumber": 13,
       "json": "levels/mine-level-13.json",
-      "ts": "levels/mine-level-13.ts",
       "png": "levels/mine-level-13.png"
     },
     {
       "levelNumber": 14,
       "json": "levels/mine-level-14.json",
-      "ts": "levels/mine-level-14.ts",
       "png": "levels/mine-level-14.png"
     },
     {
       "levelNumber": 15,
       "json": "levels/mine-level-15.json",
-      "ts": "levels/mine-level-15.ts",
       "png": "levels/mine-level-15.png"
     },
     {
       "levelNumber": 16,
       "json": "levels/mine-level-16.json",
-      "ts": "levels/mine-level-16.ts",
       "png": "levels/mine-level-16.png"
     }
   ],

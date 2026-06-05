@@ -12,8 +12,7 @@
 - Artefacts:
   - `docs/extraction/levels/mine-level-XX.json`
   - `docs/extraction/levels/mine-level-XX.png`
-  - `src/assets/generated/levels/mine-level-XX.ts`
-  - `src/assets/generated/mine-levels.ts`
+  - `src/assets/levels/level-XX.json`
 
 ### Confirmés
 
@@ -32,4 +31,3 @@ Pour chaque niveau:
 
 - Aucun niveau rejeté.
 - `tileId` non attribués (ex. `0x18`) marqués `unidentified`, utilisés en mode non actif en attendant confirmation de rôle.
-

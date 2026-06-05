@@ -16,6 +16,15 @@ const TEMPORARY_ALLOWED_TILE_IDS = new Map([
 ]);
 
 const REQUIRED_CONFIRMED_SPRITE_GROUPS = ["player", "diamond", "monster"];
+const TILE_IDS_BY_MODERN_TYPE = {
+  rock: 0x00,
+  earth: 0x01,
+  monster: 0x02,
+  diamond: 0x03,
+  border: 0x04,
+  empty: 0x05,
+  platform: 0x06
+};
 
 function main() {
   const tileMetadata = readJson("docs/extraction/mine-tiles-metadata.json");
@@ -23,10 +32,12 @@ function main() {
   const hudMetadata = readJson("docs/extraction/mine-hud-metadata.json");
   const startupMetadata = readJson("docs/extraction/mine-startup-metadata.json");
   const titleMetadata = readJson("docs/extraction/mine-title-metadata.json");
-  const levelRows = readGeneratedLevelRows("src/assets/generated/levels/mine-level-01-grid.ts");
+  const levelTileTypes = readModernLevelTileTypes("src/assets/levels/level-01.json");
 
   const tileStatusById = new Map(tileMetadata.tiles.map((tile) => [tile.tileId, tile.status]));
-  const integratedTileIds = [...new Set(levelRows.flat())].sort((left, right) => left - right);
+  const integratedTileIds = [...new Set(levelTileTypes.map((type) => TILE_IDS_BY_MODERN_TYPE[type]))]
+    .filter((tileId) => tileId !== undefined)
+    .sort((left, right) => left - right);
 
   for (const tileId of integratedTileIds) {
     const status = tileStatusById.get(tileId);
@@ -93,30 +104,9 @@ function readJson(path) {
   return JSON.parse(readFileSync(join(rootDir, path), "utf8"));
 }
 
-function readGeneratedLevelRows(path) {
-  const source = readFileSync(join(rootDir, path), "utf8");
-  const marker = "export const mineLevel01Rows =";
-  const markerIndex = source.indexOf(marker);
-  if (markerIndex === -1) {
-    fail(`${path} does not export mineLevel01Rows.`);
-  }
-
-  const arrayStart = source.indexOf("[", markerIndex);
-  if (arrayStart === -1) {
-    fail(`${path} does not contain a rows array.`);
-  }
-
-  let depth = 0;
-  for (let index = arrayStart; index < source.length; index += 1) {
-    const char = source[index];
-    if (char === "[") depth += 1;
-    if (char === "]") depth -= 1;
-    if (depth === 0) {
-      return JSON.parse(source.slice(arrayStart, index + 1));
-    }
-  }
-
-  fail(`${path} rows array is not closed.`);
+function readModernLevelTileTypes(path) {
+  const level = readJson(path);
+  return level.tiles.map((tile) => tile.type);
 }
 
 function hex(value, width) {

@@ -4,13 +4,13 @@ Objectif: remplacer les niveaux runtime derives de fichiers TS/adresses ASM par 
 
 ## Constat
 
-- Le runtime actuel charge le niveau 1 depuis `src/assets/generated/levels/mine-level-01-grid.ts`.
+- Le runtime charge le niveau 1 depuis `src/assets/levels/level-01.json`.
 - Les donnees extraites contiennent encore des notions proches du code original: adresses grille, tuiles numeriques, viewport adapte.
-- Le rendu utilise encore des offsets temporaires:
-  - `PLAYER_RUNTIME_SCREEN_OFFSET_X = -1`
-  - `PLAYER_RUNTIME_SCREEN_OFFSET_Y = -1`
-  - `INITIAL_VIEWPORT_X = -1`
-  - `INITIAL_VIEWPORT_Y = -1`
+- Le rendu a utilise des offsets temporaires:
+  - `PLAYER_RUNTIME_SCREEN_OFFSET_X = -1` (supprime en phase 3)
+  - `PLAYER_RUNTIME_SCREEN_OFFSET_Y = -1` (supprime en phase 3)
+  - `INITIAL_VIEWPORT_X = 0`
+  - `INITIAL_VIEWPORT_Y = 0`
 - Ces offsets compliquent:
   - position joueur;
   - ramassage herbe/diamants;
@@ -75,63 +75,63 @@ Mapping initial:
 
 ## Phase 1 - Generation du JSON moderne
 
-- Creer un outil de conversion depuis les donnees actuelles.
-- Source temporaire: `src/assets/generated/levels/mine-level-01-grid.ts`.
-- Sortie cible: `src/assets/levels/level-01.json` ou emplacement equivalent.
-- Supprimer les adresses originales du format runtime.
-- Garder les preuves ASM dans `docs/provenance` et les outils d'extraction, pas dans le JSON de jeu.
+- [x] Creer un outil de conversion depuis les donnees actuelles: `tools/generate-modern-levels.mjs`.
+- [x] Source temporaire: `docs/extraction/mine-levels.json`.
+- [x] Sortie cible: `src/assets/levels/level-01.json` a `src/assets/levels/level-16.json`.
+- [x] Supprimer les adresses originales du format runtime.
+- [x] Garder les preuves ASM dans `docs/provenance` et les outils d'extraction, pas dans le JSON de jeu.
 
 ## Phase 2 - Loader runtime moderne
 
-- Creer un loader de niveaux JSON.
-- Remplacer dans `src/game/state.ts` la dependance directe a `mine-level-01-grid.ts`.
-- Construire depuis le JSON:
+- [x] Creer un loader de niveaux JSON.
+- [x] Remplacer dans `src/game/state.ts` la dependance directe a `mine-level-01-grid.ts`.
+- [x] Construire depuis le JSON:
   - `LevelDefinition`;
   - entite joueur;
   - entites diamants;
   - entites monstres;
   - etat HUD initial;
   - grille runtime.
-- Conserver la possibilite d'ajouter facilement `level-02.json`, etc.
+- [x] Conserver la possibilite d'ajouter facilement `level-02.json`, etc.
 
 ## Phase 3 - Suppression de l'offset joueur
 
-- Supprimer:
+- [x] Supprimer:
   - `PLAYER_RUNTIME_SCREEN_OFFSET_X`
   - `PLAYER_RUNTIME_SCREEN_OFFSET_Y`
-- Recalculer toutes les conversions:
+- [x] Recalculer toutes les conversions joueur:
   - coordonnees grille;
   - coordonnees viewport;
   - coordonnees ecran;
   - coordonnees collision.
-- Le joueur doit etre rendu sur sa vraie case runtime.
-- Le ramassage herbe/diamant doit cibler exactement la case affichee.
-- Le spawn blink doit se faire sur la vraie case de spawn.
+- [x] Le joueur doit etre rendu sur sa vraie case runtime.
+- [x] Le ramassage herbe/diamant doit cibler exactement la case affichee.
+- [x] Le spawn blink doit se faire sur la vraie case de spawn.
 
 ## Phase 4 - Suppression de l'offset viewport initial
 
-- Revoir:
+- [x] Revoir:
   - `INITIAL_VIEWPORT_X`
   - `INITIAL_VIEWPORT_Y`
   - `CAMERA_MIN_X`
   - `CAMERA_MIN_Y`
-- Les bordures doivent venir du comportement runtime, pas d'un decalage joueur.
-- Si besoin, representer explicitement les limites/bordures dans la grille moderne.
+- [x] Les bordures doivent venir du comportement runtime, pas d'un decalage joueur.
+- [x] Representer explicitement les limites/bordures dans la grille moderne.
 
 ## Phase 5 - Camera
 
-- Garder la logique ASM deja identifiee:
+- [x] Garder la logique ASM deja identifiee:
   - marge gauche/droite `X=4/15`;
   - marge haut/bas `Y=2/7`;
   - bornes viewport `DBAF<=0x14`, `DBB0<=0x0c`.
-- Adapter ces seuils au modele sans offset.
-- Conserver le scroll fluide uniquement comme interpolation visuelle.
+- [x] Adapter ces seuils au modele sans offset.
+- [x] Conserver le scroll fluide uniquement comme interpolation visuelle.
 
 ## Phase 6 - Nettoyage
 
-- Supprimer la note TODO sur l'offset temporaire une fois la migration terminee.
-- Mettre a jour les plans existants.
-- Supprimer les anciens artefacts de niveau devenus inutiles si le JSON moderne les remplace completement.
+- [x] Supprimer la note TODO sur l'offset temporaire une fois la migration terminee.
+- [x] Mettre a jour les plans existants.
+- [x] Supprimer les anciens artefacts de niveau devenus inutiles si le JSON moderne les remplace completement.
 
 ## Risques a surveiller
 

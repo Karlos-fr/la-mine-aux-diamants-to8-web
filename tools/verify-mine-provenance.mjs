@@ -29,9 +29,8 @@ const requiredInputs = [
   "src/assets/generated/mine-hud.ts",
   "src/assets/generated/mine-startup.ts",
   "src/assets/generated/mine-title.ts",
-  "src/assets/generated/mine-levels.ts",
-  "src/assets/generated/levels/mine-level-01.ts",
-  "src/assets/generated/levels/mine-level-16.ts",
+  "src/assets/levels/level-01.json",
+  "src/assets/levels/level-16.json",
   "docs/extraction/levels/mine-level-01.json",
   "docs/extraction/levels/mine-level-16.json"
 ];

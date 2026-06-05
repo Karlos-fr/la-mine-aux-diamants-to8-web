@@ -38,20 +38,14 @@ const VIEWPORT_COLUMNS = 20;
 const VIEWPORT_ROWS = 10;
 const RUNTIME_GRID_STRIDE = 40;
 const RUNTIME_GRID_FILL_TILE_ID = 0x04;
-const VIEWPORT_BORDER_MARGIN_X = 1;
-const VIEWPORT_BORDER_MARGIN_Y = 1;
-const INITIAL_VIEWPORT_X = -VIEWPORT_BORDER_MARGIN_X;
-const INITIAL_VIEWPORT_Y = -VIEWPORT_BORDER_MARGIN_Y;
-const PLAYER_RUNTIME_SCREEN_OFFSET_X = -1;
-const PLAYER_RUNTIME_SCREEN_OFFSET_Y = -1;
+const INITIAL_VIEWPORT_X = 0;
+const INITIAL_VIEWPORT_Y = 0;
 const CAMERA_LEFT_MARGIN = 0x04;
 const CAMERA_RIGHT_MARGIN = 0x0f;
 const CAMERA_TOP_MARGIN = 0x02;
 const CAMERA_BOTTOM_MARGIN = 0x07;
 const CAMERA_MIN_X = INITIAL_VIEWPORT_X;
 const CAMERA_MIN_Y = INITIAL_VIEWPORT_Y;
-const CAMERA_MAX_X = 0x14;
-const CAMERA_MAX_Y = 0x0c;
 const PLAYER_SPAWN_BLINK_REPETITIONS = 4;
 const PLAYER_SPAWN_BLINK_STEP_DURATION = 0.25;
 const PLAYER_GRID_MOVE_DURATION = 0.21;
@@ -270,8 +264,8 @@ export class GameplayScene implements Scene {
         const fromY = Math.round(this.state.player.gridY);
         const toX = fromX + moveX;
         const toY = fromY + moveY;
-        const targetRuntimeX = toX + PLAYER_RUNTIME_SCREEN_OFFSET_X;
-        const targetRuntimeY = toY + PLAYER_RUNTIME_SCREEN_OFFSET_Y;
+        const targetRuntimeX = toX;
+        const targetRuntimeY = toY;
         const collision = this.resolvePlayerMove(targetRuntimeX, targetRuntimeY);
 
         if (moveX < 0) {
@@ -327,10 +321,6 @@ export class GameplayScene implements Scene {
 
   private drawPlayfield(renderer: Renderer): void {
     if (!this.atlasImage) {
-      renderer.drawPixelText("CHARGEMENT DES TUILES...", 72, 96, TO8_PALETTE.yellow);
-      if (this.atlasError) {
-        renderer.drawPixelText("ERREUR CHARGEMENT ATLAS", 72, 114, TO8_PALETTE.red);
-      }
       return;
     }
 
@@ -423,12 +413,10 @@ export class GameplayScene implements Scene {
         : entity.kind === "monster"
           ? this.getMonsterTileFrame()
           : this.getTileFrame(this.getEntityTileFrameId(entity.kind));
-      const screenOffsetX = entity.kind === "player" ? PLAYER_RUNTIME_SCREEN_OFFSET_X : 0;
-      const screenOffsetY = entity.kind === "player" ? PLAYER_RUNTIME_SCREEN_OFFSET_Y : 0;
       renderer.drawTile(
         frame,
-        Math.round(this.boardOffsetX + (entityGridX - renderViewportX + screenOffsetX) * this.tileSize),
-        Math.round(this.boardOffsetY + (entityGridY - renderViewportY + screenOffsetY) * this.tileSize)
+        Math.round(this.boardOffsetX + (entityGridX - renderViewportX) * this.tileSize),
+        Math.round(this.boardOffsetY + (entityGridY - renderViewportY) * this.tileSize)
       );
     }
   }
@@ -515,18 +503,21 @@ export class GameplayScene implements Scene {
   }
 
   private advanceCameraAfterPlayerStep(fromX: number, fromY: number, moveX: number, moveY: number): void {
-    const screenX = fromX - this.viewport.x + PLAYER_RUNTIME_SCREEN_OFFSET_X;
-    const screenY = fromY - this.viewport.y + PLAYER_RUNTIME_SCREEN_OFFSET_Y;
+    const screenX = fromX - this.viewport.x;
+    const screenY = fromY - this.viewport.y;
     const previousViewportX = this.viewport.x;
     const previousViewportY = this.viewport.y;
 
-    if (moveX > 0 && screenX === CAMERA_RIGHT_MARGIN && this.viewport.x < CAMERA_MAX_X) {
+    const cameraMaxX = this.getCameraMaxX();
+    const cameraMaxY = this.getCameraMaxY();
+
+    if (moveX > 0 && screenX === CAMERA_RIGHT_MARGIN && this.viewport.x < cameraMaxX) {
       this.viewport.x += 1;
     } else if (moveX < 0 && screenX === CAMERA_LEFT_MARGIN && this.viewport.x > CAMERA_MIN_X) {
       this.viewport.x -= 1;
     }
 
-    if (moveY > 0 && screenY === CAMERA_BOTTOM_MARGIN && this.viewport.y < CAMERA_MAX_Y) {
+    if (moveY > 0 && screenY === CAMERA_BOTTOM_MARGIN && this.viewport.y < cameraMaxY) {
       this.viewport.y += 1;
     } else if (moveY < 0 && screenY === CAMERA_TOP_MARGIN && this.viewport.y > CAMERA_MIN_Y) {
       this.viewport.y -= 1;
@@ -553,6 +544,14 @@ export class GameplayScene implements Scene {
     if (this.cameraMove.elapsed >= this.cameraMove.duration) {
       this.cameraMove = null;
     }
+  }
+
+  private getCameraMaxX(): number {
+    return Math.max(CAMERA_MIN_X, this.levelWidth - this.viewport.columns);
+  }
+
+  private getCameraMaxY(): number {
+    return Math.max(CAMERA_MIN_Y, this.levelHeight - this.viewport.rows);
   }
 
   private getRenderViewportX(): number {
@@ -750,11 +749,9 @@ export class GameplayScene implements Scene {
       return;
     }
 
-    const spawnGridX = this.state.player.gridX + PLAYER_RUNTIME_SCREEN_OFFSET_X;
-    const spawnGridY = this.state.player.gridY + PLAYER_RUNTIME_SCREEN_OFFSET_Y;
-    if (this.runtimeGrid.getRuntimeTile(spawnGridX, spawnGridY) === RUNTIME_GRID_FILL_TILE_ID) {
-      this.runtimeGrid.setRuntimeTile(spawnGridX, spawnGridY, RUNTIME_EMPTY_TILE_ID);
-    }
+    const spawnGridX = Math.round(this.state.player.gridX);
+    const spawnGridY = Math.round(this.state.player.gridY);
+    this.runtimeGrid.setRuntimeTile(spawnGridX, spawnGridY, RUNTIME_EMPTY_TILE_ID);
 
     this.spawnTileCleared = true;
   }
@@ -770,8 +767,8 @@ export class GameplayScene implements Scene {
 
   private isPlayerRenderedAtGrid(gridX: number, gridY: number): boolean {
     return (
-      this.state.player.gridX + PLAYER_RUNTIME_SCREEN_OFFSET_X === gridX &&
-      this.state.player.gridY + PLAYER_RUNTIME_SCREEN_OFFSET_Y === gridY
+      Math.round(this.state.player.gridX) === gridX &&
+      Math.round(this.state.player.gridY) === gridY
     );
   }
 

@@ -1,6 +1,5 @@
 ﻿- Valider dans le code original la sequence temporaire d'apparition joueur: tile `0x04`, noir, repete 4 fois, puis affichage du joueur.
 - Implementer les animations de l'ecran 2
-- Supprimer a terme l'offset joueur -1/-1 en reproduisant fidelement le viewport runtime DBAF/DBB0 et la conversion de $D034 vers position ecran.
 
 
 Enregistrer le reccord en local

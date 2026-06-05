@@ -1,13 +1,48 @@
 import type { EntityState, GameState, LevelDefinition, MonsterRuntimeState, TileDefinition } from "./types";
-import {
-  mineLevel01Metadata,
-  mineLevel01Rows
-} from "../assets/generated/levels/mine-level-01-grid";
+import level01Json from "../assets/levels/level-01.json";
 
-const BOARD_TILE_SIZE = mineLevel01Metadata.tileSize;
-const LEVEL_ID_PREFIX = "level-01";
+type ModernTileType = "empty" | "earth" | "rock" | "diamond" | "monster" | "border" | "platform" | "exit";
+
+interface ModernLevelJson {
+  readonly id: string;
+  readonly label: string;
+  readonly width: number;
+  readonly height: number;
+  readonly tileSize: number;
+  readonly defaultTile: ModernTileType;
+  readonly time: number;
+  readonly scoreStep: number;
+  readonly requiredDiamonds: number;
+  readonly playerSpawn: {
+    readonly x: number;
+    readonly y: number;
+  };
+  readonly tiles: ReadonlyArray<{
+    readonly x: number;
+    readonly y: number;
+    readonly type: ModernTileType;
+  }>;
+  readonly entities: ReadonlyArray<{
+    readonly x: number;
+    readonly y: number;
+    readonly type: ModernTileType;
+  }>;
+}
+
+const LEVEL1_SOURCE = level01Json as ModernLevelJson;
+const BOARD_TILE_SIZE = LEVEL1_SOURCE.tileSize;
 const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
 const RUNTIME_GRID_STRIDE = 40;
+const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
+  empty: 0x05,
+  earth: 0x01,
+  rock: 0x00,
+  diamond: 0x03,
+  monster: 0x02,
+  border: 0x04,
+  platform: 0x06,
+  exit: 0x04
+};
 
 const ROCK_TILE_IDS = [0x00];
 const WALL_TILE_IDS = [0x01, 0x06];
@@ -16,12 +51,12 @@ const EXIT_TILE_IDS = [0x04];
 const MONSTER_TILE_IDS = [0x02];
 const EMPTY_TILE_IDS = [0x05];
 
-const LEVEL1_TILES = mineLevel01Rows.flatMap((row) => row);
-const LEVEL1_SCORE_STEP = 0x0f;
+const LEVEL1_TILES = buildTilesFromModernLevel(LEVEL1_SOURCE);
+const LEVEL1_SCORE_STEP = LEVEL1_SOURCE.scoreStep;
 
 const LEVEL1_TILE_DEFINITIONS: Record<number, TileDefinition> = buildTileDefinitionsFromRows(LEVEL1_TILES);
 
-const LEVEL1_MONSTER_ENTITIES = findTilePositions(0x02).map((position, index) => ({
+const LEVEL1_MONSTER_ENTITIES = findEntityPositions("monster").map((position, index) => ({
   id: `monster-${index}`,
   kind: "monster" as const,
   gridX: position.x,
@@ -34,8 +69,8 @@ const LEVEL1_MONSTER_ENTITIES = findTilePositions(0x02).map((position, index) =>
   active: true
 }));
 
-const LEVEL1_DIAMOND_ENTITIES = mineLevel01Metadata.tilePositions.diamonds?.map(
-  (diamond: { readonly x: number; readonly y: number }, index: number) => ({
+const LEVEL1_DIAMOND_ENTITIES = findEntityPositions("diamond").map(
+  (diamond, index) => ({
     id: `diamond-${index}`,
     kind: "diamond" as const,
     gridX: diamond.x,
@@ -47,24 +82,24 @@ const LEVEL1_DIAMOND_ENTITIES = mineLevel01Metadata.tilePositions.diamonds?.map(
     spriteFrameId: "tile:3",
     active: true
   })
-) ?? [];
+);
 
 export const LEVEL1_DEFINITION: LevelDefinition = {
-  id: LEVEL_ID_PREFIX,
-  name: "La mine - niveau 1",
-  width: mineLevel01Metadata.width,
-  height: mineLevel01Metadata.height,
-  tileSize: mineLevel01Metadata.tileSize,
+  id: LEVEL1_SOURCE.id,
+  name: LEVEL1_SOURCE.label,
+  width: LEVEL1_SOURCE.width,
+  height: LEVEL1_SOURCE.height,
+  tileSize: LEVEL1_SOURCE.tileSize,
   tiles: LEVEL1_TILES,
   tileDefinitions: LEVEL1_TILE_DEFINITIONS,
   initialEntities: [
     {
       id: "player",
       kind: "player",
-      gridX: mineLevel01Metadata.playerStart.x,
-      gridY: mineLevel01Metadata.playerStart.y,
-      x: mineLevel01Metadata.playerStart.x * BOARD_TILE_SIZE,
-      y: mineLevel01Metadata.playerStart.y * BOARD_TILE_SIZE,
+      gridX: LEVEL1_SOURCE.playerSpawn.x,
+      gridY: LEVEL1_SOURCE.playerSpawn.y,
+      x: LEVEL1_SOURCE.playerSpawn.x * BOARD_TILE_SIZE,
+      y: LEVEL1_SOURCE.playerSpawn.y * BOARD_TILE_SIZE,
       width: BOARD_TILE_SIZE,
       height: BOARD_TILE_SIZE,
       spriteFrameId: "player-idle",
@@ -74,13 +109,13 @@ export const LEVEL1_DEFINITION: LevelDefinition = {
     ...LEVEL1_DIAMOND_ENTITIES
   ],
   playerStart: {
-    x: mineLevel01Metadata.playerStart.x,
-    y: mineLevel01Metadata.playerStart.y
+    x: LEVEL1_SOURCE.playerSpawn.x,
+    y: LEVEL1_SOURCE.playerSpawn.y
   },
   meta: {
-    timeLimit: parseTimeLimit(mineLevel01Metadata.timeLimit),
+    timeLimit: LEVEL1_SOURCE.time,
     gallery: 1,
-    requiredDiamonds: mineLevel01Metadata.requiredDiamonds,
+    requiredDiamonds: LEVEL1_SOURCE.requiredDiamonds,
     scoreStep: LEVEL1_SCORE_STEP
   }
 };
@@ -208,33 +243,21 @@ function createTileDefinition(tileId: number): TileDefinition {
   };
 }
 
-function parseTimeLimit(value: string | undefined): number {
-  if (!value) {
-    return 0;
-  }
-
-  const parts = value.split(":");
-  if (parts.length === 2) {
-    const minutes = Number.parseInt(parts[0], 10);
-    const seconds = Number.parseInt(parts[1], 10);
-    if (Number.isNaN(minutes) || Number.isNaN(seconds)) {
-      return 0;
-    }
-
-    return minutes * 100 + seconds * 10;
-  }
-
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function findTilePositions(tileId: number): Array<{ x: number; y: number }> {
-  return mineLevel01Rows.flatMap((row, y) => {
-    return row
-      .map((value, x) => ({ value, x, y }))
-      .filter((tile) => tile.value === tileId)
-      .map(({ x, y }) => ({ x, y }));
-  });
-}
-
 export const createGameShellState = createGameLevelState;
+
+function buildTilesFromModernLevel(level: ModernLevelJson): number[] {
+  const defaultTileId = TILE_IDS_BY_TYPE[level.defaultTile];
+  const tiles = Array.from({ length: level.width * level.height }, () => defaultTileId);
+
+  for (const tile of level.tiles) {
+    tiles[tile.y * level.width + tile.x] = TILE_IDS_BY_TYPE[tile.type];
+  }
+
+  return tiles;
+}
+
+function findEntityPositions(type: ModernTileType): Array<{ x: number; y: number }> {
+  return LEVEL1_SOURCE.entities
+    .filter((entity) => entity.type === type)
+    .map((entity) => ({ x: entity.x, y: entity.y }));
+}
