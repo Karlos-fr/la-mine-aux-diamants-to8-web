@@ -26,6 +26,7 @@ interface GridMoveState {
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
+  readonly targetTileId?: number;
   elapsed: number;
   readonly duration: number;
 }
@@ -280,13 +281,13 @@ export class GameplayScene implements Scene {
 
         if (collision.canEnter) {
           this.clearPlayerHeldMoveFrame();
-          this.applyPlayerTileMutation(targetRuntimeX, targetRuntimeY, collision.tileId);
           this.advanceCameraAfterPlayerStep(fromX, fromY, moveX, moveY);
           this.playerMove = {
             fromX,
             fromY,
             toX,
             toY,
+            targetTileId: collision.tileId,
             elapsed: 0,
             duration: PLAYER_GRID_MOVE_DURATION
           };
@@ -472,6 +473,13 @@ export class GameplayScene implements Scene {
       this.holdPlayerFinalMoveFrame();
       this.state.player.gridX = this.playerMove.toX;
       this.state.player.gridY = this.playerMove.toY;
+      if (this.playerMove.targetTileId !== undefined) {
+        this.applyPlayerTileMutation(
+          this.playerMove.toX,
+          this.playerMove.toY,
+          this.playerMove.targetTileId
+        );
+      }
       this.playerMove = null;
     }
   }
