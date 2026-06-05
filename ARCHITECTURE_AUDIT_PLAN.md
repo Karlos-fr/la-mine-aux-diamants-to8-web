@@ -277,13 +277,24 @@ Dette connue:
 
 ## Phase 10 - Robustesse TypeScript
 
-- [ ] Reduire les assertions `as` non necessaires.
-- [ ] Typer les JSON modernes plus strictement.
-- [ ] Ajouter des validateurs runtime legers pour les JSON de niveaux.
-- [ ] Eviter que `ModernTileType` accepte `exit` si le JSON ne cree pas de tile `exit` directement.
-- [ ] Remplacer les magic numbers par des constantes nommees quand elles sont stables.
-- [ ] Garder les adresses ASM uniquement dans documentation/provenance, pas dans les types runtime modernes.
-- [ ] Verifier l'impact de `noUnusedLocals` apres extraction des modules.
+- [x] Reduire les assertions `as` non necessaires.
+- [x] Typer les JSON modernes plus strictement.
+- [x] Ajouter des validateurs runtime legers pour les JSON de niveaux.
+- [x] Eviter que `ModernTileType` accepte `exit` si le JSON ne cree pas de tile `exit` directement.
+- [x] Remplacer les magic numbers par des constantes nommees quand elles sont stables.
+- [x] Garder les adresses ASM uniquement dans documentation/provenance, pas dans les types runtime modernes.
+- [x] Verifier l'impact de `noUnusedLocals` apres extraction des modules.
+
+### Notes Phase 10
+
+- `ModernTileType` ne contient plus `exit`; la sortie reste portee par `level.exit` dans le meme repere logique que `playerSpawn`.
+- `ModernEntityType`, `ModernGridPoint` et `ModernLevelCell<TType>` rendent le JSON moderne plus explicite.
+- `level-loader.ts` valide legerement les 16 JSON au chargement: champs requis, entiers, bornes de grille, types de tuiles et types d'entites.
+- Le mapping `ModernTileType -> RUNTIME_TILE` ne contient plus de passerelle implicite `exit -> border`.
+- Des assertions `as` non necessaires ont ete remplacees par des types explicites ou des helpers: direction initiale monstre, rotation de direction, priorite horizontale des objets tombants, acces atlas tuiles.
+- Les magic numbers stables `0x02`, `0x03`, `0x05` dans le rendu gameplay ont ete remplaces par `MONSTER_TILE_ID`, `DIAMOND_TILE_ID` et `RUNTIME_EMPTY_TILE_ID`.
+- Les adresses ASM runtime restent dans `runtime-tiles.ts`/provenance pour les parties qui modelisent explicitement la memoire TO8; elles ne sont pas ajoutees aux types JSON modernes.
+- `noUnusedLocals` et `noUnusedParameters` sont deja actifs dans `tsconfig.json`; aucun build n'a ete lance pendant cette phase.
 
 ## Phase 11 - Tests et verification future
 

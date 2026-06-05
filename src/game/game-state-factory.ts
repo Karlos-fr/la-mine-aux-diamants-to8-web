@@ -36,13 +36,14 @@ export function createGameLevelState(levelNumber = 1): GameState {
 }
 
 function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRuntimeState[] {
+  const initialDirection: MonsterRuntimeState["direction"] = 2;
   return entities
     .filter((entity) => entity.kind === "monster")
     .map((entity) => ({
       id: `runtime-${entity.id}`,
       entityId: entity.id,
       runtimePointer: RUNTIME_GRID_BASE_ADDRESS + entity.gridY * RUNTIME_GRID_STRIDE + entity.gridX,
-      direction: 2 as const,
+      direction: initialDirection,
       gridX: entity.gridX,
       gridY: entity.gridY,
       animationKey: "monsterBlink",

@@ -10,7 +10,7 @@ export type {
   TileDefinition
 } from "./types";
 export { drainRuntimeEvents, emitRuntimeEvent } from "./runtime-events";
-export type { ModernLevelJson, ModernTileType } from "./level-loader";
+export type { ModernEntityType, ModernGridPoint, ModernLevelCell, ModernLevelJson, ModernTileType } from "./level-loader";
 export {
   LEVEL_COUNT,
   buildLevelDefinition,

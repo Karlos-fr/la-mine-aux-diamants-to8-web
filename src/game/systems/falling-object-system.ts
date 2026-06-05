@@ -20,11 +20,7 @@ export function resolveFallingObjectTarget(
     return null;
   }
 
-  const horizontalDirections = context.playerGridX < context.gridX
-    ? [-1, 1] as const
-    : context.playerGridX > context.gridX
-      ? [1, -1] as const
-      : [-1, 1] as const;
+  const horizontalDirections = getHorizontalDirectionPriority(context.playerGridX, context.gridX);
 
   for (const direction of horizontalDirections) {
     const sideX = context.gridX + direction;
@@ -37,6 +33,18 @@ export function resolveFallingObjectTarget(
   }
 
   return null;
+}
+
+function getHorizontalDirectionPriority(playerGridX: number, objectGridX: number): ReadonlyArray<-1 | 1> {
+  if (playerGridX < objectGridX) {
+    return [-1, 1];
+  }
+
+  if (playerGridX > objectGridX) {
+    return [1, -1];
+  }
+
+  return [-1, 1];
 }
 
 function hasTwoEmptyCellsInSideColumn(context: FallingObjectTargetContext, direction: -1 | 1): boolean {

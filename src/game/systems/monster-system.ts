@@ -63,5 +63,17 @@ function monsterDirectionToDelta(direction: MonsterRuntimeState["direction"]): {
 }
 
 function decrementMonsterDirection(direction: MonsterRuntimeState["direction"]): MonsterRuntimeState["direction"] {
-  return direction === 1 ? 4 : (direction - 1) as MonsterRuntimeState["direction"];
+  if (direction === 1) {
+    return 4;
+  }
+
+  if (direction === 2) {
+    return 1;
+  }
+
+  if (direction === 3) {
+    return 2;
+  }
+
+  return 3;
 }

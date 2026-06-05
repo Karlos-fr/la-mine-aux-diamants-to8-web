@@ -90,6 +90,7 @@ const MONSTER_RUNTIME_TRAIL_TILE_ID = RUNTIME_TILE.monsterTrail;
 const PLAYER_DIGGABLE_TILE_ID = RUNTIME_TILE.earth;
 const ROCK_TILE_ID = RUNTIME_TILE.rock;
 const DIAMOND_TILE_ID = RUNTIME_TILE.diamond;
+const MONSTER_TILE_ID = RUNTIME_TILE.monster;
 const FALLING_ROCK_TILE_ID = RUNTIME_TILE.fallingRock;
 const FALLING_DIAMOND_TILE_ID = RUNTIME_TILE.fallingDiamond;
 const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
@@ -371,8 +372,8 @@ export class GameplayScene implements Scene {
         );
         const tileId = this.runtimeGrid.getTile(levelX, levelY);
         const isDynamicTile =
-          tileId === 2 ||
-          tileId === 3 ||
+          tileId === MONSTER_TILE_ID ||
+          tileId === DIAMOND_TILE_ID ||
           tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID ||
           tileId === FALLING_ROCK_TILE_ID ||
           tileId === FALLING_DIAMOND_TILE_ID;
@@ -396,9 +397,9 @@ export class GameplayScene implements Scene {
 
         const renderTileId =
           tileId === MONSTER_RUNTIME_TRAIL_TILE_ID || tileId === MONSTER_RUNTIME_ACTIVE_TILE_ID
-            ? 0x05
+            ? RUNTIME_EMPTY_TILE_ID
             : tileId === FALLING_ROCK_TILE_ID || tileId === FALLING_DIAMOND_TILE_ID
-            ? 0x05
+            ? RUNTIME_EMPTY_TILE_ID
             : tileId;
         const frame = this.getTileFrame(spawnBlinkTileId ?? renderTileId);
         if ((hasDynamicEntity || hasPlayerEntity) && spawnBlinkTileId === undefined) {
@@ -1169,7 +1170,7 @@ export class GameplayScene implements Scene {
 
     const frame: TileFrame = {
       id: `tile-${tileId}`,
-      source: this.atlasImage as HTMLImageElement,
+      source: this.getTileAtlasImage(),
       sourceRect: {
         x: tileId * this.tileSourceSize,
         y: 0,
@@ -1196,7 +1197,7 @@ export class GameplayScene implements Scene {
     }
 
     if (!this.diamondAtlasImage) {
-      return this.getTileFrame(0x03);
+      return this.getTileFrame(DIAMOND_TILE_ID);
     }
 
     const frame: TileFrame = {
@@ -1228,7 +1229,7 @@ export class GameplayScene implements Scene {
     }
 
     if (!this.monsterAtlasImage) {
-      return this.getTileFrame(0x02);
+      return this.getTileFrame(MONSTER_TILE_ID);
     }
 
     const frame: TileFrame = {
@@ -1336,6 +1337,14 @@ export class GameplayScene implements Scene {
       fontId: HUD_SMALL_COUNTER_FONT_ID,
       color: HUD_SMALL_COUNTER_COLOR
     });
+  }
+
+  private getTileAtlasImage(): HTMLImageElement {
+    if (!this.atlasImage) {
+      throw new Error("Atlas de tuiles non charge.");
+    }
+
+    return this.atlasImage;
   }
 }
 

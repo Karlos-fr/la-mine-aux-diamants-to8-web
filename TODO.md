@@ -9,7 +9,9 @@
 
 - Enregistrer le reccord en local
 - Commenter le code
-
+- Gestion du son
+- Gestion des autres monstres
+- - Niveau secret Infogram
 
 La mine aux diamants
 
