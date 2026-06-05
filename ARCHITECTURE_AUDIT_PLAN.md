@@ -169,6 +169,8 @@ Dette connue:
 - Les mutations de grille restent appliquees immediatement afin de conserver le comportement discret actuel et l'ordre d'update deja stabilise.
 - Les effets derives passent par le journal: score/diamants HUD, ouverture de sortie et transition de niveau.
 - `GameplayScene` garde une protection locale `mutatedRuntimeTilesThisTick` pour eviter deux nettoyages concurrents de la meme cellule pendant un tick.
+- Les mutations physiques internes, notamment la case source d'un rocher/diamant qui commence a tomber, bypassent ce garde-fou pour ne pas bloquer la chute si une autre logique a deja touche une cellule pendant le tick.
+- Les traces runtime de monstre `0x80` sont traitees comme du vide par les objets physiques, comme elles le sont deja au rendu et pour les deplacements.
 
 ## Phase 5 - Rendu gameplay
 

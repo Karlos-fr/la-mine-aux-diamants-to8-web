@@ -695,17 +695,19 @@ export class GameplayScene implements Scene {
     this.runtimeGrid.setTile(gridX, gridY, tileId);
   }
 
-  private clearRuntimeTile(gridX: number, gridY: number): void {
-    if (!this.markRuntimeTileMutation(gridX, gridY)) {
+  private clearRuntimeTile(gridX: number, gridY: number, emitEvent = true): void {
+    if (emitEvent && !this.markRuntimeTileMutation(gridX, gridY)) {
       return;
     }
 
     this.setTile(gridX, gridY, RUNTIME_EMPTY_TILE_ID);
-    emitRuntimeEvent(this.state, {
-      type: "tileCleared",
-      gridX,
-      gridY
-    });
+    if (emitEvent) {
+      emitRuntimeEvent(this.state, {
+        type: "tileCleared",
+        gridX,
+        gridY
+      });
+    }
   }
 
   private digRuntimeTile(gridX: number, gridY: number): void {
@@ -785,7 +787,7 @@ export class GameplayScene implements Scene {
 
   private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
     return (
-      this.runtimeGrid.getTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
+      this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
       !this.hasFallingObjectAtGrid(gridX, gridY) &&
       !this.isPlayerRenderedAtGrid(gridX, gridY)
     );
@@ -797,10 +799,14 @@ export class GameplayScene implements Scene {
 
   private canFallingObjectMoveTo(gridX: number, gridY: number): boolean {
     return (
-      this.runtimeGrid.getTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
+      this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
       !this.hasFallingObjectAtGrid(gridX, gridY) &&
       !this.isPlayerRenderedAtGrid(gridX, gridY)
     );
+  }
+
+  private isFallingObjectEmptyRuntimeTile(tileId: number): boolean {
+    return tileId === RUNTIME_EMPTY_TILE_ID || tileId === MONSTER_RUNTIME_TRAIL_TILE_ID;
   }
 
   private startFallingObject(fromX: number, fromY: number, toX: number, toY: number, tileId: number): void {
@@ -821,7 +827,7 @@ export class GameplayScene implements Scene {
       duration: FALLING_OBJECT_GRID_MOVE_DURATION
     };
 
-    this.clearRuntimeTile(fromX, fromY);
+    this.clearRuntimeTile(fromX, fromY, false);
     this.setTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
   }
