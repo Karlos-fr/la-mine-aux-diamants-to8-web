@@ -1,11 +1,14 @@
 /**
  * Role: Orchestre l'ordre d'update du gameplay moderne.
  * Scope: Enchaine les phases runtime sans porter directement les regles gameplay ni le rendu.
- * ISO: L'ordre conserve la sequence actuelle: spawn/HUD, joueur, camera, physique, monstres, evenements, animations.
+ * ISO: L'ordre normal conserve la sequence moderne; l'ordre attract rapproche `$CA04/$BC84/$CB07` avant `$CDF9`.
  * Notes: Les hooks restent fournis par `GameplayScene` pour limiter cette phase a une extraction d'orchestration.
  */
 
 import type { InputState } from "../engine/input";
+
+/** Ordre d'orchestration runtime applique a la scene courante. */
+export type GameplayRuntimeMode = "normal" | "attract";
 
 /** Hooks imperatifs executes par le runtime dans un ordre stable. */
 export interface GameplayRuntimeHooks {
@@ -56,10 +59,13 @@ export interface GameplayRuntimeHooks {
 export class GameplayRuntime {
   /** Hooks fournis par la scene gameplay. */
   private readonly hooks: GameplayRuntimeHooks;
+  /** Mode d'ordonnancement applique par le runtime. */
+  private readonly mode: GameplayRuntimeMode;
 
   /** Prepare le runtime avec les hooks de scene. */
-  constructor(hooks: GameplayRuntimeHooks) {
+  constructor(hooks: GameplayRuntimeHooks, mode: GameplayRuntimeMode = "normal") {
     this.hooks = hooks;
+    this.mode = mode;
   }
 
   /** Execute un tick gameplay complet dans l'ordre documente et conserve. */
@@ -71,6 +77,11 @@ export class GameplayRuntime {
     this.hooks.clearSpawnBlinkTileAfterSpawn();
     this.hooks.advanceHudCounters(dt, playerSpawning);
 
+    if (this.mode === "attract") {
+      this.updateAttractOrder(dt, input, playerSpawning);
+      return;
+    }
+
     this.hooks.advancePlayerRuntime(dt, input, playerSpawning);
     this.hooks.advanceCameraMove(dt);
     this.hooks.syncPlayerPixelPosition();
@@ -79,6 +90,22 @@ export class GameplayRuntime {
     this.hooks.advanceMonsterRuntime(dt);
     this.hooks.advanceMonsterMoves(dt);
     this.hooks.syncMonsterEntitiesFromRuntimeState();
+
+    this.hooks.consumeRuntimeEvents();
+    this.hooks.advanceRenderAnimations(dt);
+  }
+
+  /** Execute l'ordre dedie attract: monde et physique avant lecture du script joueur. */
+  private updateAttractOrder(dt: number, input: InputState, playerSpawning: boolean): void {
+    this.hooks.advanceMonsterRuntime(dt);
+    this.hooks.advanceMonsterMoves(dt);
+    this.hooks.syncMonsterEntitiesFromRuntimeState();
+
+    this.hooks.advanceFallingObjects(dt);
+
+    this.hooks.advancePlayerRuntime(dt, input, playerSpawning);
+    this.hooks.advanceCameraMove(dt);
+    this.hooks.syncPlayerPixelPosition();
 
     this.hooks.consumeRuntimeEvents();
     this.hooks.advanceRenderAnimations(dt);

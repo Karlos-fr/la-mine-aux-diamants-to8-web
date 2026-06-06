@@ -39,18 +39,36 @@ export class KeyboardPlayerInputSource implements PlayerInputSource {
 export class AttractScriptInputSource implements PlayerInputSource {
   /** Etat mutable equivalent aux variables ASM `$CE31`, `$CE33`, `$CE34`. */
   private readonly scriptState: AttractScriptState = createInitialAttractScriptState();
+  /** Derniere intention lue par le tick attract courant. */
+  private currentIntent: ReturnType<typeof readNextAttractScriptIntent> = { type: "idle", command: 0 };
   /** Indique que le marqueur `$DD` a ete atteint. */
   private ended = false;
 
-  /** Convertit la prochaine commande script en delta discret de grille. */
-  resolveMove(_input: InputState): PlayerMoveIntent {
+  /** Avance le script d'un tick logique, comme l'appel regulier a `$CDF9`. */
+  advanceScriptTick(): void {
+    if (this.ended) {
+      return;
+    }
+
     const intent = readNextAttractScriptIntent(this.scriptState);
     if (intent.type === "end") {
       this.ended = true;
+      this.currentIntent = intent;
+      return;
+    }
+
+    this.currentIntent = intent;
+  }
+
+  /** Convertit la commande courante du script en delta discret de grille. */
+  resolveMove(_input: InputState): PlayerMoveIntent {
+    const intent = this.currentIntent;
+
+    if (intent.type === "idle") {
       return { x: 0, y: 0 };
     }
 
-    if (intent.type === "idle") {
+    if (intent.type === "end") {
       return { x: 0, y: 0 };
     }
 

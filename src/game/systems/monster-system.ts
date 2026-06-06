@@ -1,7 +1,7 @@
 /**
  * Role: Gere le pas runtime d'un monstre.
  * Scope: Deplace un monstre sur la grille, pose les marqueurs runtime et met a jour son pointeur.
- * ISO: Les routines `CA04`/`BC84` utilisent l'ordre 1=bas, 2=gauche, 3=haut, 4=droite.
+ * ISO: Les routines `CA04` et `BC84` utilisent deux tables de rotation distinctes.
  * Notes: L'interpolation visuelle est stockee dans l'etat mais consommee par la scene/rendu.
  */
 
@@ -34,7 +34,7 @@ export function advanceSingleMonsterRuntime(
   let direction = monster.direction;
 
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    const delta = monsterDirectionToDelta(direction);
+    const delta = monsterDirectionToDelta(monster.kind, direction);
     const targetX = monster.gridX + delta.x;
     const targetY = monster.gridY + delta.y;
 
@@ -51,19 +51,33 @@ export function advanceSingleMonsterRuntime(
       };
       monster.gridX = targetX;
       monster.gridY = targetY;
-      monster.direction = direction;
+      monster.direction = rotateMonsterDirectionAfterMove(monster.kind, direction);
       monster.runtimePointer = context.runtimeBaseAddress + targetY * context.runtimeStride + targetX;
       return;
     }
 
-    direction = incrementMonsterDirection(direction);
+    direction = rotateMonsterDirectionAfterBlockedAttempt(monster.kind, direction);
   }
 
   monster.direction = direction;
 }
 
-/** Convertit la direction historique 1..4 en delta de grille selon `CA04`/`BC84`. */
-function monsterDirectionToDelta(direction: MonsterRuntimeState["direction"]): { readonly x: number; readonly y: number } {
+/** Convertit la direction historique 1..4 en delta de grille selon le type d'entite ASM. */
+function monsterDirectionToDelta(
+  kind: MonsterRuntimeState["kind"],
+  direction: MonsterRuntimeState["direction"]
+): { readonly x: number; readonly y: number } {
+  if (kind === "specialCreature") {
+    return specialCreatureDirectionToDelta(direction);
+  }
+
+  return standardMonsterDirectionToDelta(direction);
+}
+
+/** Convertit la direction du monstre standard `0x02` selon la routine `CA04`. */
+function standardMonsterDirectionToDelta(
+  direction: MonsterRuntimeState["direction"]
+): { readonly x: number; readonly y: number } {
   if (direction === 1) {
     return { x: 0, y: 1 };
   }
@@ -79,7 +93,38 @@ function monsterDirectionToDelta(direction: MonsterRuntimeState["direction"]): {
   return { x: 1, y: 0 };
 }
 
-/** Tourne la direction dans l'ordre original quand la voie courante est bloquee. */
+/** Convertit la direction de la creature speciale `0x17` selon la routine `BC84`. */
+function specialCreatureDirectionToDelta(
+  direction: MonsterRuntimeState["direction"]
+): { readonly x: number; readonly y: number } {
+  if (direction === 1) {
+    return { x: 0, y: -1 };
+  }
+
+  if (direction === 2) {
+    return { x: 1, y: 0 };
+  }
+
+  if (direction === 3) {
+    return { x: 0, y: 1 };
+  }
+
+  return { x: -1, y: 0 };
+}
+
+/** Tourne la direction apres un essai bloque selon le type d'entite ASM. */
+function rotateMonsterDirectionAfterBlockedAttempt(
+  kind: MonsterRuntimeState["kind"],
+  direction: MonsterRuntimeState["direction"]
+): MonsterRuntimeState["direction"] {
+  if (kind === "specialCreature") {
+    return decrementMonsterDirection(direction);
+  }
+
+  return incrementMonsterDirection(direction);
+}
+
+/** Tourne la direction standard dans l'ordre original quand la voie courante est bloquee. */
 function incrementMonsterDirection(direction: MonsterRuntimeState["direction"]): MonsterRuntimeState["direction"] {
   if (direction === 1) {
     return 2;
@@ -94,4 +139,33 @@ function incrementMonsterDirection(direction: MonsterRuntimeState["direction"]):
   }
 
   return 1;
+}
+
+/** Tourne la direction speciale dans l'ordre inverse quand la voie courante est bloquee. */
+function decrementMonsterDirection(direction: MonsterRuntimeState["direction"]): MonsterRuntimeState["direction"] {
+  if (direction === 1) {
+    return 4;
+  }
+
+  if (direction === 2) {
+    return 1;
+  }
+
+  if (direction === 3) {
+    return 2;
+  }
+
+  return 3;
+}
+
+/** Prepare la direction du prochain pas apres un mouvement reussi, comme `CA04` ou `BC84`. */
+function rotateMonsterDirectionAfterMove(
+  kind: MonsterRuntimeState["kind"],
+  direction: MonsterRuntimeState["direction"]
+): MonsterRuntimeState["direction"] {
+  if (kind === "specialCreature") {
+    return incrementMonsterDirection(direction);
+  }
+
+  return decrementMonsterDirection(direction);
 }

@@ -15,6 +15,7 @@ import { LevelRuntimeGrid } from "../game/runtime-grid";
 import { GameplayRuntime } from "../game/gameplay-runtime";
 import { RuntimeMutations } from "../game/runtime-mutations";
 import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
+import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import {
   AttractScriptInputSource,
   KeyboardPlayerInputSource,
@@ -120,26 +121,26 @@ const CAMERA_MIN_X = INITIAL_VIEWPORT_X;
 const CAMERA_MIN_Y = INITIAL_VIEWPORT_Y;
 /** Nombre de cycles `0x04`/noir prouves par le compteur `6` de `KIT.BIN:$BE68`. */
 const PLAYER_SPAWN_BLINK_REPETITIONS = 3;
-/** Duree d'un demi-pas de blink spawn. */
-const PLAYER_SPAWN_BLINK_STEP_DURATION = 0.25;
-/** Duree moderne du mouvement joueur fluide d'une cellule. */
-const PLAYER_GRID_MOVE_DURATION = 0.21;
+/** Duree d'un demi-pas de blink spawn, derivee des ticks TO8. */
+const PLAYER_SPAWN_BLINK_STEP_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerSpawnBlinkStepTicks);
+/** Duree moderne du mouvement joueur fluide d'une cellule, derivee des ticks TO8. */
+const PLAYER_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerGridMoveTicks);
 /** Delai moderne avant de relancer le cycle idle confirme par `KIT.BIN:$CED9`. */
-const PLAYER_IDLE_DELAY = 0.8;
+const PLAYER_IDLE_DELAY = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerIdleDelayTicks);
 /** Duree d'une frame de marche pendant un pas joueur. */
 const PLAYER_WALK_FRAME_DURATION = PLAYER_GRID_MOVE_DURATION / 3;
 /** Maintien court de la derniere frame de marche apres l'arrivee. */
 const PLAYER_WALK_FINAL_FRAME_HOLD_DURATION = PLAYER_WALK_FRAME_DURATION;
 /** Duree d'interpolation camera alignee sur le joueur. */
 const CAMERA_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
-/** Intervalle de decision des monstres. */
-const MONSTER_MOVE_INTERVAL = 0.28;
-/** Duree d'interpolation d'un pas monstre. */
-const MONSTER_GRID_MOVE_DURATION = 0.18;
-/** Intervalle de scan des rochers/diamants prets a tomber. */
-const FALLING_OBJECT_SCAN_INTERVAL = 0.16;
-/** Duree d'interpolation d'un objet physique. */
-const FALLING_OBJECT_GRID_MOVE_DURATION = 0.18;
+/** Intervalle de decision des monstres, derive des ticks TO8. */
+const MONSTER_MOVE_INTERVAL = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterMoveIntervalTicks);
+/** Duree d'interpolation d'un pas monstre, derivee des ticks TO8. */
+const MONSTER_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterGridMoveTicks);
+/** Intervalle de scan des rochers/diamants prets a tomber, derive des ticks TO8. */
+const FALLING_OBJECT_SCAN_INTERVAL = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.fallingObjectScanTicks);
+/** Duree d'interpolation d'un objet physique, derivee des ticks TO8. */
+const FALLING_OBJECT_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.fallingObjectGridMoveTicks);
 /** Duree d'interpolation d'un rocher pousse, synchronisee avec le pas joueur. */
 const PUSHED_ROCK_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 /** Tile runtime temporaire du monstre actif. */
@@ -165,14 +166,14 @@ const EXPLOSION_TILE_SEQUENCE = [
   RUNTIME_TILE.explosion3,
   RUNTIME_TILE.empty
 ] as const;
-/** Duree moderne d'une frame d'explosion. */
-const EXPLOSION_FRAME_DURATION = 0.12;
+/** Duree moderne d'une frame d'explosion, derivee des ticks TO8. */
+const EXPLOSION_FRAME_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.explosionFrameTicks);
 /** Tile id vide. */
 const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 /** Tile id plateforme solide. */
 const PLATFORM_TILE_ID = RUNTIME_TILE.platform;
 /** Duree en secondes d'un tick compteur temps HUD. */
-const HUD_TIMER_TICK_SECONDS = 1;
+const HUD_TIMER_TICK_SECONDS = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.hudTimerTicks);
 /** Frames couleur du diamant HUD, animees par decalage de lignes. */
 const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: 16 }, (_, index) => index);
 /** Dernier niveau actuellement disponible. */
@@ -272,11 +273,11 @@ export class GameplayScene implements Scene {
   private readonly monsterAnimationFrames = extractFrameIdsFromMetadata("monster", "blinkToggle", [2, 2]);
   /** Durees de frames par animation. */
   private readonly animationDurations = {
-    player: 1 / 8,
-    diamond: 1 / 8,
-    monster: 1 / 4,
-    hudDiamond: 1 / 8,
-    exit: 1 / 4
+    player: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerAnimationFrameTicks),
+    diamond: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.diamondAnimationFrameTicks),
+    monster: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterAnimationFrameTicks),
+    hudDiamond: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.hudDiamondAnimationFrameTicks),
+    exit: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.exitBlinkFrameTicks)
   };
   /** Horloges d'animation indexees par cle. */
   private readonly animationState = new Map<string, AnimationClock>();
@@ -364,7 +365,7 @@ export class GameplayScene implements Scene {
       syncMonsterEntitiesFromRuntimeState: () => this.syncMonsterEntitiesFromRuntimeState(),
       consumeRuntimeEvents: () => this.consumeRuntimeEvents(),
       advanceRenderAnimations: (dt) => this.advanceRenderAnimations(dt)
-    });
+    }, this.gameplayMode);
     this.animationState.set("player", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("diamond", { frameIndex: 0, accumulator: 0 });
     this.animationState.set("monster", { frameIndex: 0, accumulator: 0 });
@@ -406,16 +407,20 @@ export class GameplayScene implements Scene {
       return;
     }
 
+    if (this.gameplayMode === "attract" && !playerSpawning) {
+      this.attractInputSource?.advanceScriptTick();
+      if (this.attractInputSource?.isEnded()) {
+        this.queueAttractReturnToTitle();
+        return;
+      }
+    }
+
     if (this.playerMove) {
       this.resetPlayerIdleDelay();
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       this.advancePlayerHeldMoveFrame(dt);
       const { x: moveX, y: moveY } = this.playerInputSource.resolveMove(input);
-      if (this.gameplayMode === "attract" && this.attractInputSource?.isEnded()) {
-        this.queueAttractReturnToTitle();
-        return;
-      }
 
       if (moveX !== 0 || moveY !== 0) {
         this.resetPlayerIdleDelay();
@@ -572,7 +577,7 @@ export class GameplayScene implements Scene {
 
   /** Indique si une entite couvre la cellule donnee apres application des offsets runtime. */
   private isEntityAtGrid(entity: EntityState, gridX: number, gridY: number): boolean {
-    return Math.round(entity.gridX) === gridX && Math.round(entity.gridY) === gridY;
+    return entity.gridX === gridX && entity.gridY === gridY;
   }
 
   /** Avance le pas joueur fluide actuellement en cours. */
@@ -1420,8 +1425,8 @@ export class GameplayScene implements Scene {
     return this.state.entities.find((item) =>
       item.kind === kind &&
       item.active &&
-      Math.round(item.gridX) === gridX &&
-      Math.round(item.gridY) === gridY
+      item.gridX === gridX &&
+      item.gridY === gridY
     ) ?? null;
   }
 
@@ -1505,6 +1510,11 @@ export class GameplayScene implements Scene {
     }
 
     this.deathResetQueued = true;
+    if (this.gameplayMode === "attract") {
+      this.queueAttractReturnToTitle();
+      return;
+    }
+
     this.context?.setScene(this.recreateLevelScene(this.levelNumber));
   }
 
