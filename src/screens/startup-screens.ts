@@ -11,11 +11,14 @@ import { loadImage } from "../engine/image-loader";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
+import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
 
 /** Seuil ASM `$34`: nombre de passages de boucle titre avant lancement attract. */
 const TITLE_ATTRACT_IDLE_TICKS = 0x34;
+/** Duree moderne d'un passage de boucle titre `$8DD8`, centralisee dans `runtime-timing.ts`. */
+const TITLE_ATTRACT_IDLE_TICK_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.titleAttractLoopTicks);
 
 export class StartupInfogramScene implements Scene {
   /** Contexte de scene fourni par le routeur pour naviguer vers l'ecran titre. */
@@ -80,6 +83,8 @@ export class StartupTitleScene implements Scene {
   private feetIndex = 0;
   /** Compteur logique d'inactivite equivalent a `$8DD8` dans l'ASM. */
   private attractIdleTicks = 0;
+  /** Temps accumule avant le prochain passage logique du compteur `$8DD8`. */
+  private attractIdleElapsed = 0;
 
   /** Image de base plein ecran du titre. */
   private baseImage: HTMLImageElement | undefined;
@@ -171,12 +176,18 @@ export class StartupTitleScene implements Scene {
 
     if (hasAnyJustPressedInput(input)) {
       this.attractIdleTicks = 0;
+      this.attractIdleElapsed = 0;
       return;
     }
 
-    this.attractIdleTicks += 1;
-    if (this.attractIdleTicks >= TITLE_ATTRACT_IDLE_TICKS) {
-      this.context?.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
+    this.attractIdleElapsed += dt;
+    while (this.attractIdleElapsed >= TITLE_ATTRACT_IDLE_TICK_DURATION) {
+      this.attractIdleElapsed -= TITLE_ATTRACT_IDLE_TICK_DURATION;
+      this.attractIdleTicks += 1;
+      if (this.attractIdleTicks >= TITLE_ATTRACT_IDLE_TICKS) {
+        this.context?.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
+        return;
+      }
     }
   }
 

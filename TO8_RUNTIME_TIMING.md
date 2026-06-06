@@ -31,6 +31,7 @@ La logique gameplay doit avancer en ticks entiers. Le rendu fluide peut interpol
 | Diamant HUD | Rendu HUD moderne, inspire animations ASM | 6 ticks | Visuel moderne | Ne participe pas aux collisions ni a la collecte |
 | Sortie ouverte | `$BFB6`, rendu moderne | 13 ticks | Visuel moderne | Blink visuel sans mutation de la grille runtime |
 | Compteur temps HUD | Logique compteur temps | 50 ticks | Stable | Une seconde logique par decrement du compteur temps |
+| Compteur titre attract | `$8DD8`, comparaison `$34` | 13 ticks par passage | Calibration moderne | Le seuil ASM est prouve; la duree exacte d'un passage titre depend des routines graphiques/temporisations |
 | Script attract | `$CDF9`, `$CE31`, `$CE33`, `$CE34` | 1 lecture par tick attract moderne disponible | Partiel | Lecture decouplee de l'interpolation joueur; ordre attract dedie dans `GameplayRuntime` |
 
 ## Points encore non cycle-perfect

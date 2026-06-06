@@ -17,6 +17,14 @@ export function secondsFromTo8Ticks(ticks: number): number {
 
 /** Cadences gameplay exprimees en ticks TO8 entiers. */
 export const TO8_RUNTIME_TIMING = {
+  /**
+   * Duree moderne d'un passage de boucle titre pour le compteur attract `$8DD8`.
+   *
+   * Le seuil ASM reste `$34` passages, mais un passage de boucle titre original
+   * n'est pas un tick moteur moderne 50 Hz. Valeur de calibration moderne en
+   * attente d'une mesure video/emulateur.
+   */
+  titleAttractLoopTicks: 13,
   /** Demi-pas du blink spawn `0x04` puis noir; `$BE68` boucle 6 fois avec delais CPU `$CD5B`. */
   playerSpawnBlinkStepTicks: 13,
   /** Duree du pas joueur fluide; approximation moderne arrondie depuis 10,5 ticks. */
