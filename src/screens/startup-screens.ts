@@ -12,7 +12,10 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
-import { createGameplayScene } from "./scene-factory";
+import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
+
+/** Seuil ASM `$34`: nombre de passages de boucle titre avant lancement attract. */
+const TITLE_ATTRACT_IDLE_TICKS = 0x34;
 
 export class StartupInfogramScene implements Scene {
   /** Contexte de scene fourni par le routeur pour naviguer vers l'ecran titre. */
@@ -75,6 +78,8 @@ export class StartupTitleScene implements Scene {
   private faceIndex = 0;
   /** Index courant de frame pieds. */
   private feetIndex = 0;
+  /** Compteur logique d'inactivite equivalent a `$8DD8` dans l'ASM. */
+  private attractIdleTicks = 0;
 
   /** Image de base plein ecran du titre. */
   private baseImage: HTMLImageElement | undefined;
@@ -138,7 +143,7 @@ export class StartupTitleScene implements Scene {
     this.context = context;
   }
 
-  /** Avance les clocks d'animation et lance le niveau 1 sur action. */
+  /** Avance les clocks d'animation, lance le jeu ou le mode attract selon l'inactivite. */
   update(dt: number, input: InputState): void {
     this.sparkleElapsed += dt;
     this.faceElapsed += dt;
@@ -161,6 +166,17 @@ export class StartupTitleScene implements Scene {
 
     if (input.justPressed.confirm || input.justPressed.action) {
       this.context?.setScene(createGameplayScene(1));
+      return;
+    }
+
+    if (hasAnyJustPressedInput(input)) {
+      this.attractIdleTicks = 0;
+      return;
+    }
+
+    this.attractIdleTicks += 1;
+    if (this.attractIdleTicks >= TITLE_ATTRACT_IDLE_TICKS) {
+      this.context?.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
     }
   }
 
@@ -202,4 +218,17 @@ export class StartupTitleScene implements Scene {
 /** Retourne l'element d'un tableau si l'index existe. */
 function pick<T>(value: ReadonlyArray<T> | undefined, index: number): T | undefined {
   return value?.[index];
+}
+
+/** Indique si une action utilisateur vient d'etre pressee sur le titre. */
+function hasAnyJustPressedInput(input: InputState): boolean {
+  return (
+    input.justPressed.up ||
+    input.justPressed.down ||
+    input.justPressed.left ||
+    input.justPressed.right ||
+    input.justPressed.confirm ||
+    input.justPressed.action ||
+    input.justPressed.cancel
+  );
 }

@@ -16,6 +16,11 @@ import { GameplayRuntime } from "../game/gameplay-runtime";
 import { RuntimeMutations } from "../game/runtime-mutations";
 import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
 import {
+  AttractScriptInputSource,
+  KeyboardPlayerInputSource,
+  type PlayerInputSource
+} from "../game/player-input-source";
+import {
   RUNTIME_GRID_BASE_ADDRESS,
   RUNTIME_GRID_FILL_TILE_ID,
   RUNTIME_GRID_STRIDE,
@@ -38,7 +43,6 @@ import { resolveRockPushTarget as resolveRockPushTargetSystem } from "../game/sy
 import {
   canPlayerEnterTile as canPlayerEnterTileSystem,
   getPlayerArrivalEffect as getPlayerArrivalEffectSystem,
-  resolvePressedPlayerMove,
   type PlayerMoveResolution,
   type RuntimeTileArrivalEffect
 } from "../game/systems/player-system";
@@ -173,6 +177,19 @@ const HUD_TIMER_TICK_SECONDS = 1;
 const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: 16 }, (_, index) => index);
 /** Dernier niveau actuellement disponible. */
 const LAST_LEVEL_NUMBER = 16;
+/** Niveau moderne dedie a l'entree cachee `$B7C4` du mode attract. */
+const ATTRACT_MODE_LEVEL_NUMBER = 18;
+
+/** Mode de pilotage de la scene gameplay. */
+export type GameplaySceneMode = "normal" | "attract";
+
+/** Options de creation de la scene gameplay moderne. */
+export interface GameplaySceneOptions {
+  /** Mode runtime a utiliser pour la source d'input et les sorties. */
+  readonly mode?: GameplaySceneMode;
+  /** Factory de retour au titre utilisee uniquement par le mode attract. */
+  readonly createTitleScene?: () => Scene;
+}
 
 /** Cree le viewport initial autour du spawn joueur en respectant les marges ASM connues. */
 function createInitialViewportForSpawn(
@@ -204,12 +221,20 @@ export class GameplayScene implements Scene {
   private readonly state: GameState;
   /** Numero de niveau courant, utilise pour HUD et transition. */
   private readonly levelNumber: number;
+  /** Mode runtime courant, normal ou demonstration automatique. */
+  private readonly gameplayMode: GameplaySceneMode;
   /** Grille runtime mutable qui fait autorite pour la logique discrete. */
   private readonly runtimeGrid: LevelRuntimeGrid;
   /** API centralisee pour les mutations de grille runtime. */
   private readonly runtimeMutations: RuntimeMutations;
   /** Runtime charge d'orchestrer l'ordre d'update gameplay. */
   private readonly runtime: GameplayRuntime;
+  /** Source d'intention joueur active pour le niveau courant. */
+  private readonly playerInputSource: PlayerInputSource;
+  /** Source scriptable conservee separement pour detecter la fin `$DD`. */
+  private readonly attractInputSource: AttractScriptInputSource | null = null;
+  /** Factory de retour au titre pour les sorties du mode attract. */
+  private readonly createTitleScene: (() => Scene) | undefined;
   /** Renderer dedie a l'ordre de rendu gameplay ISO. */
   private readonly gameplayRenderer = new GameplayRenderer();
   /** Factory injectee pour creer la scene du niveau suivant sans cycle d'import. */
@@ -289,12 +314,21 @@ export class GameplayScene implements Scene {
   constructor(
     levelNumber: number,
     createNextLevelScene: (currentLevelNumber: number) => Scene,
-    recreateLevelScene: (levelNumber: number) => Scene
+    recreateLevelScene: (levelNumber: number) => Scene,
+    options: GameplaySceneOptions = {}
   ) {
-    this.levelNumber = levelNumber;
+    this.gameplayMode = options.mode ?? "normal";
+    this.levelNumber = this.gameplayMode === "attract" ? ATTRACT_MODE_LEVEL_NUMBER : levelNumber;
+    if (this.gameplayMode === "attract") {
+      this.attractInputSource = new AttractScriptInputSource();
+      this.playerInputSource = this.attractInputSource;
+    } else {
+      this.playerInputSource = new KeyboardPlayerInputSource();
+    }
+    this.createTitleScene = options.createTitleScene;
     this.createNextLevelScene = createNextLevelScene;
     this.recreateLevelScene = recreateLevelScene;
-    this.state = createGameLevelState(levelNumber);
+    this.state = createGameLevelState(this.levelNumber);
     this.viewport = createInitialViewportForSpawn(
       this.state.level.playerStart.x,
       this.state.level.playerStart.y,
@@ -346,6 +380,11 @@ export class GameplayScene implements Scene {
 
   /** Orchestre un tick gameplay complet sans effectuer de rendu. */
   update(dt: number, input: InputState): void {
+    if (this.gameplayMode === "attract" && (input.justPressed.confirm || input.justPressed.action)) {
+      this.queueAttractReturnToTitle();
+      return;
+    }
+
     this.runtime.update(dt, input);
   }
 
@@ -372,7 +411,12 @@ export class GameplayScene implements Scene {
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       this.advancePlayerHeldMoveFrame(dt);
-      const { x: moveX, y: moveY } = resolvePressedPlayerMove(input.pressed);
+      const { x: moveX, y: moveY } = this.playerInputSource.resolveMove(input);
+      if (this.gameplayMode === "attract" && this.attractInputSource?.isEnded()) {
+        this.queueAttractReturnToTitle();
+        return;
+      }
+
       if (moveX !== 0 || moveY !== 0) {
         this.resetPlayerIdleDelay();
         const playerCell = this.getPlayerLogicalCell();
@@ -1286,7 +1330,11 @@ export class GameplayScene implements Scene {
 
       if (event.type === "levelCompleted") {
         this.state.levelComplete = true;
-        this.queueNextLevelTransition();
+        if (this.gameplayMode === "attract") {
+          this.queueAttractReturnToTitle();
+        } else {
+          this.queueNextLevelTransition();
+        }
       }
     }
   }
@@ -1321,6 +1369,18 @@ export class GameplayScene implements Scene {
     this.levelTransitionQueued = true;
     if (this.levelNumber < LAST_LEVEL_NUMBER) {
       this.context?.setScene(this.createNextLevelScene(this.levelNumber));
+    }
+  }
+
+  /** Programme le retour au titre pour les sorties du mode attract. */
+  private queueAttractReturnToTitle(): void {
+    if (this.levelTransitionQueued) {
+      return;
+    }
+
+    this.levelTransitionQueued = true;
+    if (this.createTitleScene) {
+      this.context?.setScene(this.createTitleScene());
     }
   }
 

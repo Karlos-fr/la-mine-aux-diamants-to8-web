@@ -4,8 +4,8 @@ import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
-import { createGameplayScene } from "./screens/scene-factory";
-import { StartupInfogramScene } from "./screens/startup-screens";
+import { createAttractGameplayScene, createGameplayScene } from "./screens/scene-factory";
+import { StartupInfogramScene, StartupTitleScene } from "./screens/startup-screens";
 
 /**
  * Point d'entree navigateur.
@@ -59,9 +59,16 @@ if (mode === "gallery") {
     const levelSource = getModernLevelSource(levelNumber);
     const option = document.createElement("option");
     option.value = String(levelNumber);
-    option.textContent = levelSource ? `${levelNumber} - ${levelSource.label}` : `Niveau ${levelNumber}`;
+    const sourceSuffix = levelSource?.source?.kind === "attract" ? " (debug niveau cache)" : "";
+    option.textContent = levelSource ? `${levelNumber} - ${levelSource.label}${sourceSuffix}` : `Niveau ${levelNumber}`;
     levelSelect.append(option);
   }
+
+  /** Bouton debug dedie au mode attract scriptable original. */
+  const attractButton = document.createElement("button");
+  attractButton.className = "debug-attract-button";
+  attractButton.type = "button";
+  attractButton.textContent = "Attract";
 
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
@@ -75,7 +82,7 @@ if (mode === "gallery") {
     ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
     canvas.focus();
   });
-  debugToolbar.append(levelSelectLabel, levelSelect, ghostButton);
+  debugToolbar.append(levelSelectLabel, levelSelect, attractButton, ghostButton);
   root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -88,6 +95,10 @@ if (mode === "gallery") {
   levelSelect.addEventListener("change", () => {
     const levelNumber = Number(levelSelect.value);
     app.setScene(createGameplayScene(levelNumber));
+    canvas.focus();
+  });
+  attractButton.addEventListener("click", () => {
+    app.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
     canvas.focus();
   });
   app.start();

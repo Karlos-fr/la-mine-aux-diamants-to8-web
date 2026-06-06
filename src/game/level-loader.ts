@@ -24,6 +24,7 @@ import level14Json from "../assets/levels/level-14.json";
 import level15Json from "../assets/levels/level-15.json";
 import level16Json from "../assets/levels/level-16.json";
 import level17Json from "../assets/levels/level-17.json";
+import level18Json from "../assets/levels/level-18.json";
 
 /** Types de tuiles autorises dans les JSON modernes. */
 export type ModernTileType =
@@ -38,6 +39,8 @@ export type ModernTileType =
   | "transformerBlock";
 /** Types d'entites declarables dans les JSON modernes. */
 export type ModernEntityType = "diamond" | "monster" | "specialCreature";
+/** Nature documentaire d'un niveau moderne. */
+export type ModernLevelSourceKind = "normal" | "debug" | "attract";
 
 /** Coordonnees de grille modernes, sans adresse ASM. */
 export interface ModernGridPoint {
@@ -89,6 +92,19 @@ export interface ModernLevelJson {
   readonly tiles: ReadonlyArray<ModernLevelCell<ModernTileType>>;
   /** Entites placees dans le niveau. */
   readonly entities: ReadonlyArray<ModernLevelCell<ModernEntityType>>;
+  /** Metadonnees facultatives de provenance, conservees pour les niveaux speciaux/debug. */
+  readonly source?: {
+    /** Nature fonctionnelle du niveau moderne. */
+    readonly kind?: ModernLevelSourceKind;
+    /** Index ASM d'origine quand il existe. */
+    readonly originalLevelIndex?: string;
+    /** Adresse ASM du niveau encode quand elle existe. */
+    readonly originalAddress?: string;
+    /** Valeur galerie/HUD originale quand elle differe de l'index technique. */
+    readonly originalGalleryValue?: string;
+    /** Note documentaire courte. */
+    readonly note?: string;
+  };
 }
 
 /** Sources JSON brutes importees par Vite avant validation runtime legere. */
@@ -109,7 +125,8 @@ const RAW_LEVEL_SOURCES = [
   level14Json,
   level15Json,
   level16Json,
-  level17Json
+  level17Json,
+  level18Json
 ] as readonly unknown[];
 
 /** Niveaux modernes valides au chargement du module. */
@@ -147,6 +164,8 @@ const EMPTY_TILE_IDS = [RUNTIME_TILE.empty];
 
 /** Nombre de niveaux modernes disponibles. */
 export const LEVEL_COUNT = LEVEL_SOURCES.length;
+/** Nombre de galeries appartenant a la progression normale originale. */
+export const NORMAL_LEVEL_COUNT = 16;
 
 /** Retourne le JSON moderne valide d'un niveau, ou `undefined` si absent. */
 export function getModernLevelSource(levelNumber: number): ModernLevelJson | undefined {
@@ -239,10 +258,10 @@ export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number
     },
     meta: {
       timeLimit: level.time,
-      gallery: levelNumber,
+      gallery: parseOptionalHexByte(level.source?.originalGalleryValue) ?? levelNumber,
       requiredDiamonds: level.requiredDiamonds,
       scoreStep: level.scoreStep,
-      nextLevelId: levelNumber < LEVEL_SOURCES.length ? LEVEL_SOURCES[levelNumber].id : undefined
+      nextLevelId: levelNumber < NORMAL_LEVEL_COUNT ? LEVEL_SOURCES[levelNumber].id : undefined
     }
   };
 }
@@ -363,6 +382,16 @@ function findEntityPositions(level: ModernLevelJson, type: ModernEntityType): Mo
     .map((entity) => ({ x: entity.x, y: entity.y }));
 }
 
+/** Convertit une chaine hexadecimale optionnelle de provenance en octet numerique. */
+function parseOptionalHexByte(value: string | undefined): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 16);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 /** Valide legerement un JSON de niveau et retourne une structure typee. */
 function validateModernLevelJson(source: unknown, levelNumber: number): ModernLevelJson {
   const level = expectRecord(source, `level ${levelNumber}`);
@@ -383,7 +412,30 @@ function validateModernLevelJson(source: unknown, levelNumber: number): ModernLe
     playerSpawn: expectGridPoint(level.playerSpawn, levelNumber, "playerSpawn", width, height),
     exit: expectGridPoint(level.exit, levelNumber, "exit", width, height),
     tiles: expectLevelCells(level.tiles, levelNumber, "tiles", width, height, expectModernTileType),
-    entities: expectLevelCells(level.entities, levelNumber, "entities", width, height, expectModernEntityType)
+    entities: expectLevelCells(level.entities, levelNumber, "entities", width, height, expectModernEntityType),
+    source: expectOptionalLevelSource(level.source, levelNumber)
+  };
+}
+
+/** Valide les metadonnees facultatives de provenance d'un niveau moderne. */
+function expectOptionalLevelSource(source: unknown, levelNumber: number): ModernLevelJson["source"] {
+  if (source === undefined) {
+    return undefined;
+  }
+
+  const record = expectRecord(source, `level ${levelNumber}.source`);
+  const kind = record.kind;
+  if (kind !== undefined && kind !== "normal" && kind !== "debug" && kind !== "attract") {
+    throw new Error(`Niveau ${levelNumber}: source.kind contient une valeur inconnue: ${String(kind)}.`);
+  }
+  const validatedKind = kind as ModernLevelSourceKind | undefined;
+
+  return {
+    kind: validatedKind,
+    originalLevelIndex: expectOptionalString(record.originalLevelIndex, levelNumber, "source.originalLevelIndex"),
+    originalAddress: expectOptionalString(record.originalAddress, levelNumber, "source.originalAddress"),
+    originalGalleryValue: expectOptionalString(record.originalGalleryValue, levelNumber, "source.originalGalleryValue"),
+    note: expectOptionalString(record.note, levelNumber, "source.note")
   };
 }
 
@@ -462,6 +514,15 @@ function expectString(value: unknown, levelNumber: number, field: string): strin
   }
 
   throw new Error(`Niveau ${levelNumber}: ${field} doit etre une chaine non vide.`);
+}
+
+/** Valide une chaine facultative. */
+function expectOptionalString(value: unknown, levelNumber: number, field: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return expectString(value, levelNumber, field);
 }
 
 /** Valide un entier strictement positif. */

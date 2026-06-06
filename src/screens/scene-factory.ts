@@ -17,3 +17,11 @@ export function createGameplayScene(levelNumber = 1): Scene {
 export function createNextGameplayScene(currentLevelNumber: number): Scene {
   return createGameplayScene(currentLevelNumber + 1);
 }
+
+/** Cree la scene de gameplay reutilisee par le mode attract original. */
+export function createAttractGameplayScene(createTitleScene: () => Scene): Scene {
+  return new GameplayScene(1, createNextGameplayScene, createGameplayScene, {
+    mode: "attract",
+    createTitleScene
+  });
+}
