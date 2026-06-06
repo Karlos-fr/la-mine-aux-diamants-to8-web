@@ -12,6 +12,8 @@ La cible reste un portage ISO du comportement et du rendu TO8, mais dans une arc
 
 Convention de documentation a respecter pendant les evolutions de ce plan: [CODE_DOCUMENTATION_CONVENTION.md](../../CODE_DOCUMENTATION_CONVENTION.md).
 
+Cadences runtime et separation logique/rendu a respecter: [TO8_RUNTIME_TIMING.md](../../TO8_RUNTIME_TIMING.md).
+
 ## Principes
 
 - La grille runtime est la source de verite logique.

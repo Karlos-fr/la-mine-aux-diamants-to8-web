@@ -6,6 +6,8 @@ Implementer le mode attract original de `La Mine aux Diamants` dans l'architectu
 
 Le mode attract ne doit pas devenir un gameplay parallele. Il doit reutiliser le runtime moderne existant: chargement de niveau, camera, collisions, physique, monstres, creature speciale, HUD, rendu et transitions. La difference doit se limiter a la source d'entree joueur et aux regles de sortie du mode.
 
+Les cadences runtime et les limites de synchronisation attract sont documentees dans `TO8_RUNTIME_TIMING.md`.
+
 ## Principes techniques
 
 - Reutiliser `GameplayScene` et les systemes runtime existants autant que possible.
