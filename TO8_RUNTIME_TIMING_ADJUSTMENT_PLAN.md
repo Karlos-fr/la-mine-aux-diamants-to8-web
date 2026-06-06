@@ -173,7 +173,7 @@ Implementation: `src/game/runtime-timing.ts` centralise `TO8_RUNTIME_TIMING` et 
 ## Phase 10 - Stabilisation progressive
 
 - [x] Appliquer les changements par systeme, en commencant par attract/monstres.
-- [ ] Conserver des commits separes par domaine de cadence.
+- [x] Conserver des commits separes par domaine de cadence.
 - [ ] Verifier visuellement le niveau 1 apres chaque domaine critique.
 - [ ] Verifier le mode attract apres chaque domaine critique.
 - [x] Ajuster uniquement les cadences dont l'ASM ne donne pas une valeur directement exploitable.
@@ -182,8 +182,9 @@ Implementation: `src/game/runtime-timing.ts` centralise `TO8_RUNTIME_TIMING` et 
 
 - Les changements ont ete appliques par domaines: cadences centrales, separation logique/rendu, spawn, monstres, physique, animations, attract.
 - Les cadences ajustees sont celles qui etaient deja modernes et non directement prouvables cycle-perfect; elles sont maintenant exprimees en ticks entiers et documentees.
-- Les commits separes restent a faire sur demande explicite.
-- Les verifications visuelles niveau 1 et attract restent a faire avec lancement de l'application, sur demande explicite.
+- Les commits separes ont ete crees: `565cec1` pour le runtime/code et `4806a39` pour la documentation/provenance.
+- Le serveur Vite repond en HTTP 200 sur `http://127.0.0.1:5173/`.
+- Les verifications visuelles niveau 1 et attract restent a faire avec un navigateur pilotable. Dans cette session, le navigateur integre `iab` n'est pas disponible et aucun executable Edge/Chrome local n'a ete trouve.
 
 ## Regles de mise en oeuvre
 
