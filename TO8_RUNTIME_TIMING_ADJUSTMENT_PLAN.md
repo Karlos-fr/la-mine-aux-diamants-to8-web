@@ -174,8 +174,8 @@ Implementation: `src/game/runtime-timing.ts` centralise `TO8_RUNTIME_TIMING` et 
 
 - [x] Appliquer les changements par systeme, en commencant par attract/monstres.
 - [x] Conserver des commits separes par domaine de cadence.
-- [ ] Verifier visuellement le niveau 1 apres chaque domaine critique.
-- [ ] Verifier le mode attract apres chaque domaine critique.
+- [x] Verifier visuellement le niveau 1 apres chaque domaine critique.
+- [x] Verifier le mode attract apres chaque domaine critique.
 - [x] Ajuster uniquement les cadences dont l'ASM ne donne pas une valeur directement exploitable.
 
 ### Notes phase 10
@@ -184,12 +184,13 @@ Implementation: `src/game/runtime-timing.ts` centralise `TO8_RUNTIME_TIMING` et 
 - Les cadences ajustees sont celles qui etaient deja modernes et non directement prouvables cycle-perfect; elles sont maintenant exprimees en ticks entiers et documentees.
 - Les commits separes ont ete crees: `565cec1` pour le runtime/code et `4806a39` pour la documentation/provenance.
 - Le serveur Vite repond en HTTP 200 sur `http://127.0.0.1:5173/`.
-- Les verifications visuelles niveau 1 et attract restent a faire avec un navigateur pilotable. Dans cette session, le navigateur integre `iab` n'est pas disponible et aucun executable Edge/Chrome local n'a ete trouve.
+- Verification visuelle niveau 1 effectuee via Chromium Playwright temporaire: capture `level1-forced.png`, selecteur `1`, panneau `Galerie 01`, canvas `320x200`, aucun log applicatif hors Vite.
+- Verification visuelle attract effectuee via Chromium Playwright temporaire: capture `attract-12s.png` apres 12 secondes, panneau `Galerie 22`, joueur visible en demo, aucun log applicatif hors Vite.
 
 ## Regles de mise en oeuvre
 
-- [ ] Ne pas remplacer une valeur arbitraire par une autre valeur arbitraire sans justification.
-- [ ] Preferer des nombres de ticks entiers.
-- [ ] Garder le gameplay logique independant du rendu fluide.
-- [ ] Documenter chaque ecart volontaire avec une raison claire.
-- [ ] Preserver l'architecture moderne: l'ASM sert de reference comportementale, pas de runtime execute.
+- [x] Ne pas remplacer une valeur arbitraire par une autre valeur arbitraire sans justification.
+- [x] Preferer des nombres de ticks entiers.
+- [x] Garder le gameplay logique independant du rendu fluide.
+- [x] Documenter chaque ecart volontaire avec une raison claire.
+- [x] Preserver l'architecture moderne: l'ASM sert de reference comportementale, pas de runtime execute.
