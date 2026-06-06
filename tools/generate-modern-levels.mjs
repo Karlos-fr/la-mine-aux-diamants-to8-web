@@ -92,8 +92,24 @@ function buildModernLevel(sourceLevel) {
       x: sourceLevel.exit.x,
       y: sourceLevel.exit.y
     },
+    initialViewport: parseInitialViewport(sourceLevel.headerMeta?.raw),
     tiles,
     entities
+  };
+}
+
+function parseInitialViewport(rawHeader) {
+  if (!Array.isArray(rawHeader) || rawHeader.length < 4) {
+    return { x: 0, y: 0 };
+  }
+
+  // Preuve ASM:
+  // - KIT.BIN:$DA10 lit header[2..3].
+  // - Le bloc `EC 02 / FD DB AF` stocke ces deux octets en $DBAF/$DBB0.
+  // - KIT.BIN:$D0CC utilise ensuite $DBAF/$DBB0 comme origine de viewport.
+  return {
+    x: parseHexByte(rawHeader[2], 0),
+    y: parseHexByte(rawHeader[3], 0)
   };
 }
 

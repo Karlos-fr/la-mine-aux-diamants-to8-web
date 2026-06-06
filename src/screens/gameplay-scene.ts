@@ -197,24 +197,46 @@ export interface GameplaySceneOptions {
   readonly createEditorScene?: () => Scene;
 }
 
-/** Cree le viewport initial autour du spawn joueur en respectant les marges ASM connues. */
-function createInitialViewportForSpawn(
+/** Cree le viewport initial depuis le header ASM, ou depuis un fallback moderne. */
+function createInitialViewport(
+  initialViewport: ViewportState | undefined,
   playerStartX: number,
   playerStartY: number,
   levelWidth: number,
   levelHeight: number
 ): ViewportState {
+  const maxX = Math.max(CAMERA_MIN_X, levelWidth - VIEWPORT_COLUMNS);
+  const maxY = Math.max(CAMERA_MIN_Y, levelHeight - VIEWPORT_ROWS);
+  const originX = clamp(INITIAL_VIEWPORT_X, CAMERA_MIN_X, maxX);
+  const originY = clamp(INITIAL_VIEWPORT_Y, CAMERA_MIN_Y, maxY);
+
+  if (initialViewport) {
+    return {
+      x: clamp(initialViewport.x, CAMERA_MIN_X, maxX),
+      y: clamp(initialViewport.y, CAMERA_MIN_Y, maxY),
+      columns: VIEWPORT_COLUMNS,
+      rows: VIEWPORT_ROWS
+    };
+  }
+
+  const isSpawnVisibleFromOrigin =
+    playerStartX >= originX &&
+    playerStartX < originX + VIEWPORT_COLUMNS &&
+    playerStartY >= originY &&
+    playerStartY < originY + VIEWPORT_ROWS;
+
+  if (isSpawnVisibleFromOrigin) {
+    return {
+      x: originX,
+      y: originY,
+      columns: VIEWPORT_COLUMNS,
+      rows: VIEWPORT_ROWS
+    };
+  }
+
   return {
-    x: clamp(
-      playerStartX - CAMERA_LEFT_MARGIN,
-      CAMERA_MIN_X,
-      Math.max(CAMERA_MIN_X, levelWidth - VIEWPORT_COLUMNS)
-    ),
-    y: clamp(
-      playerStartY - CAMERA_TOP_MARGIN,
-      CAMERA_MIN_Y,
-      Math.max(CAMERA_MIN_Y, levelHeight - VIEWPORT_ROWS)
-    ),
+    x: clamp(playerStartX - CAMERA_LEFT_MARGIN, CAMERA_MIN_X, maxX),
+    y: clamp(playerStartY - CAMERA_TOP_MARGIN, CAMERA_MIN_Y, maxY),
     columns: VIEWPORT_COLUMNS,
     rows: VIEWPORT_ROWS
   };
@@ -338,7 +360,15 @@ export class GameplayScene implements Scene {
     this.state = options.temporaryLevel
       ? createGameStateFromLevelDefinition(buildLevelDefinition(options.temporaryLevel, this.levelNumber), this.levelNumber)
       : createGameLevelState(this.levelNumber);
-    this.viewport = createInitialViewportForSpawn(
+    this.viewport = createInitialViewport(
+      this.state.level.initialViewport
+        ? {
+            x: this.state.level.initialViewport.x,
+            y: this.state.level.initialViewport.y,
+            columns: VIEWPORT_COLUMNS,
+            rows: VIEWPORT_ROWS
+          }
+        : undefined,
       this.state.level.playerStart.x,
       this.state.level.playerStart.y,
       this.state.level.width,

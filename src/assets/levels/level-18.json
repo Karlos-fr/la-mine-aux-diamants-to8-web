@@ -17,6 +17,10 @@
     "x": 23,
     "y": 15
   },
+  "initialViewport": {
+    "x": 1,
+    "y": 1
+  },
   "tiles": [
     {
       "x": 0,

@@ -222,6 +222,11 @@ export interface LevelDefinition {
     readonly x: number;
     readonly y: number;
   };
+  /** Origine initiale du viewport quand elle est fournie par le niveau original. */
+  readonly initialViewport?: {
+    readonly x: number;
+    readonly y: number;
+  };
   /** Metadonnees gameplay du niveau. */
   readonly meta: {
     /** Temps initial du niveau. */

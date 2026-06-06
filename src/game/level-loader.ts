@@ -63,7 +63,7 @@ export interface ModernLevelCell<TType extends string> extends ModernGridPoint {
  * `id` et `label` identifient le niveau, `width`/`height`/`tileSize`
  * definissent la grille, `defaultTile` remplit toute la carte, `tiles`
  * surcharge les cellules explicites, `entities` place les entites animees,
- * `playerSpawn` et `exit` restent des coordonnees logiques separees.
+ * `playerSpawn`, `exit` et `initialViewport` restent des coordonnees logiques separees.
  */
 export interface ModernLevelJson {
   /** Version du schema JSON moderne. */
@@ -90,6 +90,8 @@ export interface ModernLevelJson {
   readonly playerSpawn: ModernGridPoint;
   /** Position sortie en coordonnees de grille. */
   readonly exit: ModernGridPoint;
+  /** Origine viewport initiale issue du header original quand elle existe. */
+  readonly initialViewport?: ModernGridPoint;
   /** Tuiles explicites differant de la tuile par defaut. */
   readonly tiles: ReadonlyArray<ModernLevelCell<ModernTileType>>;
   /** Entites placees dans le niveau. */
@@ -258,6 +260,12 @@ export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number
       x: level.exit.x,
       y: level.exit.y
     },
+    initialViewport: level.initialViewport
+      ? {
+          x: level.initialViewport.x,
+          y: level.initialViewport.y
+        }
+      : undefined,
     meta: {
       timeLimit: level.time,
       gallery: parseOptionalHexByte(level.source?.originalGalleryValue) ?? levelNumber,
@@ -413,6 +421,7 @@ function validateModernLevelJson(source: unknown, levelNumber: number): ModernLe
     requiredDiamonds: expectNonNegativeInteger(level.requiredDiamonds, levelNumber, "requiredDiamonds"),
     playerSpawn: expectGridPoint(level.playerSpawn, levelNumber, "playerSpawn", width, height),
     exit: expectGridPoint(level.exit, levelNumber, "exit", width, height),
+    initialViewport: expectOptionalGridPoint(level.initialViewport, levelNumber, "initialViewport", width, height),
     tiles: expectLevelCells(level.tiles, levelNumber, "tiles", width, height, expectModernTileType),
     entities: expectLevelCells(level.entities, levelNumber, "entities", width, height, expectModernEntityType),
     source: expectOptionalLevelSource(level.source, levelNumber)
@@ -479,6 +488,21 @@ function expectGridPoint(
   }
 
   return { x, y };
+}
+
+/** Valide une coordonnee de grille facultative et ses bornes. */
+function expectOptionalGridPoint(
+  value: unknown,
+  levelNumber: number,
+  field: string,
+  width: number,
+  height: number
+): ModernGridPoint | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return expectGridPoint(value, levelNumber, field, width, height);
 }
 
 /** Valide un type de tuile moderne sans accepter `exit` comme tuile placable. */
