@@ -42,6 +42,9 @@ export interface Renderer {
   /** Dessine une tuile sans transformation. */
   drawTile(frame: TileFrame, x: number, y: number): void;
 
+  /** Dessine une tuile en forcant sa taille destination. */
+  drawTileScaled(frame: TileFrame, x: number, y: number, width: number, height: number): void;
+
   /** Dessine une image complete ou une region source. */
   drawImage(image: CanvasImageSource, x: number, y: number, options?: DrawImageOptions): void;
 
@@ -142,6 +145,34 @@ export class Canvas2DRenderer implements Renderer {
       frame.size.width,
       frame.size.height
     );
+  }
+
+  /** Dessine une frame de tuile a une taille destination specifique. */
+  drawTileScaled(frame: TileFrame, x: number, y: number, width: number, height: number): void {
+    const shouldSmoothDownscale = width < frame.sourceRect.width || height < frame.sourceRect.height;
+    const previousSmoothing = this.context.imageSmoothingEnabled;
+    const previousQuality = this.context.imageSmoothingQuality;
+    if (shouldSmoothDownscale) {
+      this.context.imageSmoothingEnabled = true;
+      this.context.imageSmoothingQuality = "high";
+    }
+
+    this.context.drawImage(
+      frame.source,
+      frame.sourceRect.x,
+      frame.sourceRect.y,
+      frame.sourceRect.width,
+      frame.sourceRect.height,
+      Math.floor(x),
+      Math.floor(y),
+      Math.floor(width),
+      Math.floor(height)
+    );
+
+    if (shouldSmoothDownscale) {
+      this.context.imageSmoothingEnabled = previousSmoothing;
+      this.context.imageSmoothingQuality = previousQuality;
+    }
   }
 
   /** Dessine une image complete ou une sous-region sans lissage. */

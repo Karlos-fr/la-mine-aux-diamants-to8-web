@@ -35,7 +35,7 @@ export interface GameApp {
 /** Cree l'application en assemblant renderer, input, routeur de scenes et boucle fixe. */
 export function createGameApp(options: GameAppOptions): GameApp {
   const renderer = new Canvas2DRenderer(options.canvas);
-  const input = new KeyboardInput(window);
+  const input = new KeyboardInput(window, options.canvas);
   const scenes = new SceneRouter(options.initialScene());
 
   const loop = new FixedGameLoop({

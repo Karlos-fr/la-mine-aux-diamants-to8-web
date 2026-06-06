@@ -4,7 +4,7 @@ import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
-import { createAttractGameplayScene, createGameplayScene } from "./screens/scene-factory";
+import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene } from "./screens/scene-factory";
 import { StartupInfogramScene, StartupTitleScene } from "./screens/startup-screens";
 
 /**
@@ -70,6 +70,12 @@ if (mode === "gallery") {
   attractButton.type = "button";
   attractButton.textContent = "Attract";
 
+  /** Bouton debug ouvrant l'editeur de niveaux moderne. */
+  const editorButton = document.createElement("button");
+  editorButton.className = "debug-editor-button";
+  editorButton.type = "button";
+  editorButton.textContent = "Editeur";
+
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
   ghostButton.className = "debug-ghost-button";
@@ -82,7 +88,7 @@ if (mode === "gallery") {
     ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
     canvas.focus();
   });
-  debugToolbar.append(levelSelectLabel, levelSelect, attractButton, ghostButton);
+  debugToolbar.append(levelSelectLabel, levelSelect, attractButton, editorButton, ghostButton);
   root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -99,6 +105,10 @@ if (mode === "gallery") {
   });
   attractButton.addEventListener("click", () => {
     app.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
+    canvas.focus();
+  });
+  editorButton.addEventListener("click", () => {
+    app.setScene(createLevelEditorScene());
     canvas.focus();
   });
   app.start();

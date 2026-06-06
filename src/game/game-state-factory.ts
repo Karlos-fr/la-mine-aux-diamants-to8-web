@@ -5,7 +5,7 @@
  * Notes: `createGameLevelState` reste la facade stable pour les scenes.
  */
 
-import type { EntityState, GameState, MonsterRuntimeState } from "./types";
+import type { EntityState, GameState, LevelDefinition, MonsterRuntimeState } from "./types";
 import { loadLevelDefinition } from "./level-loader";
 import { RUNTIME_GRID_BASE_ADDRESS, RUNTIME_GRID_STRIDE } from "./runtime-tiles";
 
@@ -15,6 +15,11 @@ export const LEVEL1_DEFINITION = loadLevelDefinition(1);
 /** Cree l'etat complet initial pour un niveau donne. */
 export function createGameLevelState(levelNumber = 1): GameState {
   const levelDefinition = loadLevelDefinition(levelNumber);
+  return createGameStateFromLevelDefinition(levelDefinition, levelNumber);
+}
+
+/** Cree l'etat complet initial depuis une definition de niveau deja construite. */
+export function createGameStateFromLevelDefinition(levelDefinition: LevelDefinition, levelNumber = 1): GameState {
   const entities: EntityState[] = levelDefinition.initialEntities.map((entity) => ({ ...entity }));
   const player = entities.find((entity) => entity.kind === "player");
   const monsters = createMonsterRuntimeStates(entities);
@@ -50,7 +55,7 @@ function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRu
   /** Direction initiale moderne conservee pour tous les monstres au chargement. */
   const initialDirection: MonsterRuntimeState["direction"] = 2;
   return entities
-    .filter((entity) => entity.kind === "monster" || entity.kind === "specialCreature")
+    .filter((entity): entity is EntityState & { kind: "monster" | "specialCreature" } => entity.kind === "monster" || entity.kind === "specialCreature")
     .map((entity) => ({
       kind: entity.kind,
       id: `runtime-${entity.id}`,

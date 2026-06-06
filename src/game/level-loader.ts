@@ -66,6 +66,8 @@ export interface ModernLevelCell<TType extends string> extends ModernGridPoint {
  * `playerSpawn` et `exit` restent des coordonnees logiques separees.
  */
 export interface ModernLevelJson {
+  /** Version du schema JSON moderne. */
+  readonly schemaVersion?: number;
   /** Identifiant stable du niveau. */
   readonly id: string;
   /** Libelle humain affiche/documentaire. */
@@ -146,21 +148,21 @@ const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
 };
 
 /** Tile ids qui definissent un rocher dans les definitions de tuile. */
-const ROCK_TILE_IDS = [RUNTIME_TILE.rock];
+const ROCK_TILE_IDS: readonly number[] = [RUNTIME_TILE.rock];
 /** Tile ids solides de type mur/terrain. */
-const WALL_TILE_IDS = [RUNTIME_TILE.earth, RUNTIME_TILE.platform];
+const WALL_TILE_IDS: readonly number[] = [RUNTIME_TILE.earth, RUNTIME_TILE.platform];
 /** Tile ids collectible diamant. */
-const DIAMOND_TILE_IDS = [RUNTIME_TILE.diamond];
+const DIAMOND_TILE_IDS: readonly number[] = [RUNTIME_TILE.diamond];
 /** Tile ids representant une sortie/bloc protege dans le runtime courant. */
-const EXIT_TILE_IDS = [RUNTIME_TILE.border];
+const EXIT_TILE_IDS: readonly number[] = [RUNTIME_TILE.border];
 /** Tile ids de monstre initial. */
-const MONSTER_TILE_IDS = [RUNTIME_TILE.monster];
+const MONSTER_TILE_IDS: readonly number[] = [RUNTIME_TILE.monster];
 /** Tile ids de creature speciale, distincte du monstre standard `0x02`. */
-const SPECIAL_CREATURE_TILE_IDS = [RUNTIME_TILE.specialCreature];
+const SPECIAL_CREATURE_TILE_IDS: readonly number[] = [RUNTIME_TILE.specialCreature];
 /** Tile ids de bloc transformateur fixe. */
-const TRANSFORMER_BLOCK_TILE_IDS = [RUNTIME_TILE.transformerBlock];
+const TRANSFORMER_BLOCK_TILE_IDS: readonly number[] = [RUNTIME_TILE.transformerBlock];
 /** Tile ids vides. */
-const EMPTY_TILE_IDS = [RUNTIME_TILE.empty];
+const EMPTY_TILE_IDS: readonly number[] = [RUNTIME_TILE.empty];
 
 /** Nombre de niveaux modernes disponibles. */
 export const LEVEL_COUNT = LEVEL_SOURCES.length;
@@ -527,7 +529,7 @@ function expectOptionalString(value: unknown, levelNumber: number, field: string
 
 /** Valide un entier strictement positif. */
 function expectPositiveInteger(value: unknown, levelNumber: number, field: string): number {
-  if (Number.isInteger(value) && value > 0) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
     return value;
   }
 
@@ -536,7 +538,7 @@ function expectPositiveInteger(value: unknown, levelNumber: number, field: strin
 
 /** Valide un entier positif ou nul. */
 function expectNonNegativeInteger(value: unknown, levelNumber: number, field: string): number {
-  if (Number.isInteger(value) && value >= 0) {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
     return value;
   }
 
@@ -546,7 +548,7 @@ function expectNonNegativeInteger(value: unknown, levelNumber: number, field: st
 /** Valide qu'une valeur inconnue est un objet indexable. */
 function expectRecord(value: unknown, label: string): Record<string, unknown> {
   if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-    return value;
+    return value as Record<string, unknown>;
   }
 
   throw new Error(`${label} doit etre un objet.`);

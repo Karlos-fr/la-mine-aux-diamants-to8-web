@@ -3,6 +3,7 @@
 - Vérifier l'IA des créatures
 
 
+- Les monstres doivent exploser
 
 - Sequence apparition joueur validee via `KIT.BIN:$BE68`: 6 demi-etapes, donc 3 cycles `0x04`/noir avant affichage joueur.
 - Implementer les animations de l'ecran 2

@@ -10,7 +10,8 @@ import type { Renderer } from "../engine/renderer";
 import type { EntityState, FallingObjectRuntimeState, GameState, RuntimeExplosionState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
 import { debugOptions } from "../debug-options";
-import { createGameLevelState } from "../game/game-state-factory";
+import { createGameLevelState, createGameStateFromLevelDefinition } from "../game/game-state-factory";
+import { buildLevelDefinition, type ModernLevelJson } from "../game/level-loader";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
 import { GameplayRuntime } from "../game/gameplay-runtime";
 import { RuntimeMutations } from "../game/runtime-mutations";
@@ -190,6 +191,10 @@ export interface GameplaySceneOptions {
   readonly mode?: GameplaySceneMode;
   /** Factory de retour au titre utilisee uniquement par le mode attract. */
   readonly createTitleScene?: () => Scene;
+  /** Niveau JSON temporaire, utilise par l'editeur sans modifier les assets officiels. */
+  readonly temporaryLevel?: ModernLevelJson;
+  /** Factory de retour a l'editeur pour les tests temporaires. */
+  readonly createEditorScene?: () => Scene;
 }
 
 /** Cree le viewport initial autour du spawn joueur en respectant les marges ASM connues. */
@@ -236,6 +241,8 @@ export class GameplayScene implements Scene {
   private readonly attractInputSource: AttractScriptInputSource | null = null;
   /** Factory de retour au titre pour les sorties du mode attract. */
   private readonly createTitleScene: (() => Scene) | undefined;
+  /** Factory de retour editeur pour les tests temporaires. */
+  private readonly createEditorScene: (() => Scene) | undefined;
   /** Renderer dedie a l'ordre de rendu gameplay ISO. */
   private readonly gameplayRenderer = new GameplayRenderer();
   /** Factory injectee pour creer la scene du niveau suivant sans cycle d'import. */
@@ -247,8 +254,6 @@ export class GameplayScene implements Scene {
     sourceSize: RENDER_TILE_SIZE,
     renderSize: RENDER_TILE_SIZE
   });
-  /** Taille source d'une tuile dans les atlas. */
-  private readonly tileSourceSize = RENDER_TILE_SIZE;
   /** Taille de rendu d'une tuile a l'ecran. */
   private readonly tileSize = RENDER_TILE_SIZE;
   /** Decalage horizontal de la zone de jeu. */
@@ -327,9 +332,12 @@ export class GameplayScene implements Scene {
       this.playerInputSource = new KeyboardPlayerInputSource();
     }
     this.createTitleScene = options.createTitleScene;
+    this.createEditorScene = options.createEditorScene;
     this.createNextLevelScene = createNextLevelScene;
     this.recreateLevelScene = recreateLevelScene;
-    this.state = createGameLevelState(this.levelNumber);
+    this.state = options.temporaryLevel
+      ? createGameStateFromLevelDefinition(buildLevelDefinition(options.temporaryLevel, this.levelNumber), this.levelNumber)
+      : createGameLevelState(this.levelNumber);
     this.viewport = createInitialViewportForSpawn(
       this.state.level.playerStart.x,
       this.state.level.playerStart.y,
@@ -383,6 +391,11 @@ export class GameplayScene implements Scene {
   update(dt: number, input: InputState): void {
     if (this.gameplayMode === "attract" && (input.justPressed.confirm || input.justPressed.action)) {
       this.queueAttractReturnToTitle();
+      return;
+    }
+
+    if (this.createEditorScene && input.justPressed.cancel) {
+      this.context?.setScene(this.createEditorScene());
       return;
     }
 
@@ -856,11 +869,6 @@ export class GameplayScene implements Scene {
       this.startExplosion(gridX, gridY);
       this.killPlayer("monsterContact");
     }
-  }
-
-  /** Ecrit une mutation de tuile runtime et l'enregistre pour les systems du meme tick. */
-  private setTile(gridX: number, gridY: number, tileId: number): void {
-    this.runtimeMutations.setTile(gridX, gridY, tileId);
   }
 
   /** Efface une tuile runtime, avec emission optionnelle de l'evenement gameplay associe. */
@@ -1704,7 +1712,6 @@ export class GameplayScene implements Scene {
       return frames[0];
     }
 
-    const progress = clamp(this.playerMove.elapsed / this.playerMove.duration, 0, 1);
     const frameIndex = Math.min(
       frames.length - 1,
       Math.floor(this.playerMove.elapsed / PLAYER_WALK_FRAME_DURATION)
