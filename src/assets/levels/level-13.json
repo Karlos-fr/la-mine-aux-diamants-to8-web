@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "id": "level-13",
   "label": "Galerie 13",
+  "author": "P. Bruneel, C. Lemaire",
+  "createdDate": "1986-01-01",
   "width": 40,
   "height": 22,
   "tileSize": 16,

@@ -72,6 +72,10 @@ export interface ModernLevelJson {
   readonly id: string;
   /** Libelle humain affiche/documentaire. */
   readonly label: string;
+  /** Auteur ou equipe de creation du niveau. */
+  readonly author: string;
+  /** Date de creation ou de sortie associee au niveau, au format `YYYY-MM-DD`. */
+  readonly createdDate: string;
   /** Largeur logique en cellules. */
   readonly width: number;
   /** Hauteur logique en cellules. */
@@ -412,6 +416,8 @@ function validateModernLevelJson(source: unknown, levelNumber: number): ModernLe
   return {
     id: expectString(level.id, levelNumber, "id"),
     label: expectString(level.label, levelNumber, "label"),
+    author: expectString(level.author, levelNumber, "author"),
+    createdDate: expectIsoDateString(level.createdDate, levelNumber, "createdDate"),
     width,
     height,
     tileSize,
@@ -540,6 +546,16 @@ function expectString(value: unknown, levelNumber: number, field: string): strin
   }
 
   throw new Error(`Niveau ${levelNumber}: ${field} doit etre une chaine non vide.`);
+}
+
+/** Valide une date ISO simple sans heure. */
+function expectIsoDateString(value: unknown, levelNumber: number, field: string): string {
+  const date = expectString(value, levelNumber, field);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+
+  throw new Error(`Niveau ${levelNumber}: ${field} doit etre une date ISO YYYY-MM-DD.`);
 }
 
 /** Valide une chaine facultative. */

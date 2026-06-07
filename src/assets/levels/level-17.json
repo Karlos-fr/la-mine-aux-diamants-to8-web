@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "id": "level-17-special-creatures-test",
   "label": "Test creatures 17/18",
+  "author": "Portage moderne",
+  "createdDate": "2026-06-07",
   "width": 64,
   "height": 24,
   "tileSize": 16,

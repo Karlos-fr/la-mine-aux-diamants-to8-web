@@ -36,6 +36,8 @@ export function exportEditableLevelToJson(state: EditableLevelState): ModernLeve
     schemaVersion: state.schemaVersion,
     id: state.id,
     label: state.label,
+    author: state.author,
+    createdDate: state.createdDate,
     width: state.width,
     height: state.height,
     tileSize: state.tileSize,
@@ -66,6 +68,8 @@ export function importEditableLevelFromJson(source: unknown): EditableLevelState
   state.schemaVersion = 1;
   state.id = json.id;
   state.label = json.label;
+  state.author = json.author;
+  state.createdDate = json.createdDate;
   state.width = json.width;
   state.height = json.height;
   state.tileSize = json.tileSize;
@@ -108,11 +112,15 @@ function assertModernLevelJsonLike(source: unknown): ModernLevelJson {
     throw new LevelEditorSerializationError("Le niveau importe doit etre un objet JSON.");
   }
 
-  const requiredStrings = ["id", "label", "defaultTile"];
+  const requiredStrings = ["id", "label", "author", "createdDate", "defaultTile"];
   for (const field of requiredStrings) {
     if (typeof source[field] !== "string") {
       throw new LevelEditorSerializationError(`Champ texte manquant ou invalide: ${field}.`);
     }
+  }
+
+  if (!isIsoDateString(source.createdDate)) {
+    throw new LevelEditorSerializationError("Champ createdDate invalide: format YYYY-MM-DD attendu.");
   }
 
   const requiredNumbers = ["width", "height", "time", "scoreStep", "requiredDiamonds"];
@@ -135,6 +143,8 @@ function assertModernLevelJsonLike(source: unknown): ModernLevelJson {
   const entities = assertCells(source.entities ?? [], "entities", isModernEntityType);
   const id = source.id as string;
   const label = source.label as string;
+  const author = source.author as string;
+  const createdDate = source.createdDate as string;
   const width = source.width as number;
   const height = source.height as number;
   const time = source.time as number;
@@ -145,6 +155,8 @@ function assertModernLevelJsonLike(source: unknown): ModernLevelJson {
     schemaVersion: 1,
     id,
     label,
+    author,
+    createdDate,
     width,
     height,
     tileSize,
@@ -226,6 +238,11 @@ function isModernLevelSourceKind(value: unknown): value is ModernLevelSourceKind
 /** Indique si une valeur est une coordonnee de grille. */
 function isGridPoint(value: unknown): value is { readonly x: number; readonly y: number } {
   return isRecord(value) && Number.isInteger(value.x) && Number.isInteger(value.y);
+}
+
+/** Indique si une valeur est une date ISO simple sans heure. */
+function isIsoDateString(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 /** Indique si une valeur est un objet indexable. */

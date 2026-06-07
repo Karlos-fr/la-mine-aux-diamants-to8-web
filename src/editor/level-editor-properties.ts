@@ -27,6 +27,18 @@ export function setEditableLevelLabel(state: EditableLevelState, label: string):
   state.label = label.trim() || state.label;
 }
 
+/** Met a jour l'auteur documentaire du niveau. */
+export function setEditableLevelAuthor(state: EditableLevelState, author: string): void {
+  state.author = author.trim() || state.author;
+}
+
+/** Met a jour la date documentaire du niveau si elle respecte le format ISO date. */
+export function setEditableLevelCreatedDate(state: EditableLevelState, createdDate: string): void {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(createdDate)) {
+    state.createdDate = createdDate;
+  }
+}
+
 /** Met a jour la taille du niveau avec garde-fous non destructeurs simples. */
 export function setEditableLevelSize(state: EditableLevelState, width: number, height: number): void {
   state.width = clamp(Math.floor(width), EDITOR_MIN_LEVEL_WIDTH, EDITOR_MAX_LEVEL_WIDTH);

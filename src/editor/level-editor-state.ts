@@ -31,6 +31,10 @@ export interface EditableLevelState {
   id: string;
   /** Libelle humain du niveau. */
   label: string;
+  /** Auteur ou equipe de creation du niveau. */
+  author: string;
+  /** Date de creation du niveau au format `YYYY-MM-DD`. */
+  createdDate: string;
   /** Largeur en cellules. */
   width: number;
   /** Hauteur en cellules. */
@@ -63,6 +67,8 @@ export function createEmptyEditableLevelState(): EditableLevelState {
     schemaVersion: 1,
     id: "level-custom-01",
     label: "Galerie custom",
+    author: "Portage moderne",
+    createdDate: "2026-06-07",
     width: EDITOR_DEFAULT_LEVEL_WIDTH,
     height: EDITOR_DEFAULT_LEVEL_HEIGHT,
     tileSize: EDITOR_TILE_SIZE,
