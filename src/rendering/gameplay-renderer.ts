@@ -23,6 +23,8 @@ const OBJECTIVE_FLASH_YELLOW = "#fff040";
 const OBJECTIVE_FLASH_BORDER_SIZE = 4;
 /** Couleur orange du panneau HUD extraite/reproduite. */
 const HUD_PANEL_ORANGE = "#ef9300";
+/** Largeur du panneau texte gauche extrait du HUD original. */
+const HUD_LEFT_PANEL_WIDTH = 72;
 /** Largeur du panneau galerie droit. */
 const HUD_RIGHT_PANEL_WIDTH = 64;
 /** Decalage Y des compteurs du panneau galerie. */
@@ -51,18 +53,12 @@ const HUD_VALUE_FONT_ID = "hud-small-11";
 const HUD_LABEL_COLOR = "#f5f5f5";
 /** Couleur cyan des valeurs HUD principales. */
 const HUD_VALUE_COLOR = "#00d8d8";
-/** Position X des libelles HUD principaux. */
-const HUD_LABELS_X = 72;
-/** Decalage Y des libelles HUD principaux dans le HUD. */
-const HUD_LABELS_Y_OFFSET = 0;
-/** Position X du score. */
-const HUD_SCORE_X = 72;
-/** Position X du temps. */
-const HUD_TIME_X = 144;
-/** Position X du record. */
-const HUD_RECORD_X = 192;
-/** Decalage Y des valeurs HUD principales dans le HUD. */
-const HUD_VALUES_Y_OFFSET = 17;
+/** Hauteur de la font des libelles principaux du HUD. */
+const HUD_LABEL_FONT_HEIGHT = 16;
+/** Hauteur de la font des valeurs principales du HUD. */
+const HUD_VALUE_FONT_HEIGHT = 11;
+/** Ecart vertical entre libelles et valeurs principales. */
+const HUD_LABEL_VALUE_GAP = 1;
 /** Largeur du diamant anime du panneau galerie. */
 const HUD_GALLERY_DIAMOND_WIDTH = 24;
 /** Hauteur du diamant anime du panneau galerie. */
@@ -449,12 +445,10 @@ export class GameplayRenderer {
       valueFontId: HUD_VALUE_FONT_ID,
       labelColor: HUD_LABEL_COLOR,
       valueColor: HUD_VALUE_COLOR,
-      labelsX: HUD_LABELS_X,
-      labelsY: hudY + HUD_LABELS_Y_OFFSET,
-      scoreX: HUD_SCORE_X,
-      timeX: HUD_TIME_X,
-      recordX: HUD_RECORD_X,
-      valuesY: hudY + HUD_VALUES_Y_OFFSET
+      fieldAreaX: HUD_LEFT_PANEL_WIDTH,
+      fieldAreaWidth: Math.max(1, rightPanelX - HUD_LEFT_PANEL_WIDTH),
+      labelsY: hudY + getHudTextTopOffset(),
+      valuesY: hudY + getHudTextTopOffset() + HUD_LABEL_FONT_HEIGHT + HUD_LABEL_VALUE_GAP
     });
   }
 
@@ -560,6 +554,11 @@ export class GameplayRenderer {
 /** Calcule la zone de jeu disponible au-dessus du HUD. */
 function getPlayfieldHeight(renderer: Renderer): number {
   return Math.max(0, renderer.height - HUD_HEIGHT);
+}
+
+/** Centre verticalement le bloc libelle/valeur dans le bandeau HUD. */
+function getHudTextTopOffset(): number {
+  return Math.floor((HUD_HEIGHT - HUD_LABEL_FONT_HEIGHT - HUD_LABEL_VALUE_GAP - HUD_VALUE_FONT_HEIGHT) / 2);
 }
 
 /** Convertit un attribut TO8 en couleur CSS selon le plan forme/couleur. */

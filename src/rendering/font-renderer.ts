@@ -8,6 +8,15 @@
 import { mineFontMetadata } from "../assets/generated/mine-fonts";
 import type { Renderer } from "../engine/renderer";
 
+/** Dimensions d'une chaine rendue avec une font TO8. */
+export interface To8FontTextMetrics {
+  /** Largeur en pixels logiques. */
+  readonly width: number;
+
+  /** Hauteur en pixels logiques. */
+  readonly height: number;
+}
+
 /** Dessine une chaine avec une font TO8 extraite ou un fallback pixel moderne. */
 export function drawTo8FontText(
   renderer: Renderer,
@@ -41,4 +50,20 @@ export function drawTo8FontText(
     }
     cursorX += font.width;
   }
+}
+
+/** Mesure une chaine bitmap TO8 pour permettre des alignements dynamiques. */
+export function measureTo8FontText(text: string, fontId: string): To8FontTextMetrics {
+  const font = mineFontMetadata.fonts.find((item) => item.id === fontId);
+  if (!font) {
+    return {
+      width: text.length * 6,
+      height: 7
+    };
+  }
+
+  return {
+    width: text.length * font.width,
+    height: font.height
+  };
 }

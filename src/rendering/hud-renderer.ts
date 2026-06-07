@@ -7,7 +7,7 @@
 
 import type { HudState } from "../game/types";
 import type { Renderer } from "../engine/renderer";
-import { drawTo8FontText } from "./font-renderer";
+import { drawTo8FontText, measureTo8FontText } from "./font-renderer";
 
 /** Configuration de rendu des libelles et valeurs HUD principaux. */
 export interface HudTextRenderConfig {
@@ -19,16 +19,12 @@ export interface HudTextRenderConfig {
   readonly labelColor: string;
   /** Couleur des valeurs. */
   readonly valueColor: string;
-  /** Position X des libelles. */
-  readonly labelsX: number;
+  /** Debut horizontal de la zone disponible entre les panneaux HUD. */
+  readonly fieldAreaX: number;
+  /** Largeur horizontale disponible pour repartir les trois champs. */
+  readonly fieldAreaWidth: number;
   /** Position Y des libelles. */
   readonly labelsY: number;
-  /** Position X du score. */
-  readonly scoreX: number;
-  /** Position X du temps. */
-  readonly timeX: number;
-  /** Position X du record. */
-  readonly recordX: number;
   /** Position Y des valeurs. */
   readonly valuesY: number;
 }
@@ -43,10 +39,33 @@ export interface HudSmallCounterRenderConfig {
 
 /** Dessine les libelles et valeurs principales du HUD. */
 export function drawHudTextFields(renderer: Renderer, hud: HudState, config: HudTextRenderConfig): void {
-  drawTo8FontText(renderer, "Points  Temps  Record", config.labelFontId, config.labelsX, config.labelsY, config.labelColor);
-  drawTo8FontText(renderer, padNumber(hud.score, 6), config.valueFontId, config.scoreX, config.valuesY, config.valueColor);
-  drawTo8FontText(renderer, padNumber(hud.time, 3), config.valueFontId, config.timeX, config.valuesY, config.valueColor);
-  drawTo8FontText(renderer, padNumber(hud.record, 6), config.valueFontId, config.recordX, config.valuesY, config.valueColor);
+  const fields = [
+    { label: "Points", value: padNumber(hud.score, 6) },
+    { label: "Temps", value: padNumber(hud.time, 3) },
+    { label: "Record", value: padNumber(hud.record, 6) }
+  ] as const;
+
+  fields.forEach((field, index) => {
+    const centerX = config.fieldAreaX + config.fieldAreaWidth * ((index * 2 + 1) / (fields.length * 2));
+    const labelMetrics = measureTo8FontText(field.label, config.labelFontId);
+    const valueMetrics = measureTo8FontText(field.value, config.valueFontId);
+    drawTo8FontText(
+      renderer,
+      field.label,
+      config.labelFontId,
+      Math.round(centerX - labelMetrics.width / 2),
+      config.labelsY,
+      config.labelColor
+    );
+    drawTo8FontText(
+      renderer,
+      field.value,
+      config.valueFontId,
+      Math.round(centerX - valueMetrics.width / 2),
+      config.valuesY,
+      config.valueColor
+    );
+  });
 }
 
 /** Dessine un petit compteur a largeur fixe. */
