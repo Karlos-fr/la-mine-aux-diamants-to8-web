@@ -278,6 +278,11 @@ export class GameplayRenderer {
           context.boardOffsetX,
           context.boardOffsetY
         );
+
+        if (!isInsideRenderedLevel(context, levelX, levelY)) {
+          continue;
+        }
+
         const tileId = context.getRuntimeTile(levelX, levelY);
         const isDynamicTile =
           tileId === context.tileIds.monster ||
@@ -559,6 +564,11 @@ function getPlayfieldHeight(renderer: Renderer): number {
 /** Centre verticalement le bloc libelle/valeur dans le bandeau HUD. */
 function getHudTextTopOffset(): number {
   return Math.floor((HUD_HEIGHT - HUD_LABEL_FONT_HEIGHT - HUD_LABEL_VALUE_GAP - HUD_VALUE_FONT_HEIGHT) / 2);
+}
+
+/** Evite de rendre la bordure logique runtime dans l'espace visuel hors niveau. */
+function isInsideRenderedLevel(context: GameplayRenderContext, gridX: number, gridY: number): boolean {
+  return gridX >= 0 && gridY >= 0 && gridX < context.state.level.width && gridY < context.state.level.height;
 }
 
 /** Convertit un attribut TO8 en couleur CSS selon le plan forme/couleur. */
