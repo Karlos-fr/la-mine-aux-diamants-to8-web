@@ -564,6 +564,57 @@
       "controlPng": "sprites/explosion-control.png"
     },
     {
+      "id": "specialCreature",
+      "status": "confirmed",
+      "frames": [
+        {
+          "name": "normal_17",
+          "tileId": 23,
+          "status": "confirmed",
+          "hexId": "0x17",
+          "sourceAddress": "0xD7D8",
+          "atlasX": 0,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "697dff24fc430b99967ef10b5913af4d12ba64c8fb48e0c1c6a5938a9de45c4c"
+        },
+        {
+          "name": "d1bb_blue_17",
+          "tileId": 23,
+          "status": "confirmed",
+          "hexId": "0x17",
+          "sourceAddress": "0xD7D8",
+          "atlasX": 16,
+          "atlasY": 0,
+          "width": 16,
+          "height": 16,
+          "rgbaSha256": "3fb5701c6e0bed57fa2f6dae58d0a486aa1889245c022dc6917814179c8088c4"
+        }
+      ],
+      "animations": [
+        {
+          "id": "d1bbToggle",
+          "status": "confirmed",
+          "frameTileIds": [
+            23,
+            23
+          ],
+          "evidence": [
+            "KIT.BIN:$D1BB swaps the 32-byte shape plane of tile 0x17 with the shape plane stored at $D858",
+            "the resulting 17D frame keeps tile 0x17 color attributes and renders as the full blue frame observed in the dynamic preview"
+          ]
+        }
+      ],
+      "evidence": [
+        "tile 0x17 is the special creature tracked separately from monster 0x02",
+        "KIT.BIN:$BC84 moves special creatures and writes 0x17 at the new grid position",
+        "KIT.BIN:$D1BB produces the alternate blue 17D frame by mutating graphics memory, so the frame is generated rather than read as a static tile"
+      ],
+      "atlas": "sprites/specialCreature-atlas.png",
+      "controlPng": "sprites/specialCreature-control.png"
+    },
+    {
       "id": "objects",
       "status": "mixed",
       "frames": [
@@ -694,17 +745,13 @@
       "evidence": [
         "static and special tiles grouped separately from player/diamond/rocks",
         "tile 0x02 is animated by KIT.BIN:$D1BB and checked against $DAF4 by KIT.BIN:$CC5B-$CC88",
-        "tile 0x18 remains unconfirmed and is not treated as the monster",
-        "KIT.BIN:$D1BB also swaps the shape planes $D7D8-$D7F7 and $D858-$D877 for tileIds 0x17 and 0x1A",
+        "tile 0x17 is a special creature tracked separately from monster 0x02",
+        "tile 0x18 is a transformer block used by KIT.BIN:$CB3B for rock/diamond conversion",
+        "tile 0x19 is not emitted by decoded level grids and remains outside direct gameplay",
         "unidentified tiles remain explicitly unconfirmed"
       ],
       "atlas": "sprites/objects-atlas.png",
-      "controlPng": "sprites/objects-control.png",
-      "notes": [
-        "tile 0x17 is the special creature tracked separately from monster 0x02",
-        "tile 0x18 is the transformer block used by KIT.BIN:$CB3B for rock/diamond conversion",
-        "tile 0x19 is not emitted by decoded level grids and remains outside direct gameplay"
-      ]
+      "controlPng": "sprites/objects-control.png"
     },
     {
       "id": "monster",

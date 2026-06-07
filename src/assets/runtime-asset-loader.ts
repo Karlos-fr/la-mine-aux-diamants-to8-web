@@ -19,6 +19,9 @@ export interface LoadedRuntimeAssets {
   /** Atlas anime des monstres. */
   readonly monsterAtlas: HTMLImageElement;
 
+  /** Atlas anime de la creature speciale. */
+  readonly specialCreatureAtlas: HTMLImageElement;
+
   /** Panneau HUD gauche. */
   readonly leftHudPanel: HTMLImageElement;
 
@@ -50,6 +53,11 @@ export class RuntimeAssets {
   /** Atlas anime des monstres, si charge. */
   get monsterAtlas(): HTMLImageElement | null {
     return this.loadedAssets?.monsterAtlas ?? null;
+  }
+
+  /** Atlas anime de la creature speciale, si charge. */
+  get specialCreatureAtlas(): HTMLImageElement | null {
+    return this.loadedAssets?.specialCreatureAtlas ?? null;
   }
 
   /** Panneau HUD gauche, si charge. */
@@ -94,10 +102,11 @@ export class RuntimeAssets {
   /** Charge tous les assets runtime declares dans le catalogue d'URLs. */
   private async loadAll(): Promise<void> {
     try {
-      const [tileAtlas, diamondAtlas, monsterAtlas, leftHudPanel, rightHudPanel] = await Promise.all([
+      const [tileAtlas, diamondAtlas, monsterAtlas, specialCreatureAtlas, leftHudPanel, rightHudPanel] = await Promise.all([
         loadImage(RUNTIME_ASSET_URLS.tilesAtlas),
         loadImage(RUNTIME_ASSET_URLS.diamondAtlas),
         loadImage(RUNTIME_ASSET_URLS.monsterAtlas),
+        loadImage(RUNTIME_ASSET_URLS.specialCreatureAtlas),
         loadImage(RUNTIME_ASSET_URLS.hudLeftPanel),
         loadImage(RUNTIME_ASSET_URLS.hudRightPanel)
       ]);
@@ -105,6 +114,7 @@ export class RuntimeAssets {
         tileAtlas,
         diamondAtlas,
         monsterAtlas,
+        specialCreatureAtlas,
         leftHudPanel,
         rightHudPanel
       };

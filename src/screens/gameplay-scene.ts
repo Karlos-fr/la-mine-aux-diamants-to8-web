@@ -597,10 +597,12 @@ export class GameplayScene implements Scene {
         empty: RUNTIME_EMPTY_TILE_ID
       },
       hudDiamondColorOffset: this.animationState.get("hudDiamond")?.frameIndex ?? 0,
+      specialCreatureFrameIndex: this.animationState.get("monster")?.frameIndex ?? 0,
       getRuntimeTile: (gridX, gridY) => this.runtimeGrid.getTile(gridX, gridY),
       getTileFrame: (tileId) => this.getTileFrame(tileId),
       getDiamondTileFrame: () => this.getDiamondTileFrame(),
       getMonsterTileFrame: () => this.getMonsterTileFrame(),
+      getSpecialCreatureTileFrame: () => this.getSpecialCreatureTileFrame(),
       getEntityTileFrameId: (kind) => this.getEntityTileFrameId(kind),
       findEntityAtGrid: (gridX, gridY) => this.findEntityAtGrid(gridX, gridY),
       findMonsterRuntimeAtGrid: (gridX, gridY) => this.findMonsterRuntimeAtGrid(gridX, gridY),
@@ -1932,6 +1934,20 @@ export class GameplayScene implements Scene {
     }
 
     return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.monsterAtlas, `monster-${frameIndex}`, frameIndex);
+  }
+
+  /** Recupere la frame d'atlas animee courante de la creature speciale. */
+  private getSpecialCreatureTileFrame(): TileFrame {
+    const frameIndex = (this.animationState.get("monster")?.frameIndex ?? 0) % 2;
+    if (!this.runtimeAssets.specialCreatureAtlas) {
+      return this.getTileFrame(RUNTIME_TILE.specialCreature);
+    }
+
+    return this.tileFrameCache.getAtlasFrame(
+      this.runtimeAssets.specialCreatureAtlas,
+      `special-creature-${frameIndex}`,
+      frameIndex
+    );
   }
 
   /** Retourne l'atlas de tuiles charge ou leve une erreur lisible utilisateur. */

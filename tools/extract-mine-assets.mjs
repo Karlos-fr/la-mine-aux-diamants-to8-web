@@ -195,6 +195,7 @@ function writeNamedSpriteAssets(outDir, generatedDir, tileImages, tiles, memory)
   const uniqueIdleFrames = [...new Set(idleCycle)];
   const diamondColorCycle = buildDiamondColorCycle(memory);
   const monsterBlinkCycle = buildMonsterBlinkCycle(memory);
+  const specialCreatureCycle = buildSpecialCreatureCycle(memory);
   const groups = [
     {
       id: "player",
@@ -359,6 +360,30 @@ function writeNamedSpriteAssets(outDir, generatedDir, tileImages, tiles, memory)
       ]
     },
     {
+      id: "specialCreature",
+      status: "confirmed",
+      frames: [
+        { name: "normal_17", tileId: 0x17, status: "confirmed" },
+        { name: "d1bb_blue_17", tileId: 0x17, status: "confirmed", rgbaOverride: specialCreatureCycle[1] }
+      ],
+      animations: [
+        {
+          id: "d1bbToggle",
+          status: "confirmed",
+          frameTileIds: [0x17, 0x17],
+          evidence: [
+            "KIT.BIN:$D1BB swaps the 32-byte shape plane of tile 0x17 with the shape plane stored at $D858",
+            "the resulting 17D frame keeps tile 0x17 color attributes and renders as the full blue frame observed in the dynamic preview"
+          ]
+        }
+      ],
+      evidence: [
+        "tile 0x17 is the special creature tracked separately from monster 0x02",
+        "KIT.BIN:$BC84 moves special creatures and writes 0x17 at the new grid position",
+        "KIT.BIN:$D1BB produces the alternate blue 17D frame by mutating graphics memory, so the frame is generated rather than read as a static tile"
+      ]
+    },
+    {
       id: "objects",
       status: "mixed",
       frames: [
@@ -491,6 +516,17 @@ function buildMonsterBlinkCycle(memory) {
   return [
     { name: "blink_0", tileId: 0x02, rgba: renderTileRgba(before02) },
     { name: "blink_1", tileId: 0x02, rgba: renderTileRgba(after02) }
+  ];
+}
+
+function buildSpecialCreatureCycle(memory) {
+  const before17 = Buffer.from(memory.subarray(ATLAS_START + 0x17 * TILE_SIZE_BYTES, ATLAS_START + 0x18 * TILE_SIZE_BYTES));
+  const shapeSource19 = memory.subarray(ATLAS_START + 0x19 * TILE_SIZE_BYTES, ATLAS_START + 0x19 * TILE_SIZE_BYTES + 32);
+  const after17 = Buffer.from(before17);
+  shapeSource19.copy(after17, 0, 0, 32);
+  return [
+    renderTileRgba(before17),
+    renderTileRgba(after17)
   ];
 }
 

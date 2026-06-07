@@ -15,6 +15,7 @@ export const RUNTIME_ASSET_URLS = {
   tilesAtlas: docsExtractionAssetUrl("mine-tiles-atlas-D218-D8D7.png"),
   diamondAtlas: docsExtractionAssetUrl("sprites/diamond-atlas.png"),
   monsterAtlas: docsExtractionAssetUrl("sprites/monster-atlas.png"),
+  specialCreatureAtlas: docsExtractionAssetUrl("sprites/specialCreature-atlas.png"),
   hudLeftPanel: docsExtractionAssetUrl("hud/left-wood-sign.png"),
   hudRightPanel: docsExtractionAssetUrl("hud/right-gallery-sign.png"),
   startupInfogramesPresents: docsExtractionAssetUrl("startup/startup-01-infogrames-presents.png"),
@@ -28,5 +29,6 @@ export const VIEWER_ASSET_URLS: Record<string, string> = {
   rocks: docsExtractionAssetUrl("sprites/rocks-atlas.png"),
   explosion: docsExtractionAssetUrl("sprites/explosion-atlas.png"),
   objects: docsExtractionAssetUrl("sprites/objects-atlas.png"),
-  monster: RUNTIME_ASSET_URLS.monsterAtlas
+  monster: RUNTIME_ASSET_URLS.monsterAtlas,
+  specialCreature: RUNTIME_ASSET_URLS.specialCreatureAtlas
 };

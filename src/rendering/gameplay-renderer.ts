@@ -196,6 +196,9 @@ export interface GameplayRenderContext {
   /** Offset couleur courant du diamant de panneau HUD. */
   readonly hudDiamondColorOffset: number;
 
+  /** Frame courante de la creature speciale, issue de la cadence `D1BB`. */
+  readonly specialCreatureFrameIndex: number;
+
   /** Lit une tuile runtime. */
   readonly getRuntimeTile: (gridX: number, gridY: number) => number;
 
@@ -207,6 +210,9 @@ export interface GameplayRenderContext {
 
   /** Retourne la frame animee du monstre. */
   readonly getMonsterTileFrame: () => TileFrame;
+
+  /** Retourne la frame animee de la creature speciale. */
+  readonly getSpecialCreatureTileFrame: () => TileFrame;
 
   /** Retourne la frame d'entite non speciale. */
   readonly getEntityTileFrameId: (kind: string) => number;
@@ -394,19 +400,35 @@ export class GameplayRenderer {
         continue;
       }
 
+      if (entity.kind === "specialCreature") {
+        this.drawSpecialCreatureEntity(renderer, context, entityGridX, entityGridY);
+        continue;
+      }
+
       const frame = entity.kind === "diamond"
         ? context.getDiamondTileFrame()
         : entity.kind === "monster"
           ? context.getMonsterTileFrame()
-          : entity.kind === "specialCreature"
-            ? context.getTileFrame(context.tileIds.specialCreature)
-            : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+          : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+
       renderer.drawTile(
         frame,
         Math.round(context.boardOffsetX + (entityGridX - context.viewport.x) * context.tileSize),
         Math.round(context.boardOffsetY + (entityGridY - context.viewport.y) * context.tileSize)
       );
     }
+  }
+
+  /** Dessine la creature speciale en alternant la frame `17` et la frame generee `17D`. */
+  private drawSpecialCreatureEntity(
+    renderer: Renderer,
+    context: GameplayRenderContext,
+    entityGridX: number,
+    entityGridY: number
+  ): void {
+    const screenX = Math.round(context.boardOffsetX + (entityGridX - context.viewport.x) * context.tileSize);
+    const screenY = Math.round(context.boardOffsetY + (entityGridY - context.viewport.y) * context.tileSize);
+    renderer.drawTile(context.getSpecialCreatureTileFrame(), screenX, screenY);
   }
 
   /** Dessine panneaux, compteurs, libelles et diamant anime du HUD. */
