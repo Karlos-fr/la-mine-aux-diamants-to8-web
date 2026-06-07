@@ -57,6 +57,7 @@ import type { TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
+import { OPTIONS_MENU_CATEGORY_COUNT, renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { TileFrameCache } from "../rendering/tile-frame-cache";
 
 /** Horloge generique pour les animations cycliques de rendu. */
@@ -365,6 +366,10 @@ export class GameplayScene implements Scene {
   private levelTransitionQueued = false;
   /** Garde-fou pour ne demander le reset de niveau qu'une fois apres mort. */
   private deathResetQueued = false;
+  /** Indique si la pop-in d'options est ouverte et met le gameplay en pause. */
+  private optionsOpen = false;
+  /** Categorie d'options selectionnee. */
+  private selectedOptionsCategoryIndex = 0;
   /** Initialise l'etat runtime, la grille et les horloges d'animation du niveau. */
   constructor(
     levelNumber: number,
@@ -446,6 +451,10 @@ export class GameplayScene implements Scene {
 
   /** Orchestre un tick gameplay complet sans effectuer de rendu. */
   update(dt: number, input: InputState): void {
+    if (this.updateOptionsPopin(input)) {
+      return;
+    }
+
     if (this.gameplayMode === "attract" && (input.justPressed.confirm || input.justPressed.action)) {
       this.queueAttractReturnToTitle();
       return;
@@ -457,6 +466,31 @@ export class GameplayScene implements Scene {
     }
 
     this.runtime.update(dt, input);
+  }
+
+  /** Gere l'ouverture et la navigation de la pop-in d'options. */
+  private updateOptionsPopin(input: InputState): boolean {
+    if (this.gameplayMode !== "normal") {
+      return false;
+    }
+
+    if (input.justPressed.cancel) {
+      this.optionsOpen = !this.optionsOpen;
+      return true;
+    }
+
+    if (!this.optionsOpen) {
+      return false;
+    }
+
+    if (input.justPressed.up) {
+      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex - 1);
+    }
+    if (input.justPressed.down) {
+      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
+    }
+
+    return true;
   }
 
   /** Nettoie les marqueurs temporaires du tick courant. */
@@ -615,6 +649,13 @@ export class GameplayScene implements Scene {
       isPlayerSpawning: () => this.isPlayerSpawning(),
       objectiveReachedFlashPhase: this.getObjectiveReachedFlashPhase()
     });
+
+    if (this.optionsOpen) {
+      renderOptionsPopin(renderer, {
+        selectedCategoryIndex: this.selectedOptionsCategoryIndex,
+        contextLabel: "Jeu en pause"
+      });
+    }
   }
 
   /** Trouve la premiere entite visuelle active occupant la cellule de grille donnee. */
@@ -2072,6 +2113,11 @@ function smoothStep(progress: number): number {
 /** Indique si deux cellules sont identiques ou adjacentes orthogonalement. */
 function isAdjacentOrSameCell(firstX: number, firstY: number, secondX: number, secondY: number): boolean {
   return Math.abs(firstX - secondX) + Math.abs(firstY - secondY) <= 1;
+}
+
+/** Contraint l'index de categorie d'options avec boucle. */
+function wrapOptionCategory(index: number): number {
+  return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
 }
 
 /** Incremente un compteur decimal avec retour a zero selon le nombre de chiffres configure. */

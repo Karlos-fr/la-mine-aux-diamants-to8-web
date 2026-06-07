@@ -13,6 +13,7 @@ import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { gameAudio } from "../audio/audio-engine";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
+import { OPTIONS_MENU_CATEGORY_COUNT, renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
 
@@ -92,6 +93,10 @@ export class StartupTitleScene implements Scene {
   private attractIdleTicks = 0;
   /** Temps accumule avant le prochain passage logique du compteur `$8DD8`. */
   private attractIdleElapsed = 0;
+  /** Indique si la pop-in d'options est ouverte sur le titre. */
+  private optionsOpen = false;
+  /** Categorie d'options selectionnee. */
+  private selectedOptionsCategoryIndex = 0;
 
   /** Image de base plein ecran du titre. */
   private baseImage: HTMLImageElement | undefined;
@@ -163,6 +168,10 @@ export class StartupTitleScene implements Scene {
 
   /** Avance les clocks d'animation, lance le jeu ou le mode attract selon l'inactivite. */
   update(dt: number, input: InputState): void {
+    if (this.updateOptionsPopin(input)) {
+      return;
+    }
+
     this.sparkleElapsed += dt;
     this.faceElapsed += dt;
     this.feetElapsed += dt;
@@ -222,6 +231,35 @@ export class StartupTitleScene implements Scene {
       faceImage: this.faceImageCache.get(currentFace.path),
       feetImage: this.feetImageCache.get(currentFeet.path)
     });
+
+    if (this.optionsOpen) {
+      renderOptionsPopin(renderer, {
+        selectedCategoryIndex: this.selectedOptionsCategoryIndex,
+        contextLabel: "Ecran titre"
+      });
+    }
+  }
+
+  /** Gere l'ouverture et la navigation de la pop-in d'options. */
+  private updateOptionsPopin(input: InputState): boolean {
+    if (input.justPressed.cancel) {
+      this.optionsOpen = !this.optionsOpen;
+      this.attractIdleTicks = 0;
+      this.attractIdleElapsed = 0;
+      return true;
+    }
+
+    if (!this.optionsOpen) {
+      return false;
+    }
+
+    if (input.justPressed.up) {
+      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex - 1);
+    }
+    if (input.justPressed.down) {
+      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
+    }
+    return true;
   }
 
   /** Charge une liste de frames image dans le cache fourni. */
@@ -258,4 +296,9 @@ function hasAnyJustPressedInput(input: InputState): boolean {
     input.justPressed.action ||
     input.justPressed.cancel
   );
+}
+
+/** Contraint l'index de categorie avec boucle. */
+function wrapOptionCategory(index: number): number {
+  return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
 }
