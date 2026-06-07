@@ -1,6 +1,7 @@
 import "./styles.css";
 
 import { debugOptions } from "./debug-options";
+import { createThomsonDomText, setThomsonDomText } from "./dom-thomson-text";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
@@ -49,51 +50,85 @@ if (mode === "gallery") {
   const debugToolbar = document.createElement("div");
   debugToolbar.className = "debug-toolbar";
 
-  /** Libelle accessible du select de niveau. */
+  /** Libelle accessible du selecteur de niveau. */
   const levelSelectLabel = document.createElement("label");
   levelSelectLabel.className = "debug-level-label";
-  levelSelectLabel.htmlFor = "debug-level-select";
-  levelSelectLabel.textContent = "Niveau";
+  levelSelectLabel.htmlFor = "debug-level-picker";
+  setThomsonDomText(levelSelectLabel, "Niveau", { ariaLabel: "Niveau" });
 
   /** Liste de selection directe des niveaux modernes disponibles. */
-  const levelSelect = document.createElement("select");
-  levelSelect.id = "debug-level-select";
-  levelSelect.className = "debug-level-select";
+  const levelSelectShell = document.createElement("div");
+  levelSelectShell.className = "debug-level-select-shell";
+
+  /** Bouton ouvrant la liste de niveaux custom rendue en glyphes TO8. */
+  const levelPickerButton = document.createElement("button");
+  levelPickerButton.id = "debug-level-picker";
+  levelPickerButton.className = "debug-level-picker";
+  levelPickerButton.type = "button";
+  levelPickerButton.setAttribute("aria-haspopup", "listbox");
+  levelPickerButton.setAttribute("aria-expanded", "false");
+
+  /** Libelle visible du niveau selectionne dans le bouton custom. */
+  const levelPickerDisplay = document.createElement("span");
+  levelPickerDisplay.className = "debug-level-picker-display";
+
+  /** Indicateur visuel de select conserve dans le style pixel TO8. */
+  const levelSelectArrow = document.createElement("span");
+  levelSelectArrow.className = "debug-level-select-arrow";
+  levelSelectArrow.append(createThomsonDomText("v"));
+
+  /** Menu deroulant custom pour appliquer la font procedurale a chaque niveau. */
+  const levelMenu = document.createElement("div");
+  levelMenu.className = "debug-level-menu";
+  levelMenu.role = "listbox";
+  levelMenu.hidden = true;
+
+  /** Options de niveaux exposees par le menu debug. */
+  const levelOptions: Array<{ readonly levelNumber: number; readonly label: string; readonly button: HTMLButtonElement }> = [];
   for (let levelNumber = 1; levelNumber <= LEVEL_COUNT; levelNumber += 1) {
     const levelSource = getModernLevelSource(levelNumber);
-    const option = document.createElement("option");
-    option.value = String(levelNumber);
     const sourceSuffix = levelSource?.source?.kind === "attract" ? " (debug niveau cache)" : "";
-    option.textContent = levelSource ? `${levelNumber} - ${levelSource.label}${sourceSuffix}` : `Niveau ${levelNumber}`;
-    levelSelect.append(option);
+    const label = levelSource ? `${levelNumber} - ${levelSource.label}${sourceSuffix}` : `Niveau ${levelNumber}`;
+    const optionButton = document.createElement("button");
+    optionButton.className = "debug-level-menu-option";
+    optionButton.type = "button";
+    optionButton.role = "option";
+    optionButton.dataset.levelNumber = String(levelNumber);
+    setThomsonDomText(optionButton, label, { ariaLabel: label, maxLength: 32 });
+    levelMenu.append(optionButton);
+    levelOptions.push({ levelNumber, label, button: optionButton });
   }
 
   /** Bouton debug dedie au mode attract scriptable original. */
   const attractButton = document.createElement("button");
   attractButton.className = "debug-attract-button";
   attractButton.type = "button";
-  attractButton.textContent = "Debug attract";
+  setThomsonDomText(attractButton, "Debug attract", { ariaLabel: "Debug attract" });
   attractButton.title = "Lancer directement le mode attract scriptable original.";
 
   /** Bouton debug ouvrant l'editeur de niveaux moderne. */
   const editorButton = document.createElement("button");
   editorButton.className = "debug-editor-button";
   editorButton.type = "button";
-  editorButton.textContent = "Editeur";
+  setThomsonDomText(editorButton, "Editeur", { ariaLabel: "Editeur" });
 
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
   ghostButton.className = "debug-ghost-button";
   ghostButton.type = "button";
-  ghostButton.textContent = "Ghost: off";
+  setThomsonDomText(ghostButton, "Ghost: off", { ariaLabel: "Ghost: off" });
   ghostButton.setAttribute("aria-pressed", "false");
   ghostButton.addEventListener("click", () => {
     debugOptions.ghostMode = !debugOptions.ghostMode;
-    ghostButton.textContent = debugOptions.ghostMode ? "Ghost: on" : "Ghost: off";
+    const ghostLabel = debugOptions.ghostMode ? "Ghost: on" : "Ghost: off";
+    setThomsonDomText(ghostButton, ghostLabel, { ariaLabel: ghostLabel });
     ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
     canvas.focus();
   });
-  debugToolbar.append(levelSelectLabel, levelSelect, attractButton, editorButton, ghostButton);
+  levelPickerButton.append(levelPickerDisplay, levelSelectArrow);
+  levelSelectShell.append(levelPickerButton, levelMenu);
+  syncLevelPickerDisplay(levelOptions, levelPickerDisplay, 1);
+  debugToolbar.append(levelSelectLabel, levelSelectShell, attractButton, editorButton, ghostButton);
   root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -103,19 +138,80 @@ if (mode === "gallery") {
       return new StartupInfogramScene();
     }
   });
-  levelSelect.addEventListener("change", () => {
-    const levelNumber = Number(levelSelect.value);
+  let selectedDebugLevelNumber = 1;
+  const closeLevelMenu = (): void => {
+    levelMenu.hidden = true;
+    levelPickerButton.setAttribute("aria-expanded", "false");
+  };
+  const toggleLevelMenu = (): void => {
+    const nextOpen = levelMenu.hidden;
+    levelMenu.hidden = !nextOpen;
+    levelPickerButton.setAttribute("aria-expanded", String(nextOpen));
+  };
+  const selectDebugLevel = (levelNumber: number): void => {
+    selectedDebugLevelNumber = levelNumber;
+    syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
+    syncLevelMenuSelection(levelOptions, selectedDebugLevelNumber);
+    closeLevelMenu();
     app.setScene(createGameplayScene(levelNumber));
     canvas.focus();
+  };
+
+  syncLevelMenuSelection(levelOptions, selectedDebugLevelNumber);
+  levelPickerButton.addEventListener("click", () => {
+    toggleLevelMenu();
+  });
+  levelPickerButton.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeLevelMenu();
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      levelOptions.find((item) => item.levelNumber === selectedDebugLevelNumber)?.button.focus();
+      levelMenu.hidden = false;
+      levelPickerButton.setAttribute("aria-expanded", "true");
+    }
+  });
+  levelOptions.forEach((option) => {
+    option.button.addEventListener("click", () => {
+      selectDebugLevel(option.levelNumber);
+    });
+  });
+  document.addEventListener("click", (event) => {
+    if (!debugToolbar.contains(event.target as Node)) {
+      closeLevelMenu();
+    }
   });
   attractButton.addEventListener("click", () => {
+    closeLevelMenu();
     app.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
     canvas.focus();
   });
   editorButton.addEventListener("click", () => {
+    closeLevelMenu();
     app.setScene(createLevelEditorScene());
     canvas.focus();
   });
   app.start();
   canvas.focus();
+}
+
+/** Synchronise le libelle pixelise du selecteur custom avec son niveau courant. */
+function syncLevelPickerDisplay(
+  options: ReadonlyArray<{ readonly levelNumber: number; readonly label: string }>,
+  display: HTMLElement,
+  selectedLevelNumber: number
+): void {
+  const selectedOption = options.find((option) => option.levelNumber === selectedLevelNumber);
+  setThomsonDomText(display, selectedOption?.label ?? "", { maxLength: 28 });
+}
+
+/** Met a jour l'etat aria/visuel des options du menu custom. */
+function syncLevelMenuSelection(
+  options: ReadonlyArray<{ readonly levelNumber: number; readonly button: HTMLButtonElement }>,
+  selectedLevelNumber: number
+): void {
+  options.forEach((option) => {
+    option.button.setAttribute("aria-selected", String(option.levelNumber === selectedLevelNumber));
+  });
 }
