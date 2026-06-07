@@ -35,10 +35,13 @@ export const TO8_RUNTIME_TIMING = {
   monsterMoveIntervalTicks: 14,
   /** Duree visuelle d'un pas monstre; interpolation moderne decouplee de la decision logique. */
   monsterGridMoveTicks: 9,
-  /** Intervalle de scan physique; `$CB07` scanne la grille par boucle ASM, valeur moderne centralisee. */
-  fallingObjectScanTicks: 8,
-  /** Duree visuelle d'une chute/glissade; interpolation moderne decouplee de la mutation de grille. */
-  fallingObjectGridMoveTicks: 9,
+  /**
+   * Intervalle de scan physique; `$CB07` parcourt `$DBE0-$DEFF` puis les routines de mouvement
+   * utilisent le delai CPU `$CD5B`, donc la physique ne doit pas avancer a chaque petite frame moderne.
+   */
+  fallingObjectScanTicks: 14,
+  /** Duree visuelle d'une chute/glissade; ralentie pour suivre le scan physique original global. */
+  fallingObjectGridMoveTicks: 14,
   /** Duree d'une frame d'explosion; approximation moderne deja entiere. */
   explosionFrameTicks: 6,
   /** Cadence du cycle idle joueur, approximation moderne liee aux frames extraites. */
