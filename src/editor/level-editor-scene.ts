@@ -242,12 +242,12 @@ export class LevelEditorScene implements Scene {
     }
 
     if (this.gridOverlayVisible) {
-      this.renderGridOverlay(renderer, gridWidth, gridHeight, tileSize);
+      this.renderGridOverlay(renderer, gridHeight, tileSize);
     }
   }
 
-  /** Rend une grille fine en lignes uniques pour conserver la meme epaisseur au zoom. */
-  private renderGridOverlay(renderer: Renderer, gridWidth: number, gridHeight: number, tileSize: number): void {
+  /** Rend une grille fine sans superposer deux traits translucides aux intersections. */
+  private renderGridOverlay(renderer: Renderer, gridHeight: number, tileSize: number): void {
     for (let x = 0; x <= this.viewport.visibleColumns; x += 1) {
       const lineX = this.viewport.gridX + x * tileSize;
       renderer.fillRect(lineX, this.viewport.gridY, 1, gridHeight, EDITOR_GRID_OVERLAY_COLOR);
@@ -255,7 +255,9 @@ export class LevelEditorScene implements Scene {
 
     for (let y = 0; y <= this.viewport.visibleRows; y += 1) {
       const lineY = this.viewport.gridY + y * tileSize;
-      renderer.fillRect(this.viewport.gridX, lineY, gridWidth, 1, EDITOR_GRID_OVERLAY_COLOR);
+      for (let x = 0; x < this.viewport.visibleColumns; x += 1) {
+        renderer.fillRect(this.viewport.gridX + x * tileSize + 1, lineY, tileSize - 1, 1, EDITOR_GRID_OVERLAY_COLOR);
+      }
     }
   }
 
