@@ -1620,8 +1620,9 @@ export class GameplayScene implements Scene {
     }
 
     const playerCell = this.getPlayerLogicalCell();
-    if (!debugOptions.ghostMode && this.findMonsterRuntimeAtGrid(playerCell.x, playerCell.y)) {
-      this.startMonsterContactExplosion(playerCell.x, playerCell.y);
+    const monster = !debugOptions.ghostMode ? this.findMonsterRuntimeTouchingPlayer(playerCell.x, playerCell.y) : null;
+    if (monster) {
+      this.startMonsterContactExplosion(monster.gridX, monster.gridY);
     }
   }
 
@@ -1634,6 +1635,20 @@ export class GameplayScene implements Scene {
 
     this.startExplosion(gridX, gridY);
     this.killPlayer("monsterContact");
+  }
+
+  /** Trouve un monstre dont la zone de contact touche le joueur, comme les lectures voisines de `KIT.BIN:$CA04`. */
+  private findMonsterRuntimeTouchingPlayer(playerGridX: number, playerGridY: number): GameState["monsters"][number] | null {
+    return this.state.monsters.find((monster) => {
+      if (monster.movement) {
+        return (
+          isAdjacentOrSameCell(playerGridX, playerGridY, monster.movement.fromX, monster.movement.fromY) ||
+          isAdjacentOrSameCell(playerGridX, playerGridY, monster.movement.toX, monster.movement.toY)
+        );
+      }
+
+      return isAdjacentOrSameCell(playerGridX, playerGridY, monster.gridX, monster.gridY);
+    }) ?? null;
   }
 
   /** Desactive une creature speciale touchee par un objet en chute; le burst diamant est gere separement. */
@@ -2012,6 +2027,11 @@ function lerp(from: number, to: number, progress: number): number {
 /** Applique une courbe d'easing smooth-step pour l'interpolation camera. */
 function smoothStep(progress: number): number {
   return progress * progress * (3 - 2 * progress);
+}
+
+/** Indique si deux cellules sont identiques ou adjacentes orthogonalement. */
+function isAdjacentOrSameCell(firstX: number, firstY: number, secondX: number, secondY: number): boolean {
+  return Math.abs(firstX - secondX) + Math.abs(firstY - secondY) <= 1;
 }
 
 /** Incremente un compteur decimal avec retour a zero selon le nombre de chiffres configure. */
