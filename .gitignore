@@ -2,3 +2,10 @@ node_modules/
 dist/
 .vite/
 *.local
+
+# Fichiers d'extraction regenerables conserves hors versioning.
+docs/extraction/mine-tile-*.png
+docs/extraction/rock-bin-tile00.png
+docs/extraction/*-control.png
+docs/extraction/sprites/*-control.png
+!docs/extraction/sprites/specialCreature-control.png
