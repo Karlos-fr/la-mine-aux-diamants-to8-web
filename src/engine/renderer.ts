@@ -24,6 +24,12 @@ export interface Renderer {
   /** Hauteur logique de rendu. */
   readonly height: number;
 
+  /** Change la resolution logique du canvas. */
+  setLogicalSize(width: number, height: number): void;
+
+  /** Restaure la resolution logique TO8 standard. */
+  resetLogicalSize(): void;
+
   /** Prepare le contexte avant de dessiner une nouvelle frame. */
   beginFrame(): void;
 
@@ -60,11 +66,15 @@ export interface Renderer {
 
 /** Implementation Canvas 2D du renderer logique. */
 export class Canvas2DRenderer implements Renderer {
-  /** Largeur logique fixe. */
-  readonly width = LOGICAL_WIDTH;
+  /** Largeur logique courante. */
+  get width(): number {
+    return this.canvas.width;
+  }
 
-  /** Hauteur logique fixe. */
-  readonly height = LOGICAL_HEIGHT;
+  /** Hauteur logique courante. */
+  get height(): number {
+    return this.canvas.height;
+  }
 
   /** Contexte Canvas 2D configure en pixel art. */
   private readonly context: CanvasRenderingContext2D;
@@ -82,6 +92,24 @@ export class Canvas2DRenderer implements Renderer {
 
     this.context = context;
     this.context.imageSmoothingEnabled = false;
+  }
+
+  /** Change la surface logique sans lisser le rendu pixel art. */
+  setLogicalSize(width: number, height: number): void {
+    const nextWidth = Math.max(1, Math.floor(width));
+    const nextHeight = Math.max(1, Math.floor(height));
+    if (this.canvas.width !== nextWidth) {
+      this.canvas.width = nextWidth;
+    }
+    if (this.canvas.height !== nextHeight) {
+      this.canvas.height = nextHeight;
+    }
+    this.context.imageSmoothingEnabled = false;
+  }
+
+  /** Revient a la resolution logique historique du runtime. */
+  resetLogicalSize(): void {
+    this.setLogicalSize(LOGICAL_WIDTH, LOGICAL_HEIGHT);
   }
 
   /** Reactive le rendu sans lissage au debut de chaque frame. */
@@ -149,14 +177,6 @@ export class Canvas2DRenderer implements Renderer {
 
   /** Dessine une frame de tuile a une taille destination specifique. */
   drawTileScaled(frame: TileFrame, x: number, y: number, width: number, height: number): void {
-    const shouldSmoothDownscale = width < frame.sourceRect.width || height < frame.sourceRect.height;
-    const previousSmoothing = this.context.imageSmoothingEnabled;
-    const previousQuality = this.context.imageSmoothingQuality;
-    if (shouldSmoothDownscale) {
-      this.context.imageSmoothingEnabled = true;
-      this.context.imageSmoothingQuality = "high";
-    }
-
     this.context.drawImage(
       frame.source,
       frame.sourceRect.x,
@@ -168,11 +188,6 @@ export class Canvas2DRenderer implements Renderer {
       Math.floor(width),
       Math.floor(height)
     );
-
-    if (shouldSmoothDownscale) {
-      this.context.imageSmoothingEnabled = previousSmoothing;
-      this.context.imageSmoothingQuality = previousQuality;
-    }
   }
 
   /** Dessine une image complete ou une sous-region sans lissage. */

@@ -357,13 +357,12 @@ body.level-editor-active #game-screen {
   left: calc(var(--editor-left-width) + (100vw - var(--editor-left-width) - var(--editor-right-width)) / 2);
   top: calc(var(--editor-toolbar-height) + (100vh - var(--editor-toolbar-height) - var(--editor-status-height)) / 2);
   z-index: 11;
-  width: min(
-    calc(100vw - var(--editor-left-width) - var(--editor-right-width)),
-    calc((100vh - var(--editor-toolbar-height) - var(--editor-status-height)) * 1.6)
-  );
-  height: auto;
+  width: var(--editor-canvas-css-width);
+  height: var(--editor-canvas-css-height);
+  aspect-ratio: auto;
+  max-width: calc(100vw - var(--editor-left-width) - var(--editor-right-width));
   max-height: calc(100vh - var(--editor-toolbar-height) - var(--editor-status-height));
-  object-fit: contain;
+  object-fit: fill;
   margin: 0;
   transform: translate(-50%, -50%);
   border: 0;

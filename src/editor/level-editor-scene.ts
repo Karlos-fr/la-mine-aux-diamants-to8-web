@@ -9,6 +9,7 @@ import { RuntimeAssets } from "../assets/runtime-asset-loader";
 import { TO8_PALETTE } from "../assets/palette";
 import { THOMSON_8_BIT_FONT } from "../assets/generated/thomson-8-bit-font";
 import type { InputState } from "../engine/input";
+import type { Size2D } from "../engine/render-types";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { getModernLevelSource, type ModernTileType } from "../game/level-loader";
@@ -36,16 +37,16 @@ import {
 } from "./level-editor-properties";
 import { LevelEditorRenderer } from "./level-editor-renderer";
 import {
-  EDITOR_TILE_SIZE,
   createEmptyEditableLevelState,
   getEditableTileAt,
   type EditableLevelState
 } from "./level-editor-state";
-import { LEVEL_EDITOR_THEME } from "./level-editor-theme";
 import { exportEditableLevelToJson, parseEditableLevelJson, stringifyEditableLevel } from "./level-editor-serialization";
 import {
   applyEditorRectangle,
   applyEditorToolAtCell,
+  getEditorViewportTileSize,
+  LEVEL_EDITOR_ZOOM_STEPS,
   panEditorViewport,
   pointerToEditorCell,
   zoomEditorViewport,
@@ -63,10 +64,11 @@ const EDITOR_GRID_Y = 0;
 const EDITOR_VISIBLE_COLUMNS = 20;
 /** Nombre de lignes visibles dans l'editeur moderne. */
 const EDITOR_VISIBLE_ROWS = 12;
-/** Largeur logique de la zone visible de grille. */
-const EDITOR_GRID_VIEW_WIDTH = EDITOR_VISIBLE_COLUMNS * EDITOR_TILE_SIZE;
-/** Hauteur logique de la zone visible de grille. */
-const EDITOR_GRID_VIEW_HEIGHT = EDITOR_VISIBLE_ROWS * EDITOR_TILE_SIZE;
+/** Dimensions DOM des panneaux qui encadrent le canvas editeur. */
+const EDITOR_LEFT_PANEL_WIDTH = 280;
+const EDITOR_RIGHT_PANEL_WIDTH = 240;
+const EDITOR_TOOLBAR_HEIGHT = 44;
+const EDITOR_STATUS_HEIGHT = 26;
 /** Cle de stockage local du brouillon editeur. */
 const EDITOR_DRAFT_STORAGE_KEY = "la-mine-editor-draft";
 /** Taille maximale de l'historique undo. */
@@ -153,6 +155,8 @@ export class LevelEditorScene implements Scene {
     document.body.classList.add("level-editor-active");
     window.addEventListener("keydown", this.keyDownHandler);
     this.restoreLocalDraft();
+    this.updateVisibleCellCount();
+    this.syncCanvasCssSize();
     this.mountModernEditorUi();
     void this.runtimeAssets.load().then(() => {
       if (this.runtimeAssets.tileAtlas) this.editorRenderer.setTilesAtlasImage(this.runtimeAssets.tileAtlas);
@@ -168,6 +172,7 @@ export class LevelEditorScene implements Scene {
   exit(): void {
     window.removeEventListener("keydown", this.keyDownHandler);
     document.body.classList.remove("level-editor-active");
+    this.clearCanvasCssSize();
     this.editorUiRoot?.remove();
     this.editorUiRoot = null;
   }
@@ -177,6 +182,7 @@ export class LevelEditorScene implements Scene {
     this.advanceAnimations(dt);
     zoomEditorViewport(this.viewport, input.pointer.wheelDeltaY);
     this.updateVisibleCellCount();
+    this.syncCanvasCssSize();
     if (input.pressed.action && (input.horizontal !== 0 || input.vertical !== 0)) {
       panEditorViewport(this.viewport, this.editorState, input.horizontal, input.vertical);
     }
@@ -192,6 +198,28 @@ export class LevelEditorScene implements Scene {
     this.renderGrid(renderer);
     this.renderMarkers(renderer);
     this.renderHover(renderer);
+  }
+
+  /** Agrandit la surface logique quand on dezoome, sans reduire les tuiles. */
+  getRenderSize(): Size2D {
+    const availableSize = this.getAvailableCanvasCssSize();
+    return {
+      width: Math.max(1, Math.floor(availableSize.width / this.viewport.zoom)),
+      height: Math.max(1, Math.floor(availableSize.height / this.viewport.zoom))
+    };
+  }
+
+  /** Synchronise la taille CSS avec l'espace disponible pour l'editeur. */
+  private syncCanvasCssSize(): void {
+    const availableSize = this.getAvailableCanvasCssSize();
+    document.body.style.setProperty("--editor-canvas-css-width", `${availableSize.width}px`);
+    document.body.style.setProperty("--editor-canvas-css-height", `${availableSize.height}px`);
+  }
+
+  /** Retire les tailles CSS specifiques de l'editeur. */
+  private clearCanvasCssSize(): void {
+    document.body.style.removeProperty("--editor-canvas-css-width");
+    document.body.style.removeProperty("--editor-canvas-css-height");
   }
 
   /** Rend la grille editable a la taille reelle d'une tuile. */
@@ -278,23 +306,6 @@ export class LevelEditorScene implements Scene {
     const screenX = this.viewport.gridX + visibleX * tileSize;
     const screenY = this.viewport.gridY + visibleY * tileSize;
     renderer.strokeRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2, TO8_PALETTE.yellow);
-  }
-
-  /** Rend un marqueur de spawn ou de sortie sur la grille visible. */
-  private renderMarker(renderer: Renderer, gridX: number, gridY: number, label: string, color: string): void {
-    const visibleX = gridX - this.viewport.offsetX;
-    const visibleY = gridY - this.viewport.offsetY;
-    if (visibleX < 0 || visibleY < 0 || visibleX >= this.viewport.visibleColumns || visibleY >= this.viewport.visibleRows) {
-      return;
-    }
-
-    const tileSize = this.getRenderedTileSize();
-    const screenX = this.viewport.gridX + visibleX * tileSize;
-    const screenY = this.viewport.gridY + visibleY * tileSize;
-    renderer.strokeRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4, color);
-    if (tileSize >= 12) {
-      renderer.drawPixelText(label, screenX + Math.max(3, tileSize / 3), screenY + Math.max(3, tileSize / 3), color, 1);
-    }
   }
 
   /** Monte l'IHM moderne DOM autour du canvas existant. */
@@ -406,11 +417,11 @@ export class LevelEditorScene implements Scene {
     root.querySelector<HTMLElement>("[data-editor-action='undo']")?.addEventListener("click", () => this.undo());
     root.querySelector<HTMLElement>("[data-editor-action='redo']")?.addEventListener("click", () => this.redo());
     root.querySelector<HTMLElement>("[data-editor-action='zoom-in']")?.addEventListener("click", () => {
-      this.viewport.zoom = Math.min(2, this.viewport.zoom === 0.5 ? 1 : this.viewport.zoom + 1);
+      this.zoomViewportByStep(1);
       this.refreshModernEditorUi();
     });
     root.querySelector<HTMLElement>("[data-editor-action='zoom-out']")?.addEventListener("click", () => {
-      this.viewport.zoom = Math.max(0.5, this.viewport.zoom === 2 ? 1 : this.viewport.zoom - 0.5);
+      this.zoomViewportByStep(-1);
       this.refreshModernEditorUi();
     });
     root.querySelector<HTMLInputElement>("[data-editor-grid-toggle]")?.addEventListener("change", (event) => {
@@ -429,6 +440,7 @@ export class LevelEditorScene implements Scene {
     const title = "La Mine aux Diamants";
     const suffix = " - Editeur";
     const font = THOMSON_8_BIT_FONT;
+    const glyphs = font.glyphs as Record<string, readonly string[]>;
     const scale = 2;
     context.imageSmoothingEnabled = false;
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -437,7 +449,7 @@ export class LevelEditorScene implements Scene {
     const drawText = (text: string, color: string): void => {
       context.fillStyle = color;
       for (const character of text) {
-        const glyph = font.glyphs[character] ?? font.glyphs["?"];
+        const glyph = glyphs[character] ?? glyphs["?"];
         if (!glyph) {
           cursorX += font.width * scale;
           continue;
@@ -668,21 +680,44 @@ export class LevelEditorScene implements Scene {
 
   /** Met a jour le nombre de cellules visibles selon le zoom courant. */
   private updateVisibleCellCount(): void {
+    const renderSize = this.getRenderSize();
     const tileSize = this.getRenderedTileSize();
-    this.viewport.visibleColumns = Math.max(1, Math.min(this.editorState.width, Math.floor(EDITOR_GRID_VIEW_WIDTH / tileSize)));
-    this.viewport.visibleRows = Math.max(1, Math.min(this.editorState.height, Math.floor(EDITOR_GRID_VIEW_HEIGHT / tileSize)));
+    this.viewport.visibleColumns = Math.max(1, Math.min(this.editorState.width, Math.floor(renderSize.width / tileSize)));
+    this.viewport.visibleRows = Math.max(1, Math.min(this.editorState.height, Math.floor(renderSize.height / tileSize)));
     this.viewport.offsetX = this.clampViewportOffset(this.viewport.offsetX, this.editorState.width, this.viewport.visibleColumns);
     this.viewport.offsetY = this.clampViewportOffset(this.viewport.offsetY, this.editorState.height, this.viewport.visibleRows);
   }
 
+  /** Retourne l'espace ecran disponible entre les panneaux de l'editeur. */
+  private getAvailableCanvasCssSize(): Size2D {
+    return {
+      width: Math.max(320, window.innerWidth - EDITOR_LEFT_PANEL_WIDTH - EDITOR_RIGHT_PANEL_WIDTH),
+      height: Math.max(200, window.innerHeight - EDITOR_TOOLBAR_HEIGHT - EDITOR_STATUS_HEIGHT)
+    };
+  }
+
   /** Retourne la taille de rendu d'une tuile selon le zoom. */
   private getRenderedTileSize(): number {
-    return Math.max(4, Math.round(EDITOR_TILE_SIZE * this.viewport.zoom));
+    return getEditorViewportTileSize(this.viewport);
+  }
+
+  /** Deplace le zoom via les memes pas que la molette. */
+  private zoomViewportByStep(direction: -1 | 1): void {
+    const currentIndex = LEVEL_EDITOR_ZOOM_STEPS.reduce((nearestIndex, zoom, index) => {
+      return Math.abs(zoom - this.viewport.zoom) < Math.abs(LEVEL_EDITOR_ZOOM_STEPS[nearestIndex] - this.viewport.zoom) ? index : nearestIndex;
+    }, 0);
+    const nextIndex = this.clampNumber(currentIndex + direction, 0, LEVEL_EDITOR_ZOOM_STEPS.length - 1);
+    this.viewport.zoom = LEVEL_EDITOR_ZOOM_STEPS[nextIndex];
   }
 
   /** Contraint un offset de viewport. */
   private clampViewportOffset(value: number, totalSize: number, visibleSize: number): number {
     return Math.min(Math.max(0, value), Math.max(0, totalSize - visibleSize));
+  }
+
+  /** Contraint une valeur numerique entre deux bornes. */
+  private clampNumber(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
   }
 
   /** Avance les animations legeres de l'editeur. */

@@ -19,6 +19,9 @@ import {
   type EditableLevelState
 } from "./level-editor-state";
 
+/** Pas de zoom autorises: chaque valeur produit une taille de tuile entiere. */
+export const LEVEL_EDITOR_ZOOM_STEPS = [0.5, 1, 2] as const;
+
 /** Viewport de grille propre a l'editeur. */
 export interface LevelEditorViewport {
   /** Coordonne X ecran du coin haut gauche de grille. */
@@ -70,7 +73,7 @@ export function pointerToEditorCell(
     return null;
   }
 
-  const scaledTileSize = EDITOR_TILE_SIZE * viewport.zoom;
+  const scaledTileSize = getEditorViewportTileSize(viewport);
   const localX = pointer.x - viewport.gridX;
   const localY = pointer.y - viewport.gridY;
   if (localX < 0 || localY < 0) {
@@ -161,12 +164,16 @@ export function zoomEditorViewport(viewport: LevelEditorViewport, wheelDeltaY: n
     return;
   }
 
-  const zoomSteps = [0.5, 1, 2] as const;
-  const currentIndex = zoomSteps.reduce((nearestIndex, zoom, index) => {
-    return Math.abs(zoom - viewport.zoom) < Math.abs(zoomSteps[nearestIndex] - viewport.zoom) ? index : nearestIndex;
+  const currentIndex = LEVEL_EDITOR_ZOOM_STEPS.reduce((nearestIndex, zoom, index) => {
+    return Math.abs(zoom - viewport.zoom) < Math.abs(LEVEL_EDITOR_ZOOM_STEPS[nearestIndex] - viewport.zoom) ? index : nearestIndex;
   }, 0);
   const nextIndex = wheelDeltaY < 0 ? currentIndex + 1 : currentIndex - 1;
-  viewport.zoom = zoomSteps[clamp(nextIndex, 0, zoomSteps.length - 1)];
+  viewport.zoom = LEVEL_EDITOR_ZOOM_STEPS[clamp(nextIndex, 0, LEVEL_EDITOR_ZOOM_STEPS.length - 1)];
+}
+
+/** Retourne la taille de tuile effectivement dessinee pour le viewport. */
+export function getEditorViewportTileSize(_viewport: Pick<LevelEditorViewport, "zoom">): number {
+  return EDITOR_TILE_SIZE;
 }
 
 /** Contraint une valeur numerique entre deux bornes. */

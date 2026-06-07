@@ -366,8 +366,6 @@ class GameAudioManager implements GameAudio {
   };
   /** Mode sonore courant. */
   private mode: AudioMode = "original";
-  /** Indique si la scene titre demande une musique active. */
-  private titleMusicRequested = false;
   /** Indique si la musique titre est deja programmee. */
   private titleMusicPlaying = false;
 
@@ -400,14 +398,12 @@ class GameAudioManager implements GameAudio {
 
   /** Desarme la musique titre sans autoriser de relance sur le prochain geste utilisateur. */
   disarmTitleMusic(): void {
-    this.titleMusicRequested = false;
     this.titleMusicPlaying = false;
     this.strategies[this.mode].stopTitleMusic(this.engine);
   }
 
   /** Lance la musique de titre du mode courant. */
   startTitleMusic(): void {
-    this.titleMusicRequested = true;
     if (this.titleMusicPlaying) {
       return;
     }
@@ -418,7 +414,6 @@ class GameAudioManager implements GameAudio {
 
   /** Stoppe la musique de titre du mode courant. */
   stopTitleMusic(): void {
-    this.titleMusicRequested = false;
     this.titleMusicPlaying = false;
     this.strategies[this.mode].stopTitleMusic(this.engine);
   }

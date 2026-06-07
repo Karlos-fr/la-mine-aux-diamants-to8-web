@@ -1,4 +1,5 @@
 import type { InputState } from "./input";
+import type { Size2D } from "./render-types";
 import type { Renderer } from "./renderer";
 
 /**
@@ -24,6 +25,9 @@ export interface Scene {
 
   /** Met a jour la scene avec le delta fixe et l'etat d'input courant. */
   update(dt: number, input: InputState): void;
+
+  /** Retourne une resolution logique specifique pour la scene, si necessaire. */
+  getRenderSize?(): Size2D;
 
   /** Dessine la scene sur le renderer logique. */
   render(renderer: Renderer): void;
@@ -56,6 +60,12 @@ export class SceneRouter implements SceneContext {
 
   /** Rend la scene active. */
   render(renderer: Renderer): void {
+    const renderSize = this.activeScene.getRenderSize?.();
+    if (renderSize) {
+      renderer.setLogicalSize(renderSize.width, renderSize.height);
+    } else {
+      renderer.resetLogicalSize();
+    }
     this.activeScene.render(renderer);
   }
 
