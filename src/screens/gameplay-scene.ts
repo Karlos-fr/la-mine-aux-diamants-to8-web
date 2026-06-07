@@ -1619,11 +1619,23 @@ export class GameplayScene implements Scene {
       return;
     }
 
-    const playerCell = this.getPlayerLogicalCell();
-    const monster = !debugOptions.ghostMode ? this.findMonsterRuntimeTouchingPlayer(playerCell.x, playerCell.y) : null;
-    if (monster) {
-      this.startMonsterContactExplosion(monster.gridX, monster.gridY);
+    const playerCell = this.getPlayerMonsterContactCell();
+    const monsterContact = !debugOptions.ghostMode ? this.findMonsterRuntimeTouchingPlayer(playerCell.x, playerCell.y) : null;
+    if (monsterContact) {
+      this.startMonsterContactExplosion(monsterContact.x, monsterContact.y);
     }
+  }
+
+  /** Retourne la cellule joueur utilisee par le contact monstre, sans anticiper le pas fluide moderne. */
+  private getPlayerMonsterContactCell(): { readonly x: number; readonly y: number } {
+    if (this.playerMove) {
+      return {
+        x: this.playerMove.fromX,
+        y: this.playerMove.fromY
+      };
+    }
+
+    return this.getPlayerLogicalCell();
   }
 
   /** Declenche l'explosion joueur/monstre en retirant d'abord le monstre du rendu. */
@@ -1638,17 +1650,45 @@ export class GameplayScene implements Scene {
   }
 
   /** Trouve un monstre dont la zone de contact touche le joueur, comme les lectures voisines de `KIT.BIN:$CA04`. */
-  private findMonsterRuntimeTouchingPlayer(playerGridX: number, playerGridY: number): GameState["monsters"][number] | null {
-    return this.state.monsters.find((monster) => {
-      if (monster.movement) {
-        return (
-          isAdjacentOrSameCell(playerGridX, playerGridY, monster.movement.fromX, monster.movement.fromY) ||
-          isAdjacentOrSameCell(playerGridX, playerGridY, monster.movement.toX, monster.movement.toY)
-        );
+  private findMonsterRuntimeTouchingPlayer(
+    playerGridX: number,
+    playerGridY: number
+  ): { readonly monster: GameState["monsters"][number]; readonly x: number; readonly y: number } | null {
+    for (const monster of this.state.monsters) {
+      const monsterCell = this.getMonsterRenderedContactCell(monster);
+      if (isAdjacentOrSameCell(playerGridX, playerGridY, monsterCell.x, monsterCell.y)) {
+        return {
+          monster,
+          x: monsterCell.x,
+          y: monsterCell.y
+        };
       }
+    }
 
-      return isAdjacentOrSameCell(playerGridX, playerGridY, monster.gridX, monster.gridY);
-    }) ?? null;
+    return null;
+  }
+
+  /** Retourne la cellule visible d'un monstre pendant l'interpolation moderne. */
+  private getMonsterRenderedContactCell(monster: GameState["monsters"][number]): { readonly x: number; readonly y: number } {
+    if (!monster.movement) {
+      return {
+        x: monster.gridX,
+        y: monster.gridY
+      };
+    }
+
+    const progress = clamp(monster.movement.elapsed / monster.movement.duration, 0, 1);
+    if (progress < 1) {
+      return {
+        x: monster.movement.fromX,
+        y: monster.movement.fromY
+      };
+    }
+
+    return {
+      x: monster.movement.toX,
+      y: monster.movement.toY
+    };
   }
 
   /** Desactive une creature speciale touchee par un objet en chute; le burst diamant est gere separement. */
