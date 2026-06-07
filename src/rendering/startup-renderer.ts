@@ -47,8 +47,6 @@ export function renderStartupInfogram(
     if (backgroundError) {
       renderer.drawPixelText("ERREUR INFOGRAMES", 72, 92, TO8_PALETTE.yellow, 2);
       renderer.drawPixelText(backgroundError.slice(0, 40), 40, 112, TO8_PALETTE.white);
-    } else {
-      renderer.drawPixelText("CHARGEMENT...", 112, 92, TO8_PALETTE.yellow, 1);
     }
     return;
   }

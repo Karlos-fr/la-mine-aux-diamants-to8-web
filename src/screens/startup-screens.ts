@@ -11,6 +11,7 @@ import { loadImage } from "../engine/image-loader";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
+import { gameAudio } from "../audio/audio-engine";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
@@ -45,6 +46,12 @@ export class StartupInfogramScene implements Scene {
   /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
+    gameAudio.disarmTitleMusic();
+  }
+
+  /** Arrete la musique de titre quand le flux quitte l'ecran 2. */
+  exit(): void {
+    gameAudio.stopTitleMusic();
   }
 
   /** Avance le timer et passe au titre apres delai ou action utilisateur. */
@@ -146,6 +153,12 @@ export class StartupTitleScene implements Scene {
   /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
+    gameAudio.startTitleMusic();
+  }
+
+  /** Arrete la musique quand le joueur quitte le second ecran. */
+  exit(): void {
+    gameAudio.stopTitleMusic();
   }
 
   /** Avance les clocks d'animation, lance le jeu ou le mode attract selon l'inactivite. */
@@ -170,6 +183,8 @@ export class StartupTitleScene implements Scene {
     }
 
     if (input.justPressed.confirm || input.justPressed.action) {
+      gameAudio.unlock();
+      gameAudio.stopTitleMusic();
       this.context?.setScene(createGameplayScene(1));
       return;
     }
@@ -185,6 +200,7 @@ export class StartupTitleScene implements Scene {
       this.attractIdleElapsed -= TITLE_ATTRACT_IDLE_TICK_DURATION;
       this.attractIdleTicks += 1;
       if (this.attractIdleTicks >= TITLE_ATTRACT_IDLE_TICKS) {
+        gameAudio.stopTitleMusic();
         this.context?.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
         return;
       }

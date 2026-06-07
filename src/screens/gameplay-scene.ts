@@ -9,6 +9,7 @@ import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { EntityState, FallingObjectRuntimeState, GameState, RuntimeExplosionState } from "../game/types";
 import type { Scene, SceneContext } from "../engine/scene";
+import { gameAudio } from "../audio/audio-engine";
 import { debugOptions } from "../debug-options";
 import { createGameLevelState, createGameStateFromLevelDefinition } from "../game/game-state-factory";
 import { buildLevelDefinition, type ModernLevelJson } from "../game/level-loader";
@@ -1314,6 +1315,7 @@ export class GameplayScene implements Scene {
       result
     };
     this.state.explosions.push(explosion);
+    gameAudio.playExplosion();
     this.applyExplosionFrame(explosion);
     this.deactivateEntitiesInExplosion(explosion);
     if (!debugOptions.ghostMode && explosion.cells.some((cell) => this.isPlayerLogicalAtGrid(cell.x, cell.y))) {
@@ -1405,6 +1407,7 @@ export class GameplayScene implements Scene {
       if (event.type === "diamondCollected") {
         this.incrementScore(event.score);
         this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
+        gameAudio.playDiamondCollected();
         this.updateLevelExitStateAfterDiamondCollection();
         continue;
       }
@@ -1543,6 +1546,7 @@ export class GameplayScene implements Scene {
       this.levelCompletionBonusAccumulator -= LEVEL_COMPLETION_BONUS_STEP_DURATION;
       this.state.hud.time = decrementBcdCounter(this.state.hud.time, 3);
       this.incrementScore(1);
+      gameAudio.playScoreTick();
     }
 
     if (this.state.hud.time <= 0) {
