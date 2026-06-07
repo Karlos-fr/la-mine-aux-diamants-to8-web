@@ -20,29 +20,35 @@ export const TITLE_MUSIC_DAC_TABLE = [
   0x34, 0x1c, 0x20, 0x22, 0x26, 0x2b
 ] as const;
 
-/** Duree moderne d'une note de la table titre, approximation ralentie de la temporisation ASM. */
-export const TITLE_MUSIC_NOTE_DURATION = 0.18;
+/** Duree moderne d'une note de la table titre, calibree sur la capture active de la musique. */
+export const TITLE_MUSIC_NOTE_DURATION = 0.211;
 
-/** Ratio applique aux octets de table titre pour obtenir une frequence plus grave proche TO8. */
-export const TITLE_MUSIC_FREQUENCY_RATIO = 6.2;
+/** Constante de conversion des delais de la table titre vers une frequence audible. */
+export const TITLE_MUSIC_FREQUENCY_RATIO = 23000;
 
 /** Volume prudent du mode original pour respecter le rendu TO8 sans saturer le navigateur. */
 export const ORIGINAL_MASTER_GAIN = 0.18;
 
-/** Frequence haute du bruitage score/diamant inspire du segment court `KIT.BIN:$C255`. */
-export const SCORE_TICK_HIGH_FREQUENCY = 880;
+/** Frequence d'echantillonnage audio utilisee par Theodore pour le signal Thomson. */
+export const THEODORE_AUDIO_SAMPLE_RATE = 22050;
 
-/** Frequence basse du bruitage score/diamant inspire du segment long `KIT.BIN:$C255`. */
-export const SCORE_TICK_LOW_FREQUENCY = 660;
+/** Niveau sonore maximal 6 bits du DAC Thomson dans Theodore. */
+export const THEODORE_MAX_SOUND_LEVEL = 0x3f;
+
+/** Frequence dominante du bruitage diamant mesuree sur la capture, inspiree de `KIT.BIN:$C255`. */
+export const SCORE_TICK_HIGH_FREQUENCY = 1850;
+
+/** Frequence secondaire du bruitage diamant, plus grave pour reproduire la retombee finale. */
+export const SCORE_TICK_LOW_FREQUENCY = 155;
 
 /** Duree du segment haut du bruitage score/diamant. */
-export const SCORE_TICK_HIGH_DURATION = 0.045;
+export const SCORE_TICK_HIGH_DURATION = 0.078;
 
-/** Duree du segment bas du bruitage score/diamant. */
-export const SCORE_TICK_LOW_DURATION = 0.075;
+/** Duree du segment bas du bruitage score/diamant pour atteindre environ 100 ms actifs. */
+export const SCORE_TICK_LOW_DURATION = 0.027;
 
 /** Durees des trois salves d'explosion synchronisees avec les tuiles `0x14`, `0x15`, `0x16`. */
-export const EXPLOSION_PULSE_DURATIONS = [0.09, 0.11, 0.13] as const;
+export const EXPLOSION_PULSE_DURATIONS = [0.28, 0.29, 0.28] as const;
 
-/** Frequences centrales descendantes du bruitage explosion original 1-bit. */
-export const EXPLOSION_PULSE_FREQUENCIES = [190, 145, 105] as const;
+/** Frequences centrales tres graves du bruitage explosion original 1-bit, calibrees a l'oreille depuis la capture. */
+export const EXPLOSION_PULSE_FREQUENCIES = [145, 95, 65] as const;

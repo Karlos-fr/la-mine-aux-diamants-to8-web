@@ -13,8 +13,10 @@ import {
   SCORE_TICK_HIGH_FREQUENCY,
   SCORE_TICK_LOW_DURATION,
   SCORE_TICK_LOW_FREQUENCY,
-  TITLE_MUSIC_FREQUENCY_RATIO,
+  THEODORE_AUDIO_SAMPLE_RATE,
+  THEODORE_MAX_SOUND_LEVEL,
   TITLE_MUSIC_DAC_TABLE,
+  TITLE_MUSIC_FREQUENCY_RATIO,
   TITLE_MUSIC_NOTE_DURATION
 } from "./original-sound-profiles";
 
@@ -74,7 +76,6 @@ class WebAudioAdapter {
   private titleMusicOscillators: AudioScheduledSourceNode[] = [];
   /** Gains intermediaires de la sequence musicale titre. */
   private titleMusicGains: GainNode[] = [];
-
   /** Retourne le contexte audio courant, en le creant si necessaire. */
   getContext(): AudioContext | null {
     const AudioContextCtor: AudioContextConstructor | undefined = window.AudioContext ?? window.webkitAudioContext;
@@ -105,7 +106,7 @@ class WebAudioAdapter {
   }
 
   /** Lance une boucle DAC deja convertie en buffer audio. */
-  startLoopedBuffer(buffer: AudioBuffer): void {
+  startLoopedBuffer(buffer: AudioBuffer, loopStart = 0, loopEnd = buffer.duration, offset = loopStart): void {
     this.stopTitleMusic();
     const context = this.getContext();
     const destination = this.getMasterGain();
@@ -116,8 +117,10 @@ class WebAudioAdapter {
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
+    source.loopStart = loopStart;
+    source.loopEnd = loopEnd;
     source.connect(destination);
-    source.start();
+    source.start(0, offset);
     this.titleMusicSource = source;
   }
 
@@ -139,7 +142,7 @@ class WebAudioAdapter {
 
         const oscillator = context.createOscillator();
         const gain = context.createGain();
-        const frequency = Math.max(80, Math.min(1400, value * frequencyRatio));
+        const frequency = Math.max(80, Math.min(1400, frequencyRatio / value));
         const noteStart = startTime + index * noteDuration;
         const noteEnd = noteStart + noteDuration * 0.82;
         oscillator.type = "square";
@@ -161,6 +164,23 @@ class WebAudioAdapter {
     };
 
     scheduleCycle();
+  }
+
+  /** Lance une boucle de niveaux DAC 6 bits echantillonnee comme Theodore. */
+  startLoopedDacSequence(values: readonly number[], holdSeconds: number): void {
+    const samplesPerValue = Math.max(1, Math.round(holdSeconds * THEODORE_AUDIO_SAMPLE_RATE));
+    const levels: number[] = [];
+    values.forEach((value) => {
+      const level = value & THEODORE_MAX_SOUND_LEVEL;
+      for (let repeat = 0; repeat < samplesPerValue; repeat += 1) {
+        levels.push(level);
+      }
+    });
+
+    const buffer = this.createThomsonLevelBuffer(levels);
+    if (buffer) {
+      this.startLoopedBuffer(buffer);
+    }
   }
 
   /** Stoppe la musique titre si elle tourne. */
@@ -224,21 +244,49 @@ class WebAudioAdapter {
     return buffer;
   }
 
+  /** Cree un buffer depuis des niveaux materiels 6 bits, avec la conversion Theodore. */
+  createThomsonLevelBuffer(levels: readonly number[]): AudioBuffer | null {
+    const context = this.getContext();
+    if (!context || levels.length === 0) {
+      return null;
+    }
+
+    const buffer = context.createBuffer(1, levels.length, THEODORE_AUDIO_SAMPLE_RATE);
+    const channel = buffer.getChannelData(0);
+    for (let index = 0; index < levels.length; index += 1) {
+      channel[index] = thomsonLevelToFloat(levels[index]);
+    }
+
+    return buffer;
+  }
+
+  /** Joue un buffer materiel 6 bits non boucle. */
+  playThomsonLevels(levels: readonly number[]): void {
+    const context = this.getContext();
+    const destination = this.getMasterGain();
+    const buffer = this.createThomsonLevelBuffer(levels);
+    if (!context || !destination || !buffer) {
+      return;
+    }
+
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(destination);
+    source.start();
+  }
+
   /** Retourne le temps courant du contexte audio, ou zero si indisponible. */
   currentTime(): number {
     return this.getContext()?.currentTime ?? 0;
   }
+
 }
 
 /** Strategie ISO originale basee sur les routines ASM identifiees. */
 class OriginalAudioStrategy implements AudioStrategy {
   /** Lance la musique DAC de l'ecran 2 issue de `ENTET.BIN:$943F-$9498`. */
   startTitleMusic(engine: WebAudioAdapter): void {
-    engine.startLoopedToneSequence(
-      TITLE_MUSIC_DAC_TABLE,
-      TITLE_MUSIC_NOTE_DURATION,
-      TITLE_MUSIC_FREQUENCY_RATIO
-    );
+    engine.startLoopedToneSequence(TITLE_MUSIC_DAC_TABLE, TITLE_MUSIC_NOTE_DURATION, TITLE_MUSIC_FREQUENCY_RATIO);
   }
 
   /** Stoppe la musique titre originale. */
@@ -248,33 +296,34 @@ class OriginalAudioStrategy implements AudioStrategy {
 
   /** Joue le bruitage score/diamant prouve par `KIT.BIN:$C255`. */
   playDiamondCollected(engine: WebAudioAdapter): void {
-    this.playScoreTick(engine);
+    this.playSynthScoreTick(engine);
   }
 
   /** Joue le tick score utilise aussi pour la conversion de fin de niveau. */
   playScoreTick(engine: WebAudioAdapter): void {
-    const startTime = engine.currentTime();
-    engine.playSquarePulse(SCORE_TICK_HIGH_FREQUENCY, startTime, SCORE_TICK_HIGH_DURATION, 0.55);
-    engine.playSquarePulse(
-      SCORE_TICK_LOW_FREQUENCY,
-      startTime + SCORE_TICK_HIGH_DURATION,
-      SCORE_TICK_LOW_DURATION,
-      0.42
-    );
+    this.playDiamondCollected(engine);
+  }
+
+  /** Joue l'approximation synthetique de secours du tick score. */
+  private playSynthScoreTick(engine: WebAudioAdapter): void {
+    engine.playThomsonLevels(createMutedCarrierLevels([
+      { frequency: SCORE_TICK_HIGH_FREQUENCY, duration: SCORE_TICK_HIGH_DURATION },
+      { frequency: SCORE_TICK_LOW_FREQUENCY, duration: SCORE_TICK_LOW_DURATION }
+    ]));
   }
 
   /** Joue les trois salves associees a l'explosion `0x14`, `0x15`, `0x16`. */
   playExplosion(engine: WebAudioAdapter): void {
-    let cursor = engine.currentTime();
-    for (let index = 0; index < EXPLOSION_PULSE_DURATIONS.length; index += 1) {
-      engine.playSquarePulse(
-        EXPLOSION_PULSE_FREQUENCIES[index],
-        cursor,
-        EXPLOSION_PULSE_DURATIONS[index],
-        0.68 - index * 0.12
-      );
-      cursor += EXPLOSION_PULSE_DURATIONS[index] * 0.72;
-    }
+    this.playSynthExplosion(engine);
+  }
+
+  /** Joue l'approximation synthetique de secours de l'explosion. */
+  private playSynthExplosion(engine: WebAudioAdapter): void {
+    const segments = EXPLOSION_PULSE_DURATIONS.map((duration, index) => ({
+      frequency: EXPLOSION_PULSE_FREQUENCIES[index],
+      duration
+    }));
+    engine.playThomsonLevels(createMutedCarrierLevels(segments));
   }
 }
 
@@ -392,6 +441,40 @@ class GameAudioManager implements GameAudio {
 
 /** Facade sonore partagee par les scenes. */
 export const gameAudio: GameAudio = new GameAudioManager();
+
+/** Convertit un niveau sonore Thomson 6 bits en amplitude WebAudio, comme `GetAudioSample` de Theodore. */
+function thomsonLevelToFloat(level: number): number {
+  if (level < 0) {
+    return 0;
+  }
+
+  const clampedLevel = Math.max(0, Math.min(THEODORE_MAX_SOUND_LEVEL, Math.floor(level)));
+  return (clampedLevel / THEODORE_MAX_SOUND_LEVEL) * 2 - 1;
+}
+
+/** Segment de porteuse mute/unmute reproduisant les bascules `E7C1` du jeu. */
+interface MutedCarrierSegment {
+  /** Frequence de bascule mute/unmute en hertz. */
+  readonly frequency: number;
+  /** Duree du segment en secondes. */
+  readonly duration: number;
+}
+
+/** Cree des niveaux 6 bits en alternant les extremites DAC pour obtenir une porteuse TO8 perceptive. */
+function createMutedCarrierLevels(segments: readonly MutedCarrierSegment[]): number[] {
+  const levels: number[] = [];
+  const soundLevel = THEODORE_MAX_SOUND_LEVEL;
+  for (const segment of segments) {
+    const sampleCount = Math.max(1, Math.round(segment.duration * THEODORE_AUDIO_SAMPLE_RATE));
+    const halfPeriodSamples = Math.max(1, Math.round(THEODORE_AUDIO_SAMPLE_RATE / (segment.frequency * 2)));
+    for (let index = 0; index < sampleCount; index += 1) {
+      const muted = Math.floor(index / halfPeriodSamples) % 2 === 1;
+      levels.push(muted ? 0 : soundLevel);
+    }
+  }
+
+  return levels;
+}
 
 /** Extension WebKit historique exposee par Safari pour WebAudio. */
 declare global {
