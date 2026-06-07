@@ -7,10 +7,12 @@
 
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
 import { TO8_PALETTE } from "../assets/palette";
+import { THOMSON_8_BIT_FONT } from "../assets/generated/thomson-8-bit-font";
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { getModernLevelSource, type ModernTileType } from "../game/level-loader";
+import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { GameplayScene } from "../screens/gameplay-scene";
 import {
   DEFAULT_EDITOR_TILE,
@@ -22,6 +24,8 @@ import {
 } from "./level-editor-palette";
 import {
   setEditableLevelDefaultTile,
+  setEditableLevelAuthor,
+  setEditableLevelCreatedDate,
   setEditableLevelId,
   setEditableLevelLabel,
   setEditableLevelRequiredDiamonds,
@@ -37,7 +41,7 @@ import {
   getEditableTileAt,
   type EditableLevelState
 } from "./level-editor-state";
-import { LEVEL_EDITOR_THEME, editorTileFallbackColor } from "./level-editor-theme";
+import { LEVEL_EDITOR_THEME } from "./level-editor-theme";
 import { exportEditableLevelToJson, parseEditableLevelJson, stringifyEditableLevel } from "./level-editor-serialization";
 import {
   applyEditorRectangle,
@@ -52,13 +56,13 @@ import {
 import { validateEditableLevel } from "./level-editor-validation";
 
 /** Position X de la grille dans le canvas logique. */
-const EDITOR_GRID_X = 24;
+const EDITOR_GRID_X = 0;
 /** Position Y de la grille dans le canvas logique. */
-const EDITOR_GRID_Y = 18;
+const EDITOR_GRID_Y = 0;
 /** Nombre de colonnes visibles dans l'editeur moderne. */
-const EDITOR_VISIBLE_COLUMNS = 17;
+const EDITOR_VISIBLE_COLUMNS = 20;
 /** Nombre de lignes visibles dans l'editeur moderne. */
-const EDITOR_VISIBLE_ROWS = 10;
+const EDITOR_VISIBLE_ROWS = 12;
 /** Largeur logique de la zone visible de grille. */
 const EDITOR_GRID_VIEW_WIDTH = EDITOR_VISIBLE_COLUMNS * EDITOR_TILE_SIZE;
 /** Hauteur logique de la zone visible de grille. */
@@ -67,8 +71,15 @@ const EDITOR_GRID_VIEW_HEIGHT = EDITOR_VISIBLE_ROWS * EDITOR_TILE_SIZE;
 const EDITOR_DRAFT_STORAGE_KEY = "la-mine-editor-draft";
 /** Taille maximale de l'historique undo. */
 const EDITOR_HISTORY_LIMIT = 120;
-/** Duree d'une frame d'animation dans l'editeur. */
-const EDITOR_ANIMATION_FRAME_DURATION = 0.12;
+/** Cadences d'animation editeur alignees sur le runtime gameplay. */
+const EDITOR_ANIMATION_FRAME_DURATIONS = {
+  player: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerAnimationFrameTicks),
+  diamond: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.diamondAnimationFrameTicks),
+  monster: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterAnimationFrameTicks),
+  exit: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.exitBlinkFrameTicks)
+} as const;
+/** Couleur tres discrete de la grille editeur, volontairement non multipliee par cellule. */
+const EDITOR_GRID_OVERLAY_COLOR = "rgba(134, 255, 222, 0.12)";
 
 /** Scene editeur moderne, branchee sur le routeur de scenes existant. */
 export class LevelEditorScene implements Scene {
@@ -106,10 +117,20 @@ export class LevelEditorScene implements Scene {
   private readonly redoStack: string[] = [];
   /** Indique si le brouillon courant diverge du dernier export. */
   private dirty = false;
-  /** Accumulateur d'animation palette. */
-  private animationElapsed = 0;
-  /** Frame d'animation courante pour tuiles animees. */
-  private animationFrameIndex = 0;
+  /** Accumulateurs d'animation editeur par famille runtime. */
+  private readonly animationElapsed = {
+    player: 0,
+    diamond: 0,
+    monster: 0,
+    exit: 0
+  };
+  /** Frames d'animation editeur par famille runtime. */
+  private readonly animationFrameIndex = {
+    player: 0,
+    diamond: 0,
+    monster: 0,
+    exit: 0
+  };
   /** Indique si la grille fine est affichee par-dessus le rendu runtime. */
   private gridOverlayVisible = true;
   /** Position de depart du drag souris pour deplacer la carte. */
@@ -135,8 +156,11 @@ export class LevelEditorScene implements Scene {
     this.mountModernEditorUi();
     void this.runtimeAssets.load().then(() => {
       if (this.runtimeAssets.tileAtlas) this.editorRenderer.setTilesAtlasImage(this.runtimeAssets.tileAtlas);
+      if (this.runtimeAssets.playerAtlas) this.editorRenderer.setPlayerAtlasImage(this.runtimeAssets.playerAtlas);
       if (this.runtimeAssets.diamondAtlas) this.editorRenderer.setDiamondAtlasImage(this.runtimeAssets.diamondAtlas);
       if (this.runtimeAssets.monsterAtlas) this.editorRenderer.setMonsterAtlasImage(this.runtimeAssets.monsterAtlas);
+      if (this.runtimeAssets.specialCreatureAtlas) this.editorRenderer.setSpecialCreatureAtlasImage(this.runtimeAssets.specialCreatureAtlas);
+      this.refreshPalettePreviews();
     });
   }
 
@@ -165,19 +189,9 @@ export class LevelEditorScene implements Scene {
   /** Rend uniquement la surface d'edition: grille, tuiles et overlays. */
   render(renderer: Renderer): void {
     renderer.clear("#07100d");
-    this.renderEditorBackdrop(renderer);
     this.renderGrid(renderer);
     this.renderMarkers(renderer);
     this.renderHover(renderer);
-    this.renderCanvasStatus(renderer);
-  }
-
-  /** Rend un fond sobre, moderne et non intrusif. */
-  private renderEditorBackdrop(renderer: Renderer): void {
-    renderer.fillRect(0, 0, renderer.width, renderer.height, "#07100d");
-    renderer.fillRect(14, 8, 292, 178, "#0d1713");
-    renderer.strokeRect(14, 8, 292, 178, "#24483e");
-    renderer.drawPixelText("LEVEL EDITOR", 24, 192, TO8_PALETTE.cyan, 1);
   }
 
   /** Rend la grille editable a la taille reelle d'une tuile. */
@@ -185,26 +199,71 @@ export class LevelEditorScene implements Scene {
     const tileSize = this.getRenderedTileSize();
     const gridWidth = this.viewport.visibleColumns * tileSize;
     const gridHeight = this.viewport.visibleRows * tileSize;
-    renderer.fillRect(EDITOR_GRID_X - 2, EDITOR_GRID_Y - 2, gridWidth + 4, gridHeight + 4, "#020604");
-    renderer.strokeRect(EDITOR_GRID_X - 2, EDITOR_GRID_Y - 2, gridWidth + 4, gridHeight + 4, LEVEL_EDITOR_THEME.accent);
+    this.viewport.gridX = Math.max(0, Math.floor((renderer.width - gridWidth) / 2));
+    this.viewport.gridY = Math.max(0, Math.floor((renderer.height - gridHeight) / 2));
+
+    renderer.fillRect(0, 0, renderer.width, renderer.height, "#020604");
 
     for (let y = 0; y < this.viewport.visibleRows; y += 1) {
       for (let x = 0; x < this.viewport.visibleColumns; x += 1) {
         const tile = getEditableTileAt(this.editorState, this.viewport.offsetX + x, this.viewport.offsetY + y);
-        const screenX = EDITOR_GRID_X + x * tileSize;
-        const screenY = EDITOR_GRID_Y + y * tileSize;
-        this.editorRenderer.renderTile(renderer, tile, screenX, screenY, this.animationFrameIndex, tileSize);
-        if (this.gridOverlayVisible) {
-          renderer.strokeRect(screenX, screenY, tileSize, tileSize, "rgba(134, 255, 222, 0.24)");
-        }
+        const screenX = this.viewport.gridX + x * tileSize;
+        const screenY = this.viewport.gridY + y * tileSize;
+        this.editorRenderer.renderTile(renderer, tile, screenX, screenY, this.getTileAnimationFrameIndex(tile), tileSize);
       }
+    }
+
+    if (this.gridOverlayVisible) {
+      this.renderGridOverlay(renderer, gridWidth, gridHeight, tileSize);
+    }
+  }
+
+  /** Rend une grille fine en lignes uniques pour conserver la meme epaisseur au zoom. */
+  private renderGridOverlay(renderer: Renderer, gridWidth: number, gridHeight: number, tileSize: number): void {
+    for (let x = 0; x <= this.viewport.visibleColumns; x += 1) {
+      const lineX = this.viewport.gridX + x * tileSize;
+      renderer.fillRect(lineX, this.viewport.gridY, 1, gridHeight, EDITOR_GRID_OVERLAY_COLOR);
+    }
+
+    for (let y = 0; y <= this.viewport.visibleRows; y += 1) {
+      const lineY = this.viewport.gridY + y * tileSize;
+      renderer.fillRect(this.viewport.gridX, lineY, gridWidth, 1, EDITOR_GRID_OVERLAY_COLOR);
     }
   }
 
   /** Rend les overlays de spawn et sortie sans remplacer la tuile. */
   private renderMarkers(renderer: Renderer): void {
-    this.renderMarker(renderer, this.editorState.playerSpawn.x, this.editorState.playerSpawn.y, "J", TO8_PALETTE.red);
-    this.renderMarker(renderer, this.editorState.exit.x, this.editorState.exit.y, "S", TO8_PALETTE.yellow);
+    this.renderPlayerSpawnMarker(renderer);
+    this.renderExitMarker(renderer);
+  }
+
+  /** Rend le sprite idle du joueur a l'emplacement de spawn. */
+  private renderPlayerSpawnMarker(renderer: Renderer): void {
+    const visibleX = this.editorState.playerSpawn.x - this.viewport.offsetX;
+    const visibleY = this.editorState.playerSpawn.y - this.viewport.offsetY;
+    if (visibleX < 0 || visibleY < 0 || visibleX >= this.viewport.visibleColumns || visibleY >= this.viewport.visibleRows) {
+      return;
+    }
+
+    const tileSize = this.getRenderedTileSize();
+    const screenX = this.viewport.gridX + visibleX * tileSize;
+    const screenY = this.viewport.gridY + visibleY * tileSize;
+    this.editorRenderer.renderPlayerIdle(renderer, screenX, screenY, this.animationFrameIndex.player, tileSize);
+  }
+
+  /** Rend la sortie comme la tuile runtime `0x04` clignotant avec le noir. */
+  private renderExitMarker(renderer: Renderer): void {
+    const visibleX = this.editorState.exit.x - this.viewport.offsetX;
+    const visibleY = this.editorState.exit.y - this.viewport.offsetY;
+    if (visibleX < 0 || visibleY < 0 || visibleX >= this.viewport.visibleColumns || visibleY >= this.viewport.visibleRows) {
+      return;
+    }
+
+    const tileSize = this.getRenderedTileSize();
+    const screenX = this.viewport.gridX + visibleX * tileSize;
+    const screenY = this.viewport.gridY + visibleY * tileSize;
+    const exitTile = this.animationFrameIndex.exit % 2 === 0 ? "border" : "empty";
+    this.editorRenderer.renderTile(renderer, exitTile, screenX, screenY, this.animationFrameIndex.exit, tileSize);
   }
 
   /** Rend le curseur courant sur la grille. */
@@ -216,17 +275,9 @@ export class LevelEditorScene implements Scene {
     const visibleX = this.hoverCell.x - this.viewport.offsetX;
     const visibleY = this.hoverCell.y - this.viewport.offsetY;
     const tileSize = this.getRenderedTileSize();
-    const screenX = EDITOR_GRID_X + visibleX * tileSize;
-    const screenY = EDITOR_GRID_Y + visibleY * tileSize;
+    const screenX = this.viewport.gridX + visibleX * tileSize;
+    const screenY = this.viewport.gridY + visibleY * tileSize;
     renderer.strokeRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2, TO8_PALETTE.yellow);
-  }
-
-  /** Rend un statut compact dans le canvas. */
-  private renderCanvasStatus(renderer: Renderer): void {
-    const hover = this.hoverCell
-      ? `X${this.hoverCell.x} Y${this.hoverCell.y} ${getEditableTileAt(this.editorState, this.hoverCell.x, this.hoverCell.y)}`
-      : "SURVOLER UNE CELLULE";
-    renderer.drawPixelText(hover.slice(0, 32), 138, 192, TO8_PALETTE.white, 1);
   }
 
   /** Rend un marqueur de spawn ou de sortie sur la grille visible. */
@@ -238,8 +289,8 @@ export class LevelEditorScene implements Scene {
     }
 
     const tileSize = this.getRenderedTileSize();
-    const screenX = EDITOR_GRID_X + visibleX * tileSize;
-    const screenY = EDITOR_GRID_Y + visibleY * tileSize;
+    const screenX = this.viewport.gridX + visibleX * tileSize;
+    const screenY = this.viewport.gridY + visibleY * tileSize;
     renderer.strokeRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4, color);
     if (tileSize >= 12) {
       renderer.drawPixelText(label, screenX + Math.max(3, tileSize / 3), screenY + Math.max(3, tileSize / 3), color, 1);
@@ -255,48 +306,82 @@ export class LevelEditorScene implements Scene {
     document.body.append(root);
     this.editorUiRoot = root;
     this.bindModernEditorUi(root);
+    this.renderToolbarTitle(root);
     this.refreshModernEditorUi();
   }
 
   /** Cree le markup statique de l'IHM moderne. */
   private createModernEditorMarkup(): string {
     return `
-      <aside class="level-editor-panel level-editor-panel-left" aria-label="Palette de niveau">
-        <div class="level-editor-panel-header">
-          <span>Palette</span>
-          <small>Tiles & entites</small>
+      <header class="level-editor-toolbar" aria-label="Barre d'outils editeur">
+        <div class="level-editor-toolbar-brand">
+          <canvas class="level-editor-toolbar-title" data-editor-toolbar-title width="496" height="16" aria-label="La Mine aux Diamants - Editeur"></canvas>
         </div>
-        <div class="level-editor-palette" data-editor-palette></div>
-        <div class="level-editor-panel-header level-editor-tools-title">
-          <span>Outils</span>
-          <small>Edition</small>
-        </div>
-        <div class="level-editor-tools" data-editor-tools></div>
-      </aside>
-      <aside class="level-editor-panel level-editor-panel-right" aria-label="Proprietes du niveau">
-        <div class="level-editor-panel-header">
-          <span>Proprietes</span>
-          <small data-editor-dirty>Synchro</small>
-        </div>
-        <label class="level-editor-field">ID<input data-editor-field="id" type="text" /></label>
-        <label class="level-editor-field">Nom<input data-editor-field="label" type="text" /></label>
-        <div class="level-editor-field-grid">
-          <label class="level-editor-field">Largeur<input data-editor-field="width" type="number" min="10" max="80" /></label>
-          <label class="level-editor-field">Hauteur<input data-editor-field="height" type="number" min="8" max="60" /></label>
-        </div>
-        <div class="level-editor-field-grid">
-          <label class="level-editor-field">Temps<input data-editor-field="time" type="number" min="1" max="999" /></label>
-          <label class="level-editor-field">Score<input data-editor-field="scoreStep" type="number" min="0" max="9999" /></label>
-        </div>
-        <label class="level-editor-field">Diamants requis<input data-editor-field="requiredDiamonds" type="number" min="0" max="999" /></label>
-        <div class="level-editor-actions">
-          <button type="button" data-editor-action="export">Exporter</button>
-          <button type="button" data-editor-action="import">Importer</button>
-          <button type="button" data-editor-action="test">Tester</button>
-        </div>
-        <label class="level-editor-toggle"><input data-editor-grid-toggle type="checkbox" checked /> Grille visible</label>
-        <div class="level-editor-diagnostics" data-editor-diagnostics></div>
-      </aside>
+        <button type="button" data-editor-action="new">Nouveau</button>
+        <button type="button" data-editor-action="import">Importer</button>
+        <button type="button" data-editor-action="export">Exporter</button>
+        <span class="level-editor-toolbar-separator"></span>
+        <button type="button" data-editor-action="undo">Annuler</button>
+        <button type="button" data-editor-action="redo">Retablir</button>
+        <span class="level-editor-toolbar-separator"></span>
+        <button type="button" data-editor-action="zoom-out">-</button>
+        <span class="level-editor-zoom-label" data-editor-zoom>100%</span>
+        <button type="button" data-editor-action="zoom-in">+</button>
+        <label class="level-editor-toolbar-toggle"><input data-editor-grid-toggle type="checkbox" checked /> Grille</label>
+        <button type="button" class="level-editor-toolbar-primary" data-editor-action="test">Tester</button>
+      </header>
+      <main class="level-editor-workbench" aria-label="Editeur de niveau">
+        <aside class="level-editor-panel level-editor-panel-left" aria-label="Palette de niveau">
+          <section class="level-editor-section">
+            <div class="level-editor-panel-header">
+              <span>Palette</span>
+              <small>Rendu jeu</small>
+            </div>
+            <div class="level-editor-palette" data-editor-palette></div>
+          </section>
+          <section class="level-editor-section">
+            <div class="level-editor-panel-header level-editor-tools-title">
+              <span>Outils</span>
+              <small>Edition</small>
+            </div>
+            <div class="level-editor-tools" data-editor-tools></div>
+          </section>
+        </aside>
+        <aside class="level-editor-panel level-editor-panel-right" aria-label="Proprietes du niveau">
+          <section class="level-editor-section">
+            <div class="level-editor-panel-header">
+              <span>Proprietes</span>
+              <small data-editor-dirty>A jour</small>
+            </div>
+            <label class="level-editor-field">ID<input data-editor-field="id" type="text" /></label>
+            <label class="level-editor-field">Nom<input data-editor-field="label" type="text" /></label>
+            <label class="level-editor-field">Auteur<input data-editor-field="author" type="text" /></label>
+            <label class="level-editor-field">Date<input data-editor-field="createdDate" type="date" /></label>
+            <div class="level-editor-field-grid">
+              <label class="level-editor-field">Largeur<input data-editor-field="width" type="number" min="10" max="80" /></label>
+              <label class="level-editor-field">Hauteur<input data-editor-field="height" type="number" min="8" max="60" /></label>
+            </div>
+            <div class="level-editor-field-grid">
+              <label class="level-editor-field">Temps<input data-editor-field="time" type="number" min="1" max="999" /></label>
+              <label class="level-editor-field">Score<input data-editor-field="scoreStep" type="number" min="0" max="9999" /></label>
+            </div>
+            <label class="level-editor-field">Diamants requis<input data-editor-field="requiredDiamonds" type="number" min="0" max="999" /></label>
+          </section>
+          <section class="level-editor-section">
+            <div class="level-editor-panel-header">
+              <span>Verification</span>
+              <small>Live</small>
+            </div>
+            <div class="level-editor-diagnostics" data-editor-diagnostics></div>
+          </section>
+        </aside>
+      </main>
+      <footer class="level-editor-statusbar" aria-label="Statut editeur">
+        <span data-editor-status-position>X : - Y : -</span>
+        <span data-editor-status-tool>Outil : Crayon</span>
+        <span data-editor-status-level></span>
+        <span class="level-editor-status-hint">Molette : zoom | Outil deplacement : drag souris | Clic droit : effacer</span>
+      </footer>
     `;
   }
 
@@ -315,11 +400,63 @@ export class LevelEditorScene implements Scene {
       input.addEventListener("change", () => this.applyModernFieldChange(input));
     });
     root.querySelector<HTMLElement>("[data-editor-action='export']")?.addEventListener("click", () => this.exportCurrentLevel());
-    root.querySelector<HTMLElement>("[data-editor-action='import']")?.addEventListener("click", () => this.importFromPrompt());
+    root.querySelector<HTMLElement>("[data-editor-action='import']")?.addEventListener("click", () => this.importFromLocalFile());
     root.querySelector<HTMLElement>("[data-editor-action='test']")?.addEventListener("click", () => this.startRuntimeTest());
+    root.querySelector<HTMLElement>("[data-editor-action='new']")?.addEventListener("click", () => this.discardLocalDraft());
+    root.querySelector<HTMLElement>("[data-editor-action='undo']")?.addEventListener("click", () => this.undo());
+    root.querySelector<HTMLElement>("[data-editor-action='redo']")?.addEventListener("click", () => this.redo());
+    root.querySelector<HTMLElement>("[data-editor-action='zoom-in']")?.addEventListener("click", () => {
+      this.viewport.zoom = Math.min(2, this.viewport.zoom === 0.5 ? 1 : this.viewport.zoom + 1);
+      this.refreshModernEditorUi();
+    });
+    root.querySelector<HTMLElement>("[data-editor-action='zoom-out']")?.addEventListener("click", () => {
+      this.viewport.zoom = Math.max(0.5, this.viewport.zoom === 2 ? 1 : this.viewport.zoom - 0.5);
+      this.refreshModernEditorUi();
+    });
     root.querySelector<HTMLInputElement>("[data-editor-grid-toggle]")?.addEventListener("change", (event) => {
       this.gridOverlayVisible = event.currentTarget instanceof HTMLInputElement ? event.currentTarget.checked : this.gridOverlayVisible;
     });
+  }
+
+  /** Dessine le titre de toolbar avec la font bitmap TO8 procedurale du moteur. */
+  private renderToolbarTitle(root: HTMLElement): void {
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-editor-toolbar-title]");
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) {
+      return;
+    }
+
+    const title = "La Mine aux Diamants";
+    const suffix = " - Editeur";
+    const font = THOMSON_8_BIT_FONT;
+    const scale = 2;
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    let cursorX = 0;
+
+    const drawText = (text: string, color: string): void => {
+      context.fillStyle = color;
+      for (const character of text) {
+        const glyph = font.glyphs[character] ?? font.glyphs["?"];
+        if (!glyph) {
+          cursorX += font.width * scale;
+          continue;
+        }
+
+        for (let row = 0; row < font.height; row += 1) {
+          const bits = glyph[row] ?? "";
+          for (let column = 0; column < font.width; column += 1) {
+            if (bits[column] === "1") {
+              context.fillRect(cursorX + column * scale, row * scale, scale, scale);
+            }
+          }
+        }
+        cursorX += font.width * scale;
+      }
+    };
+
+    drawText(title, "#4488ff");
+    drawText(suffix, "#f4f7ff");
   }
 
   /** Cree un bouton de palette moderne. */
@@ -329,7 +466,11 @@ export class LevelEditorScene implements Scene {
     button.className = "level-editor-chip";
     button.dataset.tile = item.tileType ?? "";
     button.title = item.hint;
-    button.innerHTML = `<span class="level-editor-chip-preview" style="--tile-color:${item.tileType ? editorTileFallbackColor(item.tileType) : "#111"}"></span><span>${item.label}</span>`;
+    button.innerHTML = `<canvas class="level-editor-chip-preview" data-editor-preview-tile="${item.tileType ?? ""}" width="32" height="32" aria-hidden="true"></canvas><span class="level-editor-chip-text"><span class="level-editor-chip-label">${item.label}</span><small>${item.hint}</small></span>`;
+    const preview = button.querySelector<HTMLCanvasElement>("[data-editor-preview-tile]");
+    if (preview && item.tileType) {
+      this.editorRenderer.renderTilePreview(preview, item.tileType);
+    }
     button.addEventListener("click", () => {
       if (item.tileType) {
         this.selectedTile = item.tileType;
@@ -340,6 +481,16 @@ export class LevelEditorScene implements Scene {
     return button;
   }
 
+  /** Redessine les apercus de palette depuis les atlas runtime charges. */
+  private refreshPalettePreviews(): void {
+    this.editorUiRoot?.querySelectorAll<HTMLCanvasElement>("[data-editor-preview-tile]").forEach((canvas) => {
+      const tileType = canvas.dataset.editorPreviewTile as ModernTileType | undefined;
+      if (tileType) {
+        this.editorRenderer.renderTilePreview(canvas, tileType);
+      }
+    });
+  }
+
   /** Cree un bouton d'outil moderne. */
   private createToolButton(item: LevelEditorPaletteItem): HTMLButtonElement {
     const button = document.createElement("button");
@@ -347,7 +498,7 @@ export class LevelEditorScene implements Scene {
     button.className = "level-editor-tool-button";
     button.dataset.tool = item.tool ?? "";
     button.title = item.hint;
-    button.textContent = item.label;
+    button.innerHTML = `${item.svg}<span>${item.label}</span>`;
     button.addEventListener("click", () => {
       if (item.tool) {
         this.selectedTool = item.tool;
@@ -372,6 +523,8 @@ export class LevelEditorScene implements Scene {
     });
     this.setFieldValue(root, "id", this.editorState.id);
     this.setFieldValue(root, "label", this.editorState.label);
+    this.setFieldValue(root, "author", this.editorState.author);
+    this.setFieldValue(root, "createdDate", this.editorState.createdDate);
     this.setFieldValue(root, "width", String(this.editorState.width));
     this.setFieldValue(root, "height", String(this.editorState.height));
     this.setFieldValue(root, "time", String(this.editorState.time));
@@ -379,6 +532,16 @@ export class LevelEditorScene implements Scene {
     this.setFieldValue(root, "requiredDiamonds", String(this.editorState.requiredDiamonds));
     const dirty = root.querySelector<HTMLElement>("[data-editor-dirty]");
     if (dirty) dirty.textContent = this.dirty ? "Brouillon" : "A jour";
+    const zoom = root.querySelector<HTMLElement>("[data-editor-zoom]");
+    if (zoom) zoom.textContent = `${Math.round(this.viewport.zoom * 100)}%`;
+    const statusPosition = root.querySelector<HTMLElement>("[data-editor-status-position]");
+    if (statusPosition) {
+      statusPosition.textContent = this.hoverCell ? `X : ${this.hoverCell.x}  Y : ${this.hoverCell.y}` : "X : -  Y : -";
+    }
+    const statusTool = root.querySelector<HTMLElement>("[data-editor-status-tool]");
+    if (statusTool) statusTool.textContent = `Outil : ${this.getSelectedToolLabel()}`;
+    const statusLevel = root.querySelector<HTMLElement>("[data-editor-status-level]");
+    if (statusLevel) statusLevel.textContent = `${this.editorState.label} - ${this.editorState.width}x${this.editorState.height}`;
     const diagnostics = validateEditableLevel(this.editorState).slice(0, 4);
     const diagnosticsRoot = root.querySelector<HTMLElement>("[data-editor-diagnostics]");
     if (diagnosticsRoot) {
@@ -407,6 +570,8 @@ export class LevelEditorScene implements Scene {
     this.recordHistory();
     if (field === "id") setEditableLevelId(this.editorState, input.value);
     if (field === "label") setEditableLevelLabel(this.editorState, input.value);
+    if (field === "author") setEditableLevelAuthor(this.editorState, input.value);
+    if (field === "createdDate") setEditableLevelCreatedDate(this.editorState, input.value);
     if (field === "width" || field === "height") setEditableLevelSize(this.editorState, Number(this.getFieldValue("width")), Number(this.getFieldValue("height")));
     if (field === "time") setEditableLevelTime(this.editorState, Number(input.value));
     if (field === "scoreStep") setEditableLevelScoreStep(this.editorState, Number(input.value));
@@ -418,6 +583,11 @@ export class LevelEditorScene implements Scene {
   /** Retourne la valeur d'un champ DOM moderne. */
   private getFieldValue(field: string): string {
     return this.editorUiRoot?.querySelector<HTMLInputElement>(`[data-editor-field='${field}']`)?.value ?? "0";
+  }
+
+  /** Retourne le libelle utilisateur de l'outil selectionne. */
+  private getSelectedToolLabel(): string {
+    return LEVEL_EDITOR_TOOL_PALETTE.find((item) => item.tool === this.selectedTool)?.label ?? this.selectedTool;
   }
 
   /** Traite une interaction pointeur sur la grille. */
@@ -517,11 +687,33 @@ export class LevelEditorScene implements Scene {
 
   /** Avance les animations legeres de l'editeur. */
   private advanceAnimations(dt: number): void {
-    this.animationElapsed += dt;
-    while (this.animationElapsed >= EDITOR_ANIMATION_FRAME_DURATION) {
-      this.animationElapsed -= EDITOR_ANIMATION_FRAME_DURATION;
-      this.animationFrameIndex = (this.animationFrameIndex + 1) % 8;
+    this.advanceEditorAnimation("player", dt);
+    this.advanceEditorAnimation("diamond", dt);
+    this.advanceEditorAnimation("monster", dt);
+    this.advanceEditorAnimation("exit", dt);
+  }
+
+  /** Avance une horloge d'animation editeur alignee sur les constantes runtime. */
+  private advanceEditorAnimation(animationKey: keyof typeof EDITOR_ANIMATION_FRAME_DURATIONS, dt: number): void {
+    const duration = EDITOR_ANIMATION_FRAME_DURATIONS[animationKey];
+    this.animationElapsed[animationKey] += dt;
+    while (this.animationElapsed[animationKey] >= duration) {
+      this.animationElapsed[animationKey] -= duration;
+      this.animationFrameIndex[animationKey] = (this.animationFrameIndex[animationKey] + 1) % 64;
     }
+  }
+
+  /** Retourne la frame correspondant a la famille runtime de la tuile donnee. */
+  private getTileAnimationFrameIndex(tile: ModernTileType): number {
+    if (tile === "diamond") {
+      return this.animationFrameIndex.diamond;
+    }
+
+    if (tile === "monster" || tile === "specialCreature") {
+      return this.animationFrameIndex.monster;
+    }
+
+    return 0;
   }
 
   /** Traite les raccourcis clavier propres a l'editeur. */
@@ -730,7 +922,6 @@ export class LevelEditorScene implements Scene {
     void navigator.clipboard?.writeText(json).catch(() => undefined);
     this.downloadJson(json, `${this.editorState.id || "level-custom"}.json`);
     this.dirty = false;
-    window.prompt("JSON exporte", json);
     this.refreshModernEditorUi();
   }
 

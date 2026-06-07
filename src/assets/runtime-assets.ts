@@ -13,6 +13,7 @@ export function docsExtractionAssetUrl(relativePath: string): string {
 /** Assets utilises par le runtime principal du jeu. */
 export const RUNTIME_ASSET_URLS = {
   tilesAtlas: docsExtractionAssetUrl("mine-tiles-atlas-D218-D8D7.png"),
+  playerAtlas: docsExtractionAssetUrl("sprites/player-atlas.png"),
   diamondAtlas: docsExtractionAssetUrl("sprites/diamond-atlas.png"),
   monsterAtlas: docsExtractionAssetUrl("sprites/monster-atlas.png"),
   specialCreatureAtlas: docsExtractionAssetUrl("sprites/specialCreature-atlas.png"),
@@ -24,7 +25,7 @@ export const RUNTIME_ASSET_URLS = {
 
 /** Assets supplementaires exposes par le viewer developpeur d'animations. */
 export const VIEWER_ASSET_URLS: Record<string, string> = {
-  player: docsExtractionAssetUrl("sprites/player-atlas.png"),
+  player: RUNTIME_ASSET_URLS.playerAtlas,
   diamond: RUNTIME_ASSET_URLS.diamondAtlas,
   rocks: docsExtractionAssetUrl("sprites/rocks-atlas.png"),
   explosion: docsExtractionAssetUrl("sprites/explosion-atlas.png"),

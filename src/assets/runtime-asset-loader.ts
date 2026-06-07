@@ -13,6 +13,9 @@ export interface LoadedRuntimeAssets {
   /** Atlas principal des tuiles niveau. */
   readonly tileAtlas: HTMLImageElement;
 
+  /** Atlas anime du joueur. */
+  readonly playerAtlas: HTMLImageElement;
+
   /** Atlas anime des diamants. */
   readonly diamondAtlas: HTMLImageElement;
 
@@ -43,6 +46,11 @@ export class RuntimeAssets {
   /** Atlas principal des tuiles, si charge. */
   get tileAtlas(): HTMLImageElement | null {
     return this.loadedAssets?.tileAtlas ?? null;
+  }
+
+  /** Atlas anime du joueur, si charge. */
+  get playerAtlas(): HTMLImageElement | null {
+    return this.loadedAssets?.playerAtlas ?? null;
   }
 
   /** Atlas anime des diamants, si charge. */
@@ -102,8 +110,9 @@ export class RuntimeAssets {
   /** Charge tous les assets runtime declares dans le catalogue d'URLs. */
   private async loadAll(): Promise<void> {
     try {
-      const [tileAtlas, diamondAtlas, monsterAtlas, specialCreatureAtlas, leftHudPanel, rightHudPanel] = await Promise.all([
+      const [tileAtlas, playerAtlas, diamondAtlas, monsterAtlas, specialCreatureAtlas, leftHudPanel, rightHudPanel] = await Promise.all([
         loadImage(RUNTIME_ASSET_URLS.tilesAtlas),
+        loadImage(RUNTIME_ASSET_URLS.playerAtlas),
         loadImage(RUNTIME_ASSET_URLS.diamondAtlas),
         loadImage(RUNTIME_ASSET_URLS.monsterAtlas),
         loadImage(RUNTIME_ASSET_URLS.specialCreatureAtlas),
@@ -112,6 +121,7 @@ export class RuntimeAssets {
       ]);
       this.loadedAssets = {
         tileAtlas,
+        playerAtlas,
         diamondAtlas,
         monsterAtlas,
         specialCreatureAtlas,

@@ -329,55 +329,191 @@ button:hover {
 
 /* Editeur de niveaux moderne ------------------------------------------------ */
 body.level-editor-active {
-  background:
-    radial-gradient(circle at 20% 10%, rgba(72, 197, 255, 0.16), transparent 34rem),
-    radial-gradient(circle at 80% 12%, rgba(95, 255, 173, 0.12), transparent 28rem),
-    #06100d;
+  --editor-bg: #12121e;
+  --editor-panel: #1c1c2e;
+  --editor-panel-2: #242438;
+  --editor-panel-3: #0d0d1a;
+  --editor-border: #3a3a5c;
+  --editor-accent: #4488ff;
+  --editor-accent-2: #22cc88;
+  --editor-text: #ccd0e0;
+  --editor-text-dim: #7788aa;
+  --editor-danger: #ff4444;
+  --editor-toolbar-height: 44px;
+  --editor-status-height: 26px;
+  --editor-left-width: 280px;
+  --editor-right-width: 240px;
+  overflow: hidden;
+  background: var(--editor-bg);
+  color: var(--editor-text);
 }
 
-body.level-editor-active canvas {
-  width: min(62vw, 980px);
-  max-height: calc(100vh - 9rem);
-  margin: 5.75rem auto 2rem;
-  border: 1px solid rgba(107, 245, 211, 0.34);
-  border-radius: 18px;
-  box-shadow:
-    0 26px 80px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  background: #07100d;
+body.level-editor-active .debug-toolbar {
+  display: none;
+}
+
+body.level-editor-active #game-screen {
+  position: fixed;
+  left: calc(var(--editor-left-width) + (100vw - var(--editor-left-width) - var(--editor-right-width)) / 2);
+  top: calc(var(--editor-toolbar-height) + (100vh - var(--editor-toolbar-height) - var(--editor-status-height)) / 2);
+  z-index: 11;
+  width: min(
+    calc(100vw - var(--editor-left-width) - var(--editor-right-width)),
+    calc((100vh - var(--editor-toolbar-height) - var(--editor-status-height)) * 1.6)
+  );
+  height: auto;
+  max-height: calc(100vh - var(--editor-toolbar-height) - var(--editor-status-height));
+  object-fit: contain;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #0d0d1a;
 }
 
 .level-editor-modern-ui {
   position: fixed;
-  inset: 4.75rem 1.25rem 1.25rem;
+  inset: 0;
   z-index: 20;
   pointer-events: none;
-  font-family: "Segoe UI", "Aptos", sans-serif;
-  color: #eafcf5;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--editor-text);
+  user-select: none;
+}
+
+.level-editor-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--editor-toolbar-height);
+  padding: 0 10px;
+  pointer-events: auto;
+  border-bottom: 1px solid var(--editor-border);
+  background: var(--editor-panel);
+}
+
+.level-editor-toolbar-brand {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.level-editor-toolbar-title {
+  display: block;
+  width: 496px;
+  height: 16px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.level-editor-toolbar button,
+.level-editor-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  border: 1px solid var(--editor-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: var(--editor-text);
+  background: var(--editor-panel-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.level-editor-toolbar button:hover {
+  border-color: var(--editor-accent);
+  background: #2e2e4a;
+}
+
+.level-editor-toolbar-primary {
+  margin-left: auto;
+  border-color: rgba(34, 204, 136, 0.65) !important;
+  color: #eafff6 !important;
+  background: #12382d !important;
+}
+
+.level-editor-toolbar-toggle {
+  color: var(--editor-text-dim);
+  cursor: pointer;
+}
+
+.level-editor-toolbar-toggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--editor-accent);
+}
+
+.level-editor-toolbar-separator {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--editor-border);
+}
+
+.level-editor-zoom-label {
+  min-width: 42px;
+  color: var(--editor-text-dim);
+  text-align: center;
+}
+
+.level-editor-workbench {
+  position: fixed;
+  inset: var(--editor-toolbar-height) 0 var(--editor-status-height);
+  z-index: 10;
+  pointer-events: none;
+  background: transparent;
 }
 
 .level-editor-panel {
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
-  width: min(18rem, 18vw);
-  min-width: 14.5rem;
-  padding: 1rem;
+  z-index: 32;
+  width: var(--editor-left-width);
+  padding: 0;
   pointer-events: auto;
   overflow: auto;
-  border: 1px solid rgba(158, 255, 222, 0.18);
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(15, 29, 25, 0.94), rgba(7, 16, 13, 0.88));
-  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(14px);
+  border: 0;
+  border-radius: 0;
+  background: var(--editor-panel);
+  box-shadow: none;
+}
+
+.level-editor-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.level-editor-panel::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--editor-border);
 }
 
 .level-editor-panel-left {
   left: 0;
+  top: var(--editor-toolbar-height);
+  bottom: var(--editor-status-height);
+  border-right: 1px solid var(--editor-border);
 }
 
 .level-editor-panel-right {
   right: 0;
+  top: var(--editor-toolbar-height);
+  bottom: var(--editor-status-height);
+  width: var(--editor-right-width);
+  border-left: 1px solid var(--editor-border);
+}
+
+.level-editor-section {
+  border-bottom: 1px solid var(--editor-border);
+  padding: 10px;
 }
 
 .level-editor-panel-header {
@@ -385,54 +521,68 @@ body.level-editor-active canvas {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 8px;
 }
 
 .level-editor-panel-header span {
-  font-size: 0.95rem;
-  font-weight: 800;
+  color: var(--editor-text-dim);
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .level-editor-panel-header small {
-  color: #78f0cf;
-  font-size: 0.72rem;
+  color: var(--editor-accent-2);
+  font-size: 10px;
 }
 
 .level-editor-tools-title {
-  margin-top: 1.1rem;
+  margin-top: 0;
 }
 
 .level-editor-palette,
 .level-editor-tools,
 .level-editor-actions {
   display: grid;
-  gap: 0.55rem;
+  gap: 4px;
+}
+
+.level-editor-tools {
+  grid-template-columns: 1fr 1fr;
 }
 
 .level-editor-chip,
 .level-editor-tool-button,
 .level-editor-actions button {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
   align-items: center;
-  gap: 0.65rem;
-  min-height: 2.35rem;
+  gap: 8px;
+  min-height: 48px;
   width: 100%;
-  border: 1px solid rgba(151, 255, 224, 0.14);
-  border-radius: 14px;
-  padding: 0.45rem 0.65rem;
-  color: #eafff7;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1.5px solid transparent;
+  border-radius: 4px;
+  padding: 5px 7px;
+  color: var(--editor-text);
+  background: transparent;
   font: inherit;
-  font-size: 0.86rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+  transition: border-color 100ms ease, background 100ms ease, color 100ms ease;
 }
 
-.level-editor-chip span:last-child,
+.level-editor-tool-button {
+  display: flex;
+  justify-content: flex-start;
+  min-height: 34px;
+  gap: 6px;
+  background: var(--editor-panel-2);
+}
+
 .level-editor-tool-button {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -442,53 +592,102 @@ body.level-editor-active canvas {
 .level-editor-chip:hover,
 .level-editor-tool-button:hover,
 .level-editor-actions button:hover {
-  transform: translateY(-1px);
-  border-color: rgba(118, 255, 214, 0.45);
-  background: rgba(118, 255, 214, 0.09);
+  border-color: var(--editor-accent);
+  background: #2e2e4a;
 }
 
 .level-editor-chip.is-active,
 .level-editor-tool-button.is-active {
-  border-color: #6fffd5;
-  background: linear-gradient(135deg, rgba(111, 255, 213, 0.22), rgba(83, 202, 255, 0.13));
-  box-shadow: 0 0 0 1px rgba(111, 255, 213, 0.18) inset;
+  border-color: var(--editor-accent);
+  color: var(--editor-accent);
+  background: #1a2040;
+  font-weight: 700;
+}
+
+.level-editor-chip svg,
+.level-editor-tool-button svg {
+  width: 22px;
+  height: 22px;
+  color: currentColor;
+}
+
+.level-editor-tool-button svg.level-editor-pixel-tool-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.level-editor-chip-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.level-editor-chip-text {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.level-editor-chip small {
+  color: var(--editor-text-dim);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .level-editor-chip-preview {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
-  border-radius: 5px;
-  background: var(--tile-color);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: #000;
+  box-shadow: none;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .level-editor-field {
   display: grid;
-  gap: 0.35rem;
-  margin-bottom: 0.75rem;
-  color: #9fffe0;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 3px;
+  margin-bottom: 7px;
+  color: var(--editor-text-dim);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .level-editor-field input {
   min-width: 0;
-  border: 1px solid rgba(151, 255, 224, 0.16);
-  border-radius: 12px;
-  padding: 0.58rem 0.7rem;
-  color: #f5fffb;
-  background: rgba(0, 0, 0, 0.28);
-  font: 600 0.9rem "Segoe UI", "Aptos", sans-serif;
+  width: 100%;
+  border: 1px solid var(--editor-border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  color: var(--editor-text);
+  background: var(--editor-panel-3);
+  font: inherit;
+  font-size: 12px;
   outline: none;
 }
 
 .level-editor-field input:focus {
-  border-color: #6fffd5;
-  box-shadow: 0 0 0 3px rgba(111, 255, 213, 0.12);
+  border-color: var(--editor-accent);
+  box-shadow: none;
 }
 
 .level-editor-field-grid {
@@ -499,13 +698,13 @@ body.level-editor-active canvas {
 
 .level-editor-actions {
   grid-template-columns: 1fr;
-  margin-top: 0.7rem;
+  margin-top: 7px;
 }
 
 .level-editor-actions button {
   justify-content: center;
-  color: #06100d;
-  background: linear-gradient(135deg, #83ffd9, #55cfff);
+  color: #fff;
+  background: var(--editor-accent);
 }
 
 .level-editor-toggle {
@@ -526,17 +725,17 @@ body.level-editor-active canvas {
 
 .level-editor-diagnostics {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 0.9rem;
+  gap: 4px;
+  margin-top: 0;
 }
 
 .level-editor-diagnostic {
   margin: 0;
-  border-radius: 12px;
-  padding: 0.55rem 0.65rem;
-  font-size: 0.78rem;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
   line-height: 1.25;
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--editor-panel-2);
 }
 
 .level-editor-diagnostic-error {
@@ -549,19 +748,50 @@ body.level-editor-active canvas {
   border: 1px solid rgba(255, 212, 93, 0.36);
 }
 
-@media (max-width: 1100px) {
-  body.level-editor-active canvas {
+.level-editor-statusbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: var(--editor-status-height);
+  padding: 0 12px;
+  pointer-events: auto;
+  border-top: 1px solid var(--editor-border);
+  color: var(--editor-text-dim);
+  background: var(--editor-panel);
+  font-size: 11px;
+}
+
+.level-editor-statusbar span {
+  white-space: nowrap;
+}
+
+.level-editor-statusbar [data-editor-status-tool] {
+  color: var(--editor-accent);
+  font-weight: 700;
+}
+
+.level-editor-status-hint {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  body.level-editor-active #game-screen {
+    position: static;
     width: min(92vw, 760px);
-    margin-top: 22rem;
+    margin: calc(var(--editor-toolbar-height) + 18rem) auto calc(var(--editor-status-height) + 1rem);
   }
 
   .level-editor-modern-ui {
-    position: absolute;
-    inset: 4.75rem 1rem auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    pointer-events: none;
+    position: fixed;
+  }
+
+  .level-editor-workbench {
+    position: static;
   }
 
   .level-editor-panel {
@@ -570,20 +800,46 @@ body.level-editor-active canvas {
     min-width: 0;
     max-height: 16rem;
   }
+
+  .level-editor-panel-left,
+  .level-editor-panel-right {
+    position: fixed;
+    top: var(--editor-toolbar-height);
+    bottom: auto;
+    width: 50vw;
+    max-height: 17rem;
+  }
+
+  .level-editor-panel-left {
+    left: 0;
+  }
+
+  .level-editor-panel-right {
+    right: 0;
+  }
 }
 
 @media (max-width: 640px) {
-  body.level-editor-active canvas {
+  body.level-editor-active #game-screen {
     width: 96vw;
-    margin-top: 38rem;
-    border-radius: 12px;
+    margin-top: 35rem;
   }
 
-  .level-editor-modern-ui {
-    grid-template-columns: 1fr;
+  .level-editor-toolbar {
+    overflow-x: auto;
   }
 
-  .level-editor-panel {
-    max-height: none;
+  .level-editor-panel-left,
+  .level-editor-panel-right {
+    width: 100vw;
+    max-height: 16rem;
+  }
+
+  .level-editor-panel-right {
+    top: calc(var(--editor-toolbar-height) + 16rem);
+  }
+
+  .level-editor-status-hint {
+    display: none;
   }
 }

@@ -1086,4 +1086,5 @@ export const THOMSON_8_BIT_FONT = {
       "00000000"
     ]
   }
-};
+} as const;
+export type Thomson8BitFont = typeof THOMSON_8_BIT_FONT;

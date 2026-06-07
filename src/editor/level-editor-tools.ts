@@ -22,10 +22,10 @@ import {
 /** Viewport de grille propre a l'editeur. */
 export interface LevelEditorViewport {
   /** Coordonne X ecran du coin haut gauche de grille. */
-  readonly gridX: number;
+  gridX: number;
 
   /** Coordonne Y ecran du coin haut gauche de grille. */
-  readonly gridY: number;
+  gridY: number;
 
   /** Nombre de colonnes visibles. */
   visibleColumns: number;

@@ -12,17 +12,18 @@ const GLYPH_WIDTH = 8;
 const GLYPH_HEIGHT = 8;
 
 const rows = [
+  { x: 3, y: 62, text: "ABCDEFGHIJKLMNOPQR" },
+  { x: 3, y: 70, text: "STUVWXYZabcdefghij" },
+  { x: 2, y: 80, text: "klmnopqrstuvwxyz" },
+  { x: 3, y: 88, text: "0123456789" },
+  { x: 3, y: 97, text: ".,\"'?!@_#$%&() +-/" },
+  { x: 3, y: 106, text: ":;(<>) [\\]{|}" },
+  { x: 3, y: 115, text: "^_`{|}~ÀÂÇÈÉÊ" },
+  { x: 3, y: 124, text: "àâçèéêùüû" },
   { x: 3, y: 17, text: "BASIC 512 V1.0" },
   { x: 3, y: 25, text: "(C) Microsoft 1986" },
   { x: 3, y: 35, text: "503135 bytes free" },
-  { x: 3, y: 44, text: "OK" },
-  { x: 3, y: 62, text: "ABCDEFGHIJKLMNOPQR" },
-  { x: 3, y: 70, text: "STUVWXYZabcdefghij" },
-  { x: 3, y: 80, text: "klmnopqrstuvwxyz" },
-  { x: 3, y: 97, text: "!\"#$%&'()*+,-./012" },
-  { x: 3, y: 106, text: "3456789:;<=>?@[\\]" },
-  { x: 3, y: 115, text: "^_`{|}~ÀÂÇÈÉÊ" },
-  { x: 3, y: 124, text: "àâçèéêùüû" }
+  { x: 3, y: 44, text: "OK" }
 ];
 
 main();
@@ -69,6 +70,8 @@ function normalizeGlyphRows(rows) {
 
   const firstInkRow = Math.min(...inkRows);
   const lastInkRow = Math.max(...inkRows);
+  if (lastInkRow - firstInkRow <= 1) return rows;
+
   const targetLastInkRow = GLYPH_HEIGHT - 2;
   const shift = targetLastInkRow - lastInkRow;
   if (shift === 0) return rows;
@@ -87,7 +90,9 @@ function isInk(image, x, y) {
   const red = image.rgb[offset];
   const green = image.rgb[offset + 1];
   const blue = image.rgb[offset + 2];
-  return blue > 120 && red < 90 && green < 140;
+  const blueInk = blue > 120 && red < 90 && green < 140;
+  const redInk = red > 120 && green < 90 && blue < 90;
+  return blueInk || redInk;
 }
 
 function decodePngRgb(bytes) {
