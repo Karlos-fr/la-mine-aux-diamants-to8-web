@@ -924,8 +924,7 @@ export class GameplayScene implements Scene {
     }
 
     if (effect === "hitMonster") {
-      this.startExplosion(gridX, gridY);
-      this.killPlayer("monsterContact");
+      this.startMonsterContactExplosion(gridX, gridY);
     }
   }
 
@@ -1614,9 +1613,19 @@ export class GameplayScene implements Scene {
 
     const playerCell = this.getPlayerLogicalCell();
     if (!debugOptions.ghostMode && this.findMonsterRuntimeAtGrid(playerCell.x, playerCell.y)) {
-      this.startExplosion(playerCell.x, playerCell.y);
-      this.killPlayer("monsterContact");
+      this.startMonsterContactExplosion(playerCell.x, playerCell.y);
     }
+  }
+
+  /** Declenche l'explosion joueur/monstre en retirant d'abord le monstre du rendu. */
+  private startMonsterContactExplosion(gridX: number, gridY: number): void {
+    const monster = this.findMonsterRuntimeAtGrid(gridX, gridY);
+    if (monster) {
+      this.deactivateMonster(monster);
+    }
+
+    this.startExplosion(gridX, gridY);
+    this.killPlayer("monsterContact");
   }
 
   /** Desactive une creature speciale touchee par un objet en chute; le burst diamant est gere separement. */
