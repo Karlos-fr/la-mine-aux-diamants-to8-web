@@ -51,6 +51,14 @@ export const TO8_RUNTIME_TIMING = {
   hudDiamondAnimationFrameTicks: 6,
   /** Cadence du blink de sortie ouverte, rendu moderne sans mutation de grille. */
   exitBlinkFrameTicks: 13,
+  /** Duree d'une phase visible du flash objectif; `BD87` inverse `$E7C1` six fois. */
+  objectiveReachedFlashPhaseTicks: 2,
+  /** Nombre de phases du flash objectif, calque sur les six inversions de `KIT.BIN:$BD87`. */
+  objectiveReachedFlashPhaseCount: 6,
+  /** Cadence moderne de conversion temps restant vers score apres entree sortie. */
+  levelCompletionBonusStepTicks: 2,
+  /** Delai court apres conversion complete avant passage au niveau suivant. */
+  levelCompletionTransitionDelayTicks: 25,
   /** Cadence du compteur HUD temps en secondes historiques. */
   hudTimerTicks: TO8_RUNTIME_TICKS_PER_SECOND
 } as const;

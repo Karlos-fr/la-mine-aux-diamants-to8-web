@@ -292,6 +292,7 @@ button:hover {
 }
 
 /* Bouton debug pour activer le mode fantome pendant les tests de niveaux. */
+.debug-attract-button,
 .debug-ghost-button,
 .debug-editor-button {
   min-height: 28px;

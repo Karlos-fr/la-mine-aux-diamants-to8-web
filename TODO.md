@@ -3,7 +3,36 @@
 - Vérifier l'IA des créatures
 
 
+- Délenchement flash sur atteinte obj diamant
+- Décompte des compteuur sur victoire
+
 - Les monstres doivent exploser
+- Le monstre spécial doit clignoter
+
+
+
+Le runtime moderne ne respecte pas parfaitement l’ordre ASM.
+
+Dans l’ASM, la boucle semble faire, dans cet ordre :
+
+monstres
+creature speciale
+physique / objets
+sortie / tuile protegee
+controle attract / input
+restauration sortie / protection
+transition / rendu
+Dans notre portage moderne, l’ordre est plutôt :
+
+joueur
+camera
+objets qui tombent
+monstres
+collisions monstres
+events
+rendu
+
+
 
 - Sequence apparition joueur validee via `KIT.BIN:$BE68`: 6 demi-etapes, donc 3 cycles `0x04`/noir avant affichage joueur.
 - Implementer les animations de l'ecran 2

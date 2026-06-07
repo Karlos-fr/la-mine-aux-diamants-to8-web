@@ -124,6 +124,14 @@ const CAMERA_MIN_Y = INITIAL_VIEWPORT_Y;
 const PLAYER_SPAWN_BLINK_REPETITIONS = 3;
 /** Duree d'un demi-pas de blink spawn, derivee des ticks TO8. */
 const PLAYER_SPAWN_BLINK_STEP_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerSpawnBlinkStepTicks);
+/** Cadence de conversion du temps restant en score apres entree dans la sortie. */
+const LEVEL_COMPLETION_BONUS_STEP_DURATION = secondsFromTo8Ticks(
+  TO8_RUNTIME_TIMING.levelCompletionBonusStepTicks
+);
+/** Delai de transition apres epuisement du bonus de temps. */
+const LEVEL_COMPLETION_TRANSITION_DELAY = secondsFromTo8Ticks(
+  TO8_RUNTIME_TIMING.levelCompletionTransitionDelayTicks
+);
 /** Duree moderne du mouvement joueur fluide d'une cellule, derivee des ticks TO8. */
 const PLAYER_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerGridMoveTicks);
 /** Delai moderne avant de relancer le cycle idle confirme par `KIT.BIN:$CED9`. */
@@ -175,6 +183,12 @@ const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 const PLATFORM_TILE_ID = RUNTIME_TILE.platform;
 /** Duree en secondes d'un tick compteur temps HUD. */
 const HUD_TIMER_TICK_SECONDS = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.hudTimerTicks);
+/** Duree d'une phase de flash quand l'objectif diamant ouvre la sortie. */
+const OBJECTIVE_REACHED_FLASH_PHASE_DURATION = secondsFromTo8Ticks(
+  TO8_RUNTIME_TIMING.objectiveReachedFlashPhaseTicks
+);
+/** Nombre de phases alternees du flash objectif, derive des six inversions de `$BD87`. */
+const OBJECTIVE_REACHED_FLASH_PHASE_COUNT = TO8_RUNTIME_TIMING.objectiveReachedFlashPhaseCount;
 /** Frames couleur du diamant HUD, animees par decalage de lignes. */
 const HUD_GALLERY_DIAMOND_ANIMATION_FRAMES = Array.from({ length: 16 }, (_, index) => index);
 /** Dernier niveau actuellement disponible. */
@@ -318,6 +332,16 @@ export class GameplayScene implements Scene {
   private fallingObjectScanElapsed = 0;
   /** Accumulateur du decrement de temps HUD. */
   private hudTimeAccumulator = 0;
+  /** Indique si la conversion temps restant vers score est en cours. */
+  private levelCompletionBonusActive = false;
+  /** Accumulateur de cadence pour la conversion de fin de niveau. */
+  private levelCompletionBonusAccumulator = 0;
+  /** Delai ecoule apres la fin du bonus avant transition effective. */
+  private levelCompletionTransitionElapsed = 0;
+  /** Temps ecoule depuis le declenchement du flash objectif atteint. */
+  private objectiveReachedFlashElapsed = 0;
+  /** Indique si le flash objectif atteint est en cours de rendu. */
+  private objectiveReachedFlashActive = false;
   /** Mouvement joueur actuellement interpole. */
   private playerMove: GridMoveState | null = null;
   /** Frame de marche maintenue apres arrivee. */
@@ -450,18 +474,18 @@ export class GameplayScene implements Scene {
       return;
     }
 
-    if (this.gameplayMode === "attract" && !playerSpawning) {
-      this.attractInputSource?.advanceScriptTick();
-      if (this.attractInputSource?.isEnded()) {
-        this.queueAttractReturnToTitle();
-        return;
-      }
-    }
-
     if (this.playerMove) {
       this.resetPlayerIdleDelay();
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
+      if (this.gameplayMode === "attract") {
+        this.attractInputSource?.advanceScriptTick();
+        if (this.attractInputSource?.isEnded()) {
+          this.queueAttractReturnToTitle();
+          return;
+        }
+      }
+
       this.advancePlayerHeldMoveFrame(dt);
       const { x: moveX, y: moveY } = this.playerInputSource.resolveMove(input);
 
@@ -512,6 +536,8 @@ export class GameplayScene implements Scene {
             elapsed: 0,
             duration: PLAYER_GRID_MOVE_DURATION
           };
+        } else if (this.gameplayMode === "attract") {
+          this.attractInputSource?.advanceScriptTick();
         }
       } else {
         this.advancePlayerIdleDelay(dt);
@@ -529,6 +555,7 @@ export class GameplayScene implements Scene {
   private advanceRenderAnimations(dt: number): void {
     this.advanceExplosions(dt);
     this.queueDeathResetAfterExplosions();
+    this.advanceObjectiveReachedFlash(dt);
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
     this.advanceAnimation("monster", this.monsterAnimationFrames, this.animationDurations.monster, dt);
@@ -580,7 +607,8 @@ export class GameplayScene implements Scene {
       isPlayerRenderedAtGrid: (gridX, gridY) => this.isPlayerRenderedAtGrid(gridX, gridY),
       getPlayerSpawnBlinkTileId: (gridX, gridY) => this.getPlayerSpawnBlinkTileId(gridX, gridY),
       getExitBlinkTileId: (gridX, gridY) => this.getExitBlinkTileId(gridX, gridY),
-      isPlayerSpawning: () => this.isPlayerSpawning()
+      isPlayerSpawning: () => this.isPlayerSpawning(),
+      objectiveReachedFlashPhase: this.getObjectiveReachedFlashPhase()
     });
   }
 
@@ -928,6 +956,10 @@ export class GameplayScene implements Scene {
 
   /** Avance les scans d'objets en chute et leurs animations fluides actives. */
   private advanceFallingObjects(dt: number): void {
+    if (this.state.levelComplete) {
+      return;
+    }
+
     this.advanceActiveFallingObjects(dt);
 
     this.fallingObjectScanElapsed += dt;
@@ -1206,14 +1238,17 @@ export class GameplayScene implements Scene {
 
   /** Ouvre la sortie du niveau quand l'objectif de diamants est atteint. */
   private updateLevelExitStateAfterDiamondCollection(): void {
-    if (this.state.hud.diamonds === 0) {
-      this.state.exitOpen = true;
-      emitRuntimeEvent(this.state, {
-        type: "exitOpened",
-        gridX: this.state.level.exit.x,
-        gridY: this.state.level.exit.y
-      });
+    if (this.state.hud.diamonds !== 0 || this.state.exitOpen) {
+      return;
     }
+
+    this.state.exitOpen = true;
+    this.startObjectiveReachedFlash();
+    emitRuntimeEvent(this.state, {
+      type: "exitOpened",
+      gridX: this.state.level.exit.x,
+      gridY: this.state.level.exit.y
+    });
   }
 
   /** Applique les effets d'impact mortels quand un rocher ou diamant atteint sa cible. */
@@ -1372,12 +1407,7 @@ export class GameplayScene implements Scene {
       }
 
       if (event.type === "levelCompleted") {
-        this.state.levelComplete = true;
-        if (this.gameplayMode === "attract") {
-          this.queueAttractReturnToTitle();
-        } else {
-          this.queueNextLevelTransition();
-        }
+        this.startLevelCompletionBonus();
       }
     }
   }
@@ -1401,6 +1431,36 @@ export class GameplayScene implements Scene {
 
     const frameIndex = this.animationState.get("exit")?.frameIndex ?? 0;
     return frameIndex % 2 === 0 ? RUNTIME_GRID_FILL_TILE_ID : RUNTIME_EMPTY_TILE_ID;
+  }
+
+  /** Declenche le flash cadre quand l'objectif diamant vient d'etre atteint. */
+  private startObjectiveReachedFlash(): void {
+    this.objectiveReachedFlashElapsed = 0;
+    this.objectiveReachedFlashActive = true;
+  }
+
+  /** Avance la sequence moderne du flash objectif atteint. */
+  private advanceObjectiveReachedFlash(dt: number): void {
+    if (!this.objectiveReachedFlashActive) {
+      return;
+    }
+
+    this.objectiveReachedFlashElapsed += dt;
+    if (this.objectiveReachedFlashElapsed >= OBJECTIVE_REACHED_FLASH_PHASE_DURATION * OBJECTIVE_REACHED_FLASH_PHASE_COUNT) {
+      this.objectiveReachedFlashActive = false;
+    }
+  }
+
+  /** Retourne la phase visible courante du flash objectif, ou rien si l'effet est termine. */
+  private getObjectiveReachedFlashPhase(): number | null {
+    if (!this.objectiveReachedFlashActive) {
+      return null;
+    }
+
+    return Math.min(
+      OBJECTIVE_REACHED_FLASH_PHASE_COUNT - 1,
+      Math.floor(this.objectiveReachedFlashElapsed / OBJECTIVE_REACHED_FLASH_PHASE_DURATION)
+    );
   }
 
   /** Programme la transition directe vers le niveau suivant quand le joueur atteint la sortie ouverte. */
@@ -1429,6 +1489,11 @@ export class GameplayScene implements Scene {
 
   /** Avance temps, score et compteurs de panneaux; la navigation game-over reste differee. */
   private advanceHudCounters(dt: number, playerSpawning: boolean): void {
+    if (this.levelCompletionBonusActive) {
+      this.advanceLevelCompletionBonus(dt);
+      return;
+    }
+
     if (playerSpawning || this.state.gameOver || this.state.levelComplete || this.state.hud.time <= 0) {
       return;
     }
@@ -1447,6 +1512,55 @@ export class GameplayScene implements Scene {
   private incrementScore(amount: number): void {
     this.state.hud.score = incrementBcdCounter(this.state.hud.score, amount, 6);
     this.state.hud.record = Math.max(this.state.hud.record, this.state.hud.score);
+  }
+
+  /** Demarre la sequence de conversion du temps restant en score apres sortie. */
+  private startLevelCompletionBonus(): void {
+    if (this.state.levelComplete) {
+      return;
+    }
+
+    this.state.levelComplete = true;
+    this.playerMove = null;
+    this.clearPlayerHeldMoveFrame();
+    this.levelCompletionBonusActive = true;
+    this.levelCompletionBonusAccumulator = 0;
+    this.levelCompletionTransitionElapsed = 0;
+  }
+
+  /** Convertit progressivement le temps restant en score comme la boucle `KIT.BIN:$BFE2/C003`. */
+  private advanceLevelCompletionBonus(dt: number): void {
+    if (this.state.hud.time <= 0) {
+      this.advanceLevelCompletionTransitionDelay(dt);
+      return;
+    }
+
+    this.levelCompletionBonusAccumulator += dt;
+    while (this.levelCompletionBonusAccumulator >= LEVEL_COMPLETION_BONUS_STEP_DURATION && this.state.hud.time > 0) {
+      this.levelCompletionBonusAccumulator -= LEVEL_COMPLETION_BONUS_STEP_DURATION;
+      this.state.hud.time = decrementBcdCounter(this.state.hud.time, 3);
+      this.incrementScore(1);
+    }
+
+    if (this.state.hud.time <= 0) {
+      this.levelCompletionBonusAccumulator = 0;
+      this.levelCompletionTransitionElapsed = 0;
+    }
+  }
+
+  /** Attend un court instant apres le bonus avant de changer de scene. */
+  private advanceLevelCompletionTransitionDelay(dt: number): void {
+    this.levelCompletionTransitionElapsed += dt;
+    if (this.levelCompletionTransitionElapsed < LEVEL_COMPLETION_TRANSITION_DELAY) {
+      return;
+    }
+
+    this.levelCompletionBonusActive = false;
+    if (this.gameplayMode === "attract") {
+      this.queueAttractReturnToTitle();
+    } else {
+      this.queueNextLevelTransition();
+    }
   }
 
   /** Desactive la premiere entite d'un type trouvee a la cellule de grille donnee. */
@@ -1558,6 +1672,10 @@ export class GameplayScene implements Scene {
 
   /** Avance le timing de decision des monstres et demande de nouveaux mouvements quand necessaire. */
   private advanceMonsterRuntime(dt: number): void {
+    if (this.state.levelComplete) {
+      return;
+    }
+
     this.monsterMoveElapsed += dt;
     if (this.monsterMoveElapsed < MONSTER_MOVE_INTERVAL) {
       return;
@@ -1587,6 +1705,10 @@ export class GameplayScene implements Scene {
 
   /** Avance les mouvements fluides actifs des monstres et valide les pas termines. */
   private advanceMonsterMoves(dt: number): void {
+    if (this.state.levelComplete) {
+      return;
+    }
+
     for (const monster of this.state.monsters) {
       if (!monster.movement) {
         continue;

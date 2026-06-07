@@ -68,7 +68,8 @@ if (mode === "gallery") {
   const attractButton = document.createElement("button");
   attractButton.className = "debug-attract-button";
   attractButton.type = "button";
-  attractButton.textContent = "Attract";
+  attractButton.textContent = "Debug attract";
+  attractButton.title = "Lancer directement le mode attract scriptable original.";
 
   /** Bouton debug ouvrant l'editeur de niveaux moderne. */
   const editorButton = document.createElement("button");

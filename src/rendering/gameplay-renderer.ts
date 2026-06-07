@@ -15,6 +15,12 @@ import { getGridCellScreenPosition } from "./level-renderer";
 
 /** Hauteur en pixels de la zone de jeu au-dessus du HUD. */
 const PLAYFIELD_HEIGHT = 160;
+/** Couleur rouge observee lors du flash objectif atteint. */
+const OBJECTIVE_FLASH_RED = "#ff4040";
+/** Couleur jaune observee lors du flash objectif atteint. */
+const OBJECTIVE_FLASH_YELLOW = "#fff040";
+/** Epaisseur du cadre de flash objectif. */
+const OBJECTIVE_FLASH_BORDER_SIZE = 4;
 /** Couleur orange du panneau HUD extraite/reproduite. */
 const HUD_PANEL_ORANGE = "#ef9300";
 /** Position X du panneau galerie. */
@@ -222,6 +228,9 @@ export interface GameplayRenderContext {
 
   /** Indique si le joueur est encore dans l'animation de spawn. */
   readonly isPlayerSpawning: () => boolean;
+
+  /** Phase courante du flash objectif atteint, ou rien si l'effet est inactif. */
+  readonly objectiveReachedFlashPhase: number | null;
 }
 
 /** Renderer gameplay unique, sans mutation runtime. */
@@ -237,6 +246,7 @@ export class GameplayRenderer {
     this.drawPlayfield(renderer, context);
     this.drawEntitiesAndObjects(renderer, context);
     this.drawHud(renderer, context);
+    this.drawObjectiveReachedFlash(renderer, context);
   }
 
   /** Affiche une erreur de chargement asset directement dans la resolution logique. */
@@ -488,6 +498,30 @@ export class GameplayRenderer {
       fontId: HUD_SMALL_COUNTER_FONT_ID,
       color: HUD_SMALL_COUNTER_COLOR
     });
+  }
+
+  /** Dessine le flash de cadre declenche quand l'objectif de diamants est atteint. */
+  private drawObjectiveReachedFlash(renderer: Renderer, context: GameplayRenderContext): void {
+    if (context.objectiveReachedFlashPhase === null || context.objectiveReachedFlashPhase % 2 !== 0) {
+      return;
+    }
+
+    renderer.fillRect(0, 0, renderer.width, OBJECTIVE_FLASH_BORDER_SIZE, OBJECTIVE_FLASH_RED);
+    renderer.fillRect(0, 0, OBJECTIVE_FLASH_BORDER_SIZE, PLAYFIELD_HEIGHT, OBJECTIVE_FLASH_RED);
+    renderer.fillRect(
+      renderer.width - OBJECTIVE_FLASH_BORDER_SIZE,
+      0,
+      OBJECTIVE_FLASH_BORDER_SIZE,
+      PLAYFIELD_HEIGHT,
+      OBJECTIVE_FLASH_YELLOW
+    );
+    renderer.fillRect(
+      0,
+      renderer.height - OBJECTIVE_FLASH_BORDER_SIZE,
+      renderer.width,
+      OBJECTIVE_FLASH_BORDER_SIZE,
+      OBJECTIVE_FLASH_YELLOW
+    );
   }
 }
 
