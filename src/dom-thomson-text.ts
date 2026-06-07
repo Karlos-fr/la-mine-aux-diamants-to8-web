@@ -74,10 +74,9 @@ function appendGlyphPixels(container: HTMLElement, character: string, offsetX: n
 
 /** Normalise les libelles DOM vers le jeu de glyphes Thomson disponible. */
 function normalizeText(text: string, maxLength: number | undefined): string {
-  const upperText = text.toUpperCase();
-  if (maxLength === undefined || upperText.length <= maxLength) {
-    return upperText;
+  if (maxLength === undefined || text.length <= maxLength) {
+    return text;
   }
 
-  return `${upperText.slice(0, Math.max(0, maxLength - 1))}~`;
+  return `${text.slice(0, Math.max(0, maxLength - 1))}~`;
 }

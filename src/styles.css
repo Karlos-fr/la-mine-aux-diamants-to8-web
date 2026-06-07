@@ -294,7 +294,7 @@ button:hover {
 
 /* Texte DOM rendu depuis les glyphes Thomson proceduraux. */
 .to8-dom-text {
-  --to8-pixel-size: 1.5px;
+  --to8-pixel-size: 1.25px;
   position: relative;
   display: inline-block;
   flex: 0 0 auto;
@@ -326,8 +326,8 @@ button:hover {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-width: min(390px, 48vw);
-  min-height: 22px;
+  min-width: min(330px, 46vw);
+  min-height: 19px;
   color: #00ffff;
 }
 
@@ -337,11 +337,11 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 22px;
+  min-height: 19px;
   border-color: #0001fe;
   border-radius: 0;
   overflow: hidden;
-  padding: 4px 22px 4px 6px;
+  padding: 3px 19px 3px 5px;
   background: rgba(0, 0, 0, 0.38);
   color: #00ffff;
   text-align: left;
@@ -358,7 +358,7 @@ button:hover {
 /* Fleche pixelisee du select debug. */
 .debug-level-select-arrow {
   position: absolute;
-  right: 6px;
+  right: 5px;
   top: 50%;
   color: #00ffff;
   pointer-events: none;
@@ -370,7 +370,7 @@ button:hover {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  width: min(460px, calc(100vw - 24px));
+  width: min(390px, calc(100vw - 24px));
   min-width: 100%;
   max-height: min(260px, calc(100vh - 52px));
   overflow-x: hidden;
@@ -389,11 +389,11 @@ button:hover {
 .debug-level-menu-option {
   display: flex;
   width: 100%;
-  min-height: 22px;
+  min-height: 19px;
   border: 0;
   border-bottom: 1px solid rgba(0, 1, 254, 0.65);
   border-radius: 0;
-  padding: 4px 6px;
+  padding: 3px 5px;
   color: #00ffff;
   background: rgba(0, 0, 0, 0.38);
   text-align: left;
@@ -411,10 +411,10 @@ button:hover {
 .debug-attract-button,
 .debug-ghost-button,
 .debug-editor-button {
-  min-height: 22px;
+  min-height: 19px;
   border-color: #0001fe;
   border-radius: 0;
-  padding: 4px 7px;
+  padding: 3px 6px;
   color: #00ffff;
   background: rgba(0, 0, 0, 0.38);
   text-shadow: 1px 1px 0 #0001fe;
