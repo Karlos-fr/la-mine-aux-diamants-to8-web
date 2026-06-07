@@ -13,7 +13,7 @@ import { debugOptions } from "../debug-options";
 import { createGameLevelState, createGameStateFromLevelDefinition } from "../game/game-state-factory";
 import { buildLevelDefinition, type ModernLevelJson } from "../game/level-loader";
 import { LevelRuntimeGrid } from "../game/runtime-grid";
-import { GameplayRuntime } from "../game/gameplay-runtime";
+import { GameplayRuntime, type GameplayRuntimeMonsterKind } from "../game/gameplay-runtime";
 import { RuntimeMutations } from "../game/runtime-mutations";
 import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
@@ -326,8 +326,10 @@ export class GameplayScene implements Scene {
   private spawnElapsed = 0;
   /** Indique si la tuile temporaire de spawn a ete nettoyee. */
   private spawnTileCleared = false;
-  /** Accumulateur du pas runtime monstre. */
-  private monsterMoveElapsed = 0;
+  /** Accumulateur du pas runtime des monstres standards `0x02`. */
+  private standardMonsterMoveElapsed = 0;
+  /** Accumulateur du pas runtime des creatures speciales `0x17`. */
+  private specialCreatureMoveElapsed = 0;
   /** Accumulateur de scan des objets physiques. */
   private fallingObjectScanElapsed = 0;
   /** Accumulateur du decrement de temps HUD. */
@@ -422,8 +424,8 @@ export class GameplayScene implements Scene {
       advanceCameraMove: (dt) => this.advanceCameraMove(dt),
       syncPlayerPixelPosition: () => this.syncPlayerPixelPosition(),
       advanceFallingObjects: (dt) => this.advanceFallingObjects(dt),
-      advanceMonsterRuntime: (dt) => this.advanceMonsterRuntime(dt),
-      advanceMonsterMoves: (dt) => this.advanceMonsterMoves(dt),
+      advanceMonsterRuntime: (dt, kind) => this.advanceMonsterRuntime(dt, kind),
+      advanceMonsterMoves: (dt, kind) => this.advanceMonsterMoves(dt, kind),
       syncMonsterEntitiesFromRuntimeState: () => this.syncMonsterEntitiesFromRuntimeState(),
       consumeRuntimeEvents: () => this.consumeRuntimeEvents(),
       advanceRenderAnimations: (dt) => this.advanceRenderAnimations(dt)
@@ -1681,22 +1683,39 @@ export class GameplayScene implements Scene {
     this.context?.setScene(this.recreateLevelScene(this.levelNumber));
   }
 
-  /** Avance le timing de decision des monstres et demande de nouveaux mouvements quand necessaire. */
-  private advanceMonsterRuntime(dt: number): void {
+  /** Avance le timing de decision d'une famille de monstres et demande de nouveaux mouvements quand necessaire. */
+  private advanceMonsterRuntime(dt: number, kind: GameplayRuntimeMonsterKind): void {
     if (this.state.levelComplete) {
       return;
     }
 
-    this.monsterMoveElapsed += dt;
-    if (this.monsterMoveElapsed < MONSTER_MOVE_INTERVAL) {
+    const elapsed = kind === "specialCreature"
+      ? this.specialCreatureMoveElapsed + dt
+      : this.standardMonsterMoveElapsed + dt;
+    if (elapsed < MONSTER_MOVE_INTERVAL) {
+      this.setMonsterMoveElapsed(kind, elapsed);
       return;
     }
 
-    this.monsterMoveElapsed %= MONSTER_MOVE_INTERVAL;
+    this.setMonsterMoveElapsed(kind, elapsed % MONSTER_MOVE_INTERVAL);
 
     for (const monster of this.state.monsters) {
+      if (monster.kind !== kind) {
+        continue;
+      }
+
       this.advanceSingleMonsterRuntime(monster);
     }
+  }
+
+  /** Met a jour l'accumulateur de cadence de la famille de monstres demandee. */
+  private setMonsterMoveElapsed(kind: GameplayRuntimeMonsterKind, elapsed: number): void {
+    if (kind === "specialCreature") {
+      this.specialCreatureMoveElapsed = elapsed;
+      return;
+    }
+
+    this.standardMonsterMoveElapsed = elapsed;
   }
 
   /** Avance un monstre selon les regles de mouvement de patrouille originales. */
@@ -1714,13 +1733,17 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Avance les mouvements fluides actifs des monstres et valide les pas termines. */
-  private advanceMonsterMoves(dt: number): void {
+  /** Avance les mouvements fluides actifs d'une famille de monstres et valide les pas termines. */
+  private advanceMonsterMoves(dt: number, kind: GameplayRuntimeMonsterKind): void {
     if (this.state.levelComplete) {
       return;
     }
 
     for (const monster of this.state.monsters) {
+      if (monster.kind !== kind) {
+        continue;
+      }
+
       if (!monster.movement) {
         continue;
       }

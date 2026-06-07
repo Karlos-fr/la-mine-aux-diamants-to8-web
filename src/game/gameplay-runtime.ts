@@ -1,7 +1,7 @@
 /**
  * Role: Orchestre l'ordre d'update du gameplay moderne.
  * Scope: Enchaine les phases runtime sans porter directement les regles gameplay ni le rendu.
- * ISO: L'ordre normal conserve la sequence moderne; l'ordre attract rapproche `$CA04/$BC84/$CB07` avant `$CDF9`.
+ * ISO: Reproduit l'ordre macro de `KIT.BIN:$BF13`: `$CA04`, `$BC84`, `$CB07`, input, HUD et animations.
  * Notes: Les hooks restent fournis par `GameplayScene` pour limiter cette phase a une extraction d'orchestration.
  */
 
@@ -9,6 +9,9 @@ import type { InputState } from "../engine/input";
 
 /** Ordre d'orchestration runtime applique a la scene courante. */
 export type GameplayRuntimeMode = "normal" | "attract";
+
+/** Famille de monstre appelee separement pour respecter `$CA04` puis `$BC84`. */
+export type GameplayRuntimeMonsterKind = "monster" | "specialCreature";
 
 /** Hooks imperatifs executes par le runtime dans un ordre stable. */
 export interface GameplayRuntimeHooks {
@@ -39,11 +42,11 @@ export interface GameplayRuntimeHooks {
   /** Avance les objets physiques comme rochers et diamants. */
   advanceFallingObjects(dt: number): void;
 
-  /** Avance les decisions runtime des monstres. */
-  advanceMonsterRuntime(dt: number): void;
+  /** Avance les decisions runtime d'une famille de monstres. */
+  advanceMonsterRuntime(dt: number, kind: GameplayRuntimeMonsterKind): void;
 
-  /** Avance les mouvements interpoles des monstres. */
-  advanceMonsterMoves(dt: number): void;
+  /** Avance les mouvements interpoles d'une famille de monstres. */
+  advanceMonsterMoves(dt: number, kind: GameplayRuntimeMonsterKind): void;
 
   /** Synchronise les entites visuelles des monstres. */
   syncMonsterEntitiesFromRuntimeState(): void;
@@ -59,13 +62,10 @@ export interface GameplayRuntimeHooks {
 export class GameplayRuntime {
   /** Hooks fournis par la scene gameplay. */
   private readonly hooks: GameplayRuntimeHooks;
-  /** Mode d'ordonnancement applique par le runtime. */
-  private readonly mode: GameplayRuntimeMode;
 
   /** Prepare le runtime avec les hooks de scene. */
-  constructor(hooks: GameplayRuntimeHooks, mode: GameplayRuntimeMode = "normal") {
+  constructor(hooks: GameplayRuntimeHooks, _mode: GameplayRuntimeMode = "normal") {
     this.hooks = hooks;
-    this.mode = mode;
   }
 
   /** Execute un tick gameplay complet dans l'ordre documente et conserve. */
@@ -75,39 +75,28 @@ export class GameplayRuntime {
     const playerSpawning = this.hooks.isPlayerSpawning();
     this.hooks.advanceSpawnTimer(dt);
     this.hooks.clearSpawnBlinkTileAfterSpawn();
-    this.hooks.advanceHudCounters(dt, playerSpawning);
-
-    if (this.mode === "attract") {
-      this.updateAttractOrder(dt, input, playerSpawning);
-      return;
-    }
-
-    this.hooks.advancePlayerRuntime(dt, input, playerSpawning);
-    this.hooks.advanceCameraMove(dt);
-    this.hooks.syncPlayerPixelPosition();
-
-    this.hooks.advanceFallingObjects(dt);
-    this.hooks.advanceMonsterRuntime(dt);
-    this.hooks.advanceMonsterMoves(dt);
-    this.hooks.syncMonsterEntitiesFromRuntimeState();
-
-    this.hooks.consumeRuntimeEvents();
-    this.hooks.advanceRenderAnimations(dt);
+    this.updateIsoOrder(dt, input, playerSpawning);
   }
 
-  /** Execute l'ordre dedie attract: monde et physique avant lecture du script joueur. */
-  private updateAttractOrder(dt: number, input: InputState, playerSpawning: boolean): void {
-    this.hooks.advanceMonsterRuntime(dt);
-    this.hooks.advanceMonsterMoves(dt);
+  /** Execute l'ordre macro prouve dans `KIT.BIN:$BF13`. */
+  private updateIsoOrder(dt: number, input: InputState, playerSpawning: boolean): void {
+    this.hooks.advanceMonsterRuntime(dt, "monster");
+    this.hooks.advanceMonsterMoves(dt, "monster");
+    this.hooks.syncMonsterEntitiesFromRuntimeState();
+
+    this.hooks.advanceMonsterRuntime(dt, "specialCreature");
+    this.hooks.advanceMonsterMoves(dt, "specialCreature");
     this.hooks.syncMonsterEntitiesFromRuntimeState();
 
     this.hooks.advanceFallingObjects(dt);
-
     this.hooks.advancePlayerRuntime(dt, input, playerSpawning);
     this.hooks.advanceCameraMove(dt);
     this.hooks.syncPlayerPixelPosition();
 
+    this.hooks.syncMonsterEntitiesFromRuntimeState();
+
     this.hooks.consumeRuntimeEvents();
+    this.hooks.advanceHudCounters(dt, playerSpawning);
     this.hooks.advanceRenderAnimations(dt);
   }
 }
