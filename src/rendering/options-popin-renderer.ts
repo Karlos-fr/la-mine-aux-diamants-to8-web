@@ -7,6 +7,7 @@
 import { THOMSON_8_BIT_FONT } from "../assets/generated/thomson-8-bit-font";
 import { TO8_PALETTE } from "../assets/palette";
 import { APP_VERSION } from "../app-version";
+import { getDisplayModeLabel, getDisplayZoomLabel } from "../display-options";
 import type { Renderer } from "../engine/renderer";
 
 /** Categories prevues pour la future configuration. */
@@ -69,6 +70,8 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
   drawThomsonText(renderer, selectedCategory.toUpperCase(), contentX + 8, contentY + 10, TO8_PALETTE.white, TEXT_SCALE);
   if (selectedCategory === "A propos") {
     renderAboutContent(renderer, contentX + 8, contentY + 30);
+  } else if (selectedCategory === "Affichage") {
+    renderDisplayContent(renderer, contentX + 8, contentY + 30);
   } else {
     drawThomsonText(renderer, "OPTIONS A VENIR", contentX + 8, contentY + 34, TO8_PALETTE.gray, TEXT_SCALE);
     drawThomsonText(renderer, options.contextLabel.toUpperCase(), contentX + 8, contentY + 58, TO8_PALETTE.cyan, TEXT_SCALE);
@@ -77,6 +80,22 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
   renderer.fillRect(panelX + 8, panelY + PANEL_HEIGHT - 24, PANEL_WIDTH - 16, 1, TO8_PALETTE.blue);
   drawThomsonText(renderer, "ECHAP: RETOUR", panelX + 14, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
   drawThomsonText(renderer, "HAUT/BAS: CATEGORIE", panelX + 124, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
+}
+
+/** Rend les options d'affichage deja actives. */
+function renderDisplayContent(renderer: Renderer, x: number, y: number): void {
+  const lines = [
+    { text: "MODE", color: TO8_PALETTE.gray },
+    { text: getDisplayModeLabel(), color: TO8_PALETTE.cyan },
+    { text: "ZOOM", color: TO8_PALETTE.gray },
+    { text: getDisplayZoomLabel(), color: TO8_PALETTE.lightGreen },
+    { text: "ENTREE: MODE", color: TO8_PALETTE.white },
+    { text: "< >: ZOOM", color: TO8_PALETTE.white }
+  ] as const;
+
+  lines.forEach((line, index) => {
+    drawThomsonText(renderer, line.text, x, y + index * 12, line.color, TEXT_SCALE);
+  });
 }
 
 /** Rend les credits et informations de version. */

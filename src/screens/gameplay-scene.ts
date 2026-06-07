@@ -53,11 +53,20 @@ import {
   getPlayerSpawnBlinkTileId as getPlayerSpawnBlinkTileIdSystem,
   isPlayerSpawning as isPlayerSpawningSystem
 } from "../game/systems/spawn-system";
-import type { TileFrame } from "../engine/render-types";
+import type { Size2D, TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
+import {
+  cycleDisplayZoom,
+  getGameplayRenderSize,
+  toggleDisplayMode
+} from "../display-options";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
-import { OPTIONS_MENU_CATEGORY_COUNT, renderOptionsPopin } from "../rendering/options-popin-renderer";
+import {
+  OPTIONS_MENU_CATEGORIES,
+  OPTIONS_MENU_CATEGORY_COUNT,
+  renderOptionsPopin
+} from "../rendering/options-popin-renderer";
 import { TileFrameCache } from "../rendering/tile-frame-cache";
 
 /** Horloge generique pour les animations cycliques de rendu. */
@@ -75,9 +84,9 @@ interface ViewportState {
   /** Ligne de depart du viewport. */
   y: number;
   /** Nombre de colonnes visibles. */
-  readonly columns: number;
+  columns: number;
   /** Nombre de lignes visibles. */
-  readonly rows: number;
+  rows: number;
 }
 
 /** Mouvement fluide entre deux cellules de grille. */
@@ -106,6 +115,8 @@ const RENDER_TILE_SIZE = 16;
 const VIEWPORT_COLUMNS = 20;
 /** Nombre de lignes visibles dans la fenetre niveau. */
 const VIEWPORT_ROWS = 10;
+/** Hauteur logique du HUD en bas de l'ecran gameplay. */
+const GAMEPLAY_HUD_HEIGHT = 40;
 /** Position initiale horizontale du viewport. */
 const INITIAL_VIEWPORT_X = 0;
 /** Position initiale verticale du viewport. */
@@ -451,6 +462,8 @@ export class GameplayScene implements Scene {
 
   /** Orchestre un tick gameplay complet sans effectuer de rendu. */
   update(dt: number, input: InputState): void {
+    this.updateViewportSize();
+
     if (this.updateOptionsPopin(input)) {
       return;
     }
@@ -488,6 +501,18 @@ export class GameplayScene implements Scene {
     }
     if (input.justPressed.down) {
       this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
+    }
+    if (isDisplayOptionsCategory(this.selectedOptionsCategoryIndex)) {
+      if (input.justPressed.left) {
+        cycleDisplayZoom(-1);
+      }
+      if (input.justPressed.right) {
+        cycleDisplayZoom(1);
+      }
+      if (input.justPressed.confirm || input.justPressed.action) {
+        toggleDisplayMode();
+      }
+      this.updateViewportSize();
     }
 
     return true;
@@ -607,6 +632,8 @@ export class GameplayScene implements Scene {
 
   /** Rend la scene gameplay dans l'ordre ISO: grille, objets/entites, HUD. */
   render(renderer: Renderer): void {
+    this.updateViewportSize();
+
     this.gameplayRenderer.render(renderer, {
       state: this.state,
       tileAtlasLoaded: this.runtimeAssets.tileAtlasLoaded,
@@ -656,6 +683,27 @@ export class GameplayScene implements Scene {
         contextLabel: "Jeu en pause"
       });
     }
+  }
+
+  /** Retourne la resolution logique active du gameplay. */
+  getRenderSize(): Size2D {
+    return getGameplayRenderSize();
+  }
+
+  /** Ajuste le nombre de cases visibles selon la resolution logique courante. */
+  private updateViewportSize(): void {
+    const renderSize = getGameplayRenderSize();
+    const columns = Math.max(1, Math.floor(renderSize.width / this.tileSize));
+    const rows = Math.max(1, Math.floor((renderSize.height - GAMEPLAY_HUD_HEIGHT) / this.tileSize));
+
+    if (this.viewport.columns !== columns || this.viewport.rows !== rows) {
+      this.cameraMove = null;
+    }
+
+    this.viewport.columns = columns;
+    this.viewport.rows = rows;
+    this.viewport.x = clamp(this.viewport.x, CAMERA_MIN_X, Math.max(CAMERA_MIN_X, this.levelWidth - columns));
+    this.viewport.y = clamp(this.viewport.y, CAMERA_MIN_Y, Math.max(CAMERA_MIN_Y, this.levelHeight - rows));
   }
 
   /** Trouve la premiere entite visuelle active occupant la cellule de grille donnee. */
@@ -2118,6 +2166,11 @@ function isAdjacentOrSameCell(firstX: number, firstY: number, secondX: number, s
 /** Contraint l'index de categorie d'options avec boucle. */
 function wrapOptionCategory(index: number): number {
   return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
+}
+
+/** Indique si la categorie active pilote les options d'affichage. */
+function isDisplayOptionsCategory(index: number): boolean {
+  return OPTIONS_MENU_CATEGORIES[index] === "Affichage";
 }
 
 /** Incremente un compteur decimal avec retour a zero selon le nombre de chiffres configure. */

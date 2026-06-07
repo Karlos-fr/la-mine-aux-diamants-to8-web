@@ -13,8 +13,8 @@ import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible }
 import { drawHudSmallCounter, drawHudTextFields } from "./hud-renderer";
 import { getGridCellScreenPosition } from "./level-renderer";
 
-/** Hauteur en pixels de la zone de jeu au-dessus du HUD. */
-const PLAYFIELD_HEIGHT = 160;
+/** Hauteur en pixels du HUD gameplay. */
+const HUD_HEIGHT = 40;
 /** Couleur rouge observee lors du flash objectif atteint. */
 const OBJECTIVE_FLASH_RED = "#ff4040";
 /** Couleur jaune observee lors du flash objectif atteint. */
@@ -23,20 +23,18 @@ const OBJECTIVE_FLASH_YELLOW = "#fff040";
 const OBJECTIVE_FLASH_BORDER_SIZE = 4;
 /** Couleur orange du panneau HUD extraite/reproduite. */
 const HUD_PANEL_ORANGE = "#ef9300";
-/** Position X du panneau galerie. */
-const HUD_RIGHT_PANEL_X = 256;
-/** Position Y des panneaux HUD. */
-const HUD_RIGHT_PANEL_Y = PLAYFIELD_HEIGHT;
-/** Position Y des compteurs du panneau galerie. */
-const HUD_RIGHT_COUNTER_Y = HUD_RIGHT_PANEL_Y + 20;
-/** Position X du compteur galerie. */
-const HUD_GALLERY_COUNTER_X = HUD_RIGHT_PANEL_X;
-/** Position X du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_X = HUD_RIGHT_PANEL_X + 16;
-/** Position Y du diamant anime du panneau galerie. */
-const HUD_GALLERY_DIAMOND_Y = HUD_RIGHT_PANEL_Y + 16;
-/** Position X du compteur diamants restants. */
-const HUD_DIAMOND_COUNTER_X = HUD_RIGHT_PANEL_X + 40;
+/** Largeur du panneau galerie droit. */
+const HUD_RIGHT_PANEL_WIDTH = 64;
+/** Decalage Y des compteurs du panneau galerie. */
+const HUD_RIGHT_COUNTER_Y_OFFSET = 20;
+/** Decalage X du compteur galerie. */
+const HUD_GALLERY_COUNTER_X_OFFSET = 0;
+/** Decalage X du diamant anime du panneau galerie. */
+const HUD_GALLERY_DIAMOND_X_OFFSET = 16;
+/** Decalage Y du diamant anime du panneau galerie. */
+const HUD_GALLERY_DIAMOND_Y_OFFSET = 16;
+/** Decalage X du compteur diamants restants. */
+const HUD_DIAMOND_COUNTER_X_OFFSET = 40;
 /** Font des petits compteurs de panneau. */
 const HUD_SMALL_COUNTER_FONT_ID = "hud-digits-7";
 /** Couleur bleue des petits compteurs. */
@@ -55,16 +53,16 @@ const HUD_LABEL_COLOR = "#f5f5f5";
 const HUD_VALUE_COLOR = "#00d8d8";
 /** Position X des libelles HUD principaux. */
 const HUD_LABELS_X = 72;
-/** Position Y des libelles HUD principaux. */
-const HUD_LABELS_Y = 160;
+/** Decalage Y des libelles HUD principaux dans le HUD. */
+const HUD_LABELS_Y_OFFSET = 0;
 /** Position X du score. */
 const HUD_SCORE_X = 72;
 /** Position X du temps. */
 const HUD_TIME_X = 144;
 /** Position X du record. */
 const HUD_RECORD_X = 192;
-/** Position Y des valeurs HUD principales. */
-const HUD_VALUES_Y = 177;
+/** Decalage Y des valeurs HUD principales dans le HUD. */
+const HUD_VALUES_Y_OFFSET = 17;
 /** Largeur du diamant anime du panneau galerie. */
 const HUD_GALLERY_DIAMOND_WIDTH = 24;
 /** Hauteur du diamant anime du panneau galerie. */
@@ -267,7 +265,7 @@ export class GameplayRenderer {
       return;
     }
 
-    renderer.fillRect(0, 0, renderer.width, PLAYFIELD_HEIGHT, TO8_PALETTE.black);
+    renderer.fillRect(0, 0, renderer.width, getPlayfieldHeight(renderer), TO8_PALETTE.black);
 
     const baseLevelX = Math.floor(context.viewport.x);
     const baseLevelY = Math.floor(context.viewport.y);
@@ -434,14 +432,16 @@ export class GameplayRenderer {
   /** Dessine panneaux, compteurs, libelles et diamant anime du HUD. */
   private drawHud(renderer: Renderer, context: GameplayRenderContext): void {
     const { hud } = context.state;
-    renderer.fillRect(0, PLAYFIELD_HEIGHT, 320, 40, TO8_PALETTE.black);
+    const hudY = getPlayfieldHeight(renderer);
+    const rightPanelX = Math.max(0, renderer.width - HUD_RIGHT_PANEL_WIDTH);
+    renderer.fillRect(0, hudY, renderer.width, HUD_HEIGHT, TO8_PALETTE.black);
 
     if (context.leftHudPanelImage) {
-      renderer.drawImage(context.leftHudPanelImage, 0, PLAYFIELD_HEIGHT);
+      renderer.drawImage(context.leftHudPanelImage, 0, hudY);
     }
     if (context.rightHudPanelImage) {
-      renderer.drawImage(context.rightHudPanelImage, HUD_RIGHT_PANEL_X, HUD_RIGHT_PANEL_Y);
-      this.drawDynamicGalleryPanelContent(renderer, context);
+      renderer.drawImage(context.rightHudPanelImage, rightPanelX, hudY);
+      this.drawDynamicGalleryPanelContent(renderer, context, rightPanelX, hudY);
     }
 
     drawHudTextFields(renderer, hud, {
@@ -450,40 +450,50 @@ export class GameplayRenderer {
       labelColor: HUD_LABEL_COLOR,
       valueColor: HUD_VALUE_COLOR,
       labelsX: HUD_LABELS_X,
-      labelsY: HUD_LABELS_Y,
+      labelsY: hudY + HUD_LABELS_Y_OFFSET,
       scoreX: HUD_SCORE_X,
       timeX: HUD_TIME_X,
       recordX: HUD_RECORD_X,
-      valuesY: HUD_VALUES_Y
+      valuesY: hudY + HUD_VALUES_Y_OFFSET
     });
   }
 
   /** Dessine les compteurs live du panneau galerie droit. */
-  private drawDynamicGalleryPanelContent(renderer: Renderer, context: GameplayRenderContext): void {
+  private drawDynamicGalleryPanelContent(
+    renderer: Renderer,
+    context: GameplayRenderContext,
+    panelX: number,
+    panelY: number
+  ): void {
+    const galleryCounterX = panelX + HUD_GALLERY_COUNTER_X_OFFSET;
+    const diamondCounterX = panelX + HUD_DIAMOND_COUNTER_X_OFFSET;
+    const counterY = panelY + HUD_RIGHT_COUNTER_Y_OFFSET;
     renderer.fillRect(
-      HUD_GALLERY_COUNTER_X,
-      HUD_RIGHT_COUNTER_Y,
+      galleryCounterX,
+      counterY,
       HUD_SMALL_COUNTER_WIDTH,
       HUD_SMALL_COUNTER_HEIGHT,
       HUD_PANEL_ORANGE
     );
     renderer.fillRect(
-      HUD_DIAMOND_COUNTER_X,
-      HUD_RIGHT_COUNTER_Y,
+      diamondCounterX,
+      counterY,
       HUD_SMALL_COUNTER_WIDTH,
       HUD_SMALL_COUNTER_HEIGHT,
       HUD_PANEL_ORANGE
     );
-    this.drawHudGalleryDiamond(renderer, context.hudDiamondColorOffset);
-    this.drawHudDigitValue(renderer, context.state.hud.gallery, HUD_GALLERY_COUNTER_X, HUD_RIGHT_COUNTER_Y);
-    this.drawHudDigitValue(renderer, context.state.hud.diamonds, HUD_DIAMOND_COUNTER_X, HUD_RIGHT_COUNTER_Y);
+    this.drawHudGalleryDiamond(renderer, context.hudDiamondColorOffset, panelX, panelY);
+    this.drawHudDigitValue(renderer, context.state.hud.gallery, galleryCounterX, counterY);
+    this.drawHudDigitValue(renderer, context.state.hud.diamonds, diamondCounterX, counterY);
   }
 
   /** Dessine l'animation ASM du diamant de panneau galerie. */
-  private drawHudGalleryDiamond(renderer: Renderer, colorOffset: number): void {
+  private drawHudGalleryDiamond(renderer: Renderer, colorOffset: number, panelX: number, panelY: number): void {
+    const diamondX = panelX + HUD_GALLERY_DIAMOND_X_OFFSET;
+    const diamondY = panelY + HUD_GALLERY_DIAMOND_Y_OFFSET;
     renderer.fillRect(
-      HUD_GALLERY_DIAMOND_X,
-      HUD_GALLERY_DIAMOND_Y,
+      diamondX,
+      diamondY,
       HUD_GALLERY_DIAMOND_WIDTH,
       HUD_GALLERY_DIAMOND_HEIGHT,
       HUD_PANEL_ORANGE
@@ -502,8 +512,8 @@ export class GameplayRenderer {
             const shape = (shapeByte & (0x80 >> bit)) !== 0;
             const color = to8ColorFromAttribute(colorByte, shape);
             renderer.fillRect(
-              HUD_GALLERY_DIAMOND_X + blockColumn * 8 + bit,
-              HUD_GALLERY_DIAMOND_Y + globalRow,
+              diamondX + blockColumn * 8 + bit,
+              diamondY + globalRow,
               1,
               1,
               color
@@ -529,12 +539,12 @@ export class GameplayRenderer {
     }
 
     renderer.fillRect(0, 0, renderer.width, OBJECTIVE_FLASH_BORDER_SIZE, OBJECTIVE_FLASH_RED);
-    renderer.fillRect(0, 0, OBJECTIVE_FLASH_BORDER_SIZE, PLAYFIELD_HEIGHT, OBJECTIVE_FLASH_RED);
+    renderer.fillRect(0, 0, OBJECTIVE_FLASH_BORDER_SIZE, getPlayfieldHeight(renderer), OBJECTIVE_FLASH_RED);
     renderer.fillRect(
       renderer.width - OBJECTIVE_FLASH_BORDER_SIZE,
       0,
       OBJECTIVE_FLASH_BORDER_SIZE,
-      PLAYFIELD_HEIGHT,
+      getPlayfieldHeight(renderer),
       OBJECTIVE_FLASH_YELLOW
     );
     renderer.fillRect(
@@ -545,6 +555,11 @@ export class GameplayRenderer {
       OBJECTIVE_FLASH_YELLOW
     );
   }
+}
+
+/** Calcule la zone de jeu disponible au-dessus du HUD. */
+function getPlayfieldHeight(renderer: Renderer): number {
+  return Math.max(0, renderer.height - HUD_HEIGHT);
 }
 
 /** Convertit un attribut TO8 en couleur CSS selon le plan forme/couleur. */

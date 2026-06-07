@@ -2,6 +2,7 @@ import "./styles.css";
 
 import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
+import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
 import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene } from "./screens/scene-factory";
@@ -27,6 +28,9 @@ const mode = new URLSearchParams(window.location.search).get("mode");
 if (mode === "gallery") {
   mountDevAnimationGallery(root);
 } else {
+  applyDisplayCanvasLayout();
+  window.addEventListener("resize", () => applyDisplayCanvasLayout());
+
   /** Canvas existant eventuel, utile quand le DOM est prehydrate ou modifie en dev. */
   const existingCanvas = root.querySelector<HTMLCanvasElement>("#game-screen");
 

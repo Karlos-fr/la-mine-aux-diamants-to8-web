@@ -12,8 +12,13 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { gameAudio } from "../audio/audio-engine";
+import { cycleDisplayZoom, toggleDisplayMode } from "../display-options";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
-import { OPTIONS_MENU_CATEGORY_COUNT, renderOptionsPopin } from "../rendering/options-popin-renderer";
+import {
+  OPTIONS_MENU_CATEGORIES,
+  OPTIONS_MENU_CATEGORY_COUNT,
+  renderOptionsPopin
+} from "../rendering/options-popin-renderer";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
 
@@ -259,6 +264,17 @@ export class StartupTitleScene implements Scene {
     if (input.justPressed.down) {
       this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
     }
+    if (isDisplayOptionsCategory(this.selectedOptionsCategoryIndex)) {
+      if (input.justPressed.left) {
+        cycleDisplayZoom(-1);
+      }
+      if (input.justPressed.right) {
+        cycleDisplayZoom(1);
+      }
+      if (input.justPressed.confirm || input.justPressed.action) {
+        toggleDisplayMode();
+      }
+    }
     return true;
   }
 
@@ -301,4 +317,9 @@ function hasAnyJustPressedInput(input: InputState): boolean {
 /** Contraint l'index de categorie avec boucle. */
 function wrapOptionCategory(index: number): number {
   return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
+}
+
+/** Indique si la categorie active pilote les options d'affichage. */
+function isDisplayOptionsCategory(index: number): boolean {
+  return OPTIONS_MENU_CATEGORIES[index] === "Affichage";
 }
