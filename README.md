@@ -1,53 +1,64 @@
-# La Mine aux Diamants TO8 - Portage moderne TypeScript
+# La Mine aux Diamants TO8 - Portage TypeScript web
 
-Ce dépôt contient un portage web moderne de **La Mine aux Diamants**, jeu Thomson TO8 publié par Infogrames en 1986.
+Portage moderne en TypeScript de **La Mine aux Diamants**, jeu Thomson TO8 publie par Infogrames en 1986.
 
-Le projet est parti d'un portage automatique généré avec `TO8 Porting Kit v2`, puis a été progressivement reconstruit en TypeScript moderne avec un objectif clair : conserver un rendu et un comportement aussi proches que possible de l'original TO8, tout en obtenant une architecture lisible et maintenable.
+Le projet vise un portage jouable dans un navigateur web, avec un rendu proche du TO8 original, tout en s'appuyant sur une architecture moderne, maintenable et outillee.
 
-## Objectif du projet
+## Statut
 
-Le but n'est pas de créer un remake librement réinterprété, ni un moteur générique multi-jeux.
+Le jeu est deja jouable dans le navigateur.
 
-L'objectif est plutôt :
+Fonctionnalites principales :
 
-- reproduire le rendu TO8 de façon fidèle;
-- conserver les règles de gameplay observées dans le code original;
-- utiliser les assets extraits ou reconstruits depuis les sources ASM/BASIC quand c'est possible;
-- isoler progressivement les concepts modernes : scènes, runtime, rendu, grille, entités, assets;
-- garder le code suffisamment simple pour continuer le portage sans sur-architecture.
+- ecran Infogrames et ecran titre;
+- mode attract / demo automatique avec niveau cache decode;
+- moteur gameplay case par case;
+- joueur, rochers, diamants, monstres, creature speciale et bloc transformateur;
+- gravite, poussees, explosions, mort/reset, sortie et conversion du temps restant en score;
+- HUD TO8 avec score, temps, record, galerie et objectif diamants;
+- options accessibles avec `Echap`;
+- option de mouvements fluides activable/desactivable;
+- options d'affichage: zoom, etirage navigateur sans deformation, densite de cellules;
+- vitrine des niveaux avec apercus dynamiques;
+- editeur de niveaux JSON integre;
+- barre debug avec selection de niveau, attract mode, vitrine, editeur et mode ghost.
 
-Le projet reste expérimental et en cours de portage.
+Limites connues :
 
-## Fonctionnalités actuellement portées
+- le cadencement n'est pas encore parfaitement cale sur le TO8 original;
+- le son reste une approximation WebAudio moderne;
+- certains comportements restent documentes comme hypotheses tant que l'ASM n'est pas totalement tranche;
+- la progression/deblocage des niveaux est preparee mais pas encore branchee au gameplay final.
 
-- Écran Infogrames initial.
-- Écran titre principal.
-- Chargement de niveaux modernes en JSON.
-- Rendu partiel du niveau avec caméra.
-- Déplacement fluide du joueur case par case.
-- Gestion de la grille runtime.
-- Récolte de l'herbe et des diamants.
-- HUD avec compteurs `Points`, `Temps`, `Record` et panneau galerie.
-- Animation des diamants.
-- Animation et déplacement des monstres.
-- Chute des rochers et diamants selon les règles déjà analysées.
-- Viewer développeur pour les sprites et animations extraites.
+## Apercu
+
+### Ecran titre
+
+![Ecran titre TO8](docs/screenshots/screen-title.png)
+
+### Niveau en jeu
+
+![Niveau en jeu](docs/screenshots/level-01.png)
+
+### Editeur de niveaux
+
+![Editeur de niveaux](docs/screenshots/editor.png)
 
 ## Lancer le projet
 
-Installer les dépendances :
+Installer les dependances :
 
 ```bash
 npm install
 ```
 
-Démarrer le serveur de développement :
+Demarrer le serveur de developpement :
 
 ```bash
 npm run dev
 ```
 
-Puis ouvrir l'application dans le navigateur, généralement :
+Puis ouvrir :
 
 ```text
 http://localhost:5173/
@@ -59,125 +70,129 @@ Construire la version de production :
 npm run build
 ```
 
-Prévisualiser le build :
+Previsualiser le build :
 
 ```bash
 npm run preview
 ```
 
-## Contrôles
+## Controles
 
-- `Espace` : avancer dans les écrans de démarrage.
-- Flèches directionnelles : déplacer le personnage.
-- `Ctrl` ou `Espace` : action, selon le contexte.
+- `Espace` : avancer depuis les ecrans de demarrage.
+- Fleches directionnelles : deplacer le personnage.
+- `Echap` : ouvrir la pop-in d'options en jeu.
 
-Le déplacement du joueur est fluide visuellement, mais reste logique : une pression déplace le personnage d'une case entière.
+La logique gameplay reste discrete en cellules de grille. La fluidification ne modifie que le rendu visuel des mouvements.
 
-## Viewer développeur
+## Modes et outils
 
-Un viewer d'animations est disponible avec :
+### Jeu principal
+
+```text
+http://localhost:5173/
+```
+
+### Vitrine des niveaux
+
+Accessible depuis la barre debug avec le bouton `Niveaux`.
+
+Elle affiche :
+
+- tous les niveaux disponibles;
+- un apercu global rendu dynamiquement depuis les JSON;
+- nom, auteur, date, temps, objectif diamants;
+- fiche detaillee avec score, record, meilleur temps, progression et condition de deblocage;
+- bouton `Jouer`.
+
+### Editeur de niveaux
+
+Accessible depuis la barre debug avec le bouton `Editeur`.
+
+L'editeur permet notamment :
+
+- creer/importer/exporter des niveaux JSON;
+- peindre les tuiles avec les assets runtime;
+- placer spawn joueur et sortie;
+- tester temporairement le niveau;
+- zoomer/dezoomer et deplacer la vue;
+- afficher une vraie grille;
+- conserver une bordure non supprimable autour du niveau;
+- redimensionner un niveau en deplacant la bordure et en supprimant les objets hors limites.
+
+### Viewer d'animations
 
 ```text
 http://localhost:5173/?mode=gallery
 ```
 
-Il permet d'inspecter les atlas extraits et les animations déclarées dans les metadata :
-
-- joueur;
-- diamants;
-- rochers;
-- explosions;
-- objets;
-- monstres.
-
-Ce viewer sert de support pour vérifier les assets sans mélanger ce code avec le runtime du jeu.
+Permet d'inspecter les atlas et animations extraits sans passer par le gameplay.
 
 ## Architecture
 
-Le portage moderne est organisé autour de quelques blocs simples.
+Le code principal est dans `src/`.
 
 ```text
 src/
-  assets/
-    generated/          Metadata TypeScript générées depuis les extractions.
-    levels/             Niveaux modernes au format JSON.
-    runtime-assets.ts   Catalogue central des URLs d'assets.
-    runtime-asset-loader.ts
-
-  engine/
-    game-app.ts         Assemblage canvas, input, scènes et boucle.
-    game-loop.ts        Boucle de jeu à pas fixe.
-    input.ts            Abstraction clavier.
-    renderer.ts         Renderer Canvas 2D pixel-perfect.
-    scene.ts            Contrats et routeur de scènes.
-
-  game/
-    gameplay-runtime.ts Orchestration de l'ordre d'update gameplay.
-    runtime-grid.ts     Grille runtime mutable.
-    runtime-mutations.ts
-    runtime-tiles.ts    Tile ids runtime prouvés.
-    level-loader.ts     Chargement et validation des niveaux JSON modernes.
-    systems/            Systèmes gameplay ciblés.
-
-  rendering/
-    gameplay-renderer.ts
-    font-renderer.ts
-    hud-renderer.ts
-    level-renderer.ts
-    entity-renderer.ts
-
-  screens/
-    startup-screens.ts
-    gameplay-scene.ts
-    scene-factory.ts
-
-  dev-animation-gallery.ts
-  main.ts
-  styles.css
+  assets/          Assets runtime, niveaux JSON et donnees generees
+  audio/           Son WebAudio moderne
+  editor/          Editeur de niveaux
+  engine/          Boucle, input, renderer canvas et scenes
+  game/            Runtime gameplay, grille, timing, systemes
+  level-gallery/   Catalogue, progression et previews de niveaux
+  rendering/       Rendu gameplay, HUD, entites, tuiles
+  screens/         Scenes principales
 ```
 
-## Principes d'architecture
+Principes :
 
-- `GameplayScene` reste une scène : elle gère le cycle de vie, la navigation et le lien entre runtime et rendu.
-- `GameplayRuntime` orchestre l'ordre d'update sans porter les règles détaillées.
-- `RuntimeMutations` centralise les mutations de grille : joueur, diamants, objets tombants, monstres, spawn.
-- `GameplayRenderer` lit l'état runtime et dessine la frame sans mutation.
-- `RuntimeAssets` regroupe le chargement des images nécessaires au gameplay.
-- Les systèmes dans `src/game/systems/` gardent les règles localisées : joueur, caméra, monstres, objets tombants, sortie, spawn.
+- `GameplayScene` orchestre la scene de jeu.
+- `GameplayRuntime` garde l'ordre d'update gameplay.
+- `runtime-timing.ts` centralise les cadences modernes en ticks TO8.
+- les options de fluidification ne changent pas le cadencement logique;
+- les niveaux modernes sont des JSON dans `src/assets/levels/`;
+- les outils d'edition et de vitrine reutilisent les assets du runtime.
 
-Cette architecture vise une séparation raisonnable, pas une abstraction excessive.
+## Niveaux
 
-## Niveaux modernes
-
-Les niveaux utilisés par le runtime moderne sont stockés dans :
+Les niveaux modernes sont stockes ici :
 
 ```text
 src/assets/levels/
 ```
 
-Ils utilisent un format JSON éditable, sans adresses mémoire originales. Le loader moderne convertit ensuite ces données vers les tile ids runtime nécessaires au rendu et au gameplay.
+Chaque niveau contient notamment :
 
-Le schéma est documenté dans :
+- identifiant et libelle;
+- auteur et date;
+- dimensions;
+- temps;
+- score par diamant;
+- objectif diamants;
+- spawn joueur;
+- sortie;
+- tuiles et entites.
+
+Le format est valide dans :
 
 ```text
 src/game/level-loader.ts
 ```
 
-## Assets et extraction
+## Extraction et verification
 
-Les assets proviennent principalement du travail d'extraction autour du jeu original :
+Les assets extraits ou reconstruits sont principalement dans :
 
 ```text
 docs/extraction/
 ```
 
-Les outils d'extraction sont dans :
+Les outils sont dans :
 
 ```text
 tools/
 ```
 
-Scripts disponibles :
+Scripts utiles :
 
 ```bash
 npm run extract:assets
@@ -188,7 +203,7 @@ npm run extract:startup
 npm run extract:title
 ```
 
-Scripts de vérification disponibles :
+Verifications :
 
 ```bash
 npm run test:assets
@@ -201,43 +216,29 @@ npm run test:asset-policy
 npm run test:provenance
 ```
 
-Les fichiers TypeScript dans `src/assets/generated/` sont générés. Ils ne doivent pas être modifiés à la main.
+## Documentation
 
-## Documentation utile
+Les plans, analyses et notes techniques sont regroupes dans :
 
-- `ASSET_EXTRACTION_PLAN.md` : historique du travail d'extraction.
-- `ARCHITECTURE_AUDIT_PLAN.md` : audit d'architecture initial.
-- `MODERN_ARCHITECTURE_PERFECTION_PLAN.md` : plan pragmatique de finition architecture.
-- `CODE_DOCUMENTATION_CONVENTION.md` : convention de documentation du code.
-- `CODE_DOCUMENTATION_ROLLOUT_PLAN.md` : suivi de l'application des commentaires.
-- `docs/plans/` : plans de gameplay et de migration modernes.
+```text
+docs/plans/
+```
 
-## Cible de fidélité
+Ce repertoire contient notamment les analyses ASM, les plans d'implementation, les notes de timing, l'audit de la pop-in d'options et les documents lies a l'editeur.
 
-Quand un comportement est incertain, la priorité est :
+## Fidelite au TO8
 
-1. vérifier le code original ASM/BASIC;
-2. comparer avec les assets ou metadata extraits;
+Quand un comportement est incertain, la priorite est :
+
+1. verifier l'ASM, les binaires ou les documents d'analyse;
+2. comparer avec les assets et metadata extraits;
 3. reproduire le comportement dans l'architecture moderne;
-4. documenter les hypothèses restantes dans les plans ou TODO.
+4. documenter les hypotheses restantes.
 
-Le rendu cherche le pixel-perfect quand l'information source est disponible.
-
-## Statut
-
-Le projet est jouable partiellement, mais le gameplay complet n'est pas terminé.
-
-Les principaux chantiers restants concernent notamment :
-
-- collisions avancées;
-- poussée et chute complète des rochers/diamants;
-- morts du joueur et des monstres;
-- explosions;
-- progression complète des niveaux;
-- validation plus fine de certains comportements via l'ASM.
+Le portage cherche le pixel-perfect quand les informations source le permettent. Les choix modernes sont separes des comportements ISO.
 
 ## Licence et origine
 
-Ce dépôt est un travail technique de portage, d'analyse et de préservation autour d'un jeu TO8 existant.
+Ce depot est un travail technique de portage, d'analyse et de preservation autour d'un jeu TO8 existant.
 
-Les droits du jeu original, de ses graphismes, de son code et de ses marques restent à leurs ayants droit respectifs.
+Les droits du jeu original, de ses graphismes, de son code, de ses sons, de sa musique et de ses marques restent a leurs ayants droit respectifs.

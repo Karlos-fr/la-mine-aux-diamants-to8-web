@@ -2,6 +2,12 @@ node_modules/
 dist/
 .vite/
 *.local
+*.log
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
 
 # Fichiers d'extraction regenerables conserves hors versioning.
 docs/extraction/mine-tile-*.png
@@ -9,3 +15,10 @@ docs/extraction/rock-bin-tile00.png
 docs/extraction/*-control.png
 docs/extraction/sprites/*-control.png
 !docs/extraction/sprites/specialCreature-control.png
+
+extraction/decoded-fd
+sons
+.tmp/
+extraction/sources/disk
+TODO.md
+docs/plans/
