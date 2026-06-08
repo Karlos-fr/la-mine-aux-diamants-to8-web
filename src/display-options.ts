@@ -53,12 +53,12 @@ export function getDisplayOptions(): DisplayOptions {
 
 /** Retourne le libelle court du mode courant pour la pop-in TO8. */
 export function getDisplayModeLabel(): string {
-  return displayOptions.mode === "original" ? "ORIGINE TO8" : "ESPACE NAV";
+  return displayOptions.mode === "original" ? "Origine TO8" : "Espace nav";
 }
 
 /** Retourne le libelle court du zoom courant pour la pop-in TO8. */
 export function getDisplayZoomLabel(): string {
-  return displayOptions.zoom === "fitHeight" ? "HAUTEUR" : `X${displayOptions.zoom}`;
+  return displayOptions.zoom === "fitHeight" ? "Hauteur" : `x${displayOptions.zoom}`;
 }
 
 /** Bascule entre rendu TO8 strict et rendu plein espace navigateur. */

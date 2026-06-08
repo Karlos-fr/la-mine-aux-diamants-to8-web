@@ -52,7 +52,7 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
   renderer.strokeRect(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, TO8_PALETTE.cyan);
   renderer.strokeRect(panelX + 2, panelY + 2, PANEL_WIDTH - 4, PANEL_HEIGHT - 4, TO8_PALETTE.blue);
 
-  drawCenteredThomsonText(renderer, "OPTIONS", panelX, panelY + TITLE_Y_PADDING, PANEL_WIDTH, TO8_PALETTE.yellow, TITLE_SCALE);
+  drawCenteredThomsonText(renderer, "Options", panelX, panelY + TITLE_Y_PADDING, PANEL_WIDTH, TO8_PALETTE.yellow, TITLE_SCALE);
   renderer.fillRect(panelX + 8, panelY + 28, PANEL_WIDTH - 16, 1, TO8_PALETTE.blue);
 
   const tabsX = panelX + 12;
@@ -67,30 +67,30 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
   renderer.fillRect(contentX + 1, contentY + 1, contentWidth - 2, CONTENT_HEIGHT - 2, "#080810");
 
   const selectedCategory = OPTIONS_MENU_CATEGORIES[options.selectedCategoryIndex] ?? OPTIONS_MENU_CATEGORIES[0];
-  drawThomsonText(renderer, selectedCategory.toUpperCase(), contentX + 8, contentY + 10, TO8_PALETTE.white, TEXT_SCALE);
+  drawThomsonText(renderer, selectedCategory, contentX + 8, contentY + 10, TO8_PALETTE.white, TEXT_SCALE);
   if (selectedCategory === "A propos") {
     renderAboutContent(renderer, contentX + 8, contentY + 30);
   } else if (selectedCategory === "Affichage") {
     renderDisplayContent(renderer, contentX + 8, contentY + 30);
   } else {
-    drawThomsonText(renderer, "OPTIONS A VENIR", contentX + 8, contentY + 34, TO8_PALETTE.gray, TEXT_SCALE);
-    drawThomsonText(renderer, options.contextLabel.toUpperCase(), contentX + 8, contentY + 58, TO8_PALETTE.cyan, TEXT_SCALE);
+    drawThomsonText(renderer, "Options a venir", contentX + 8, contentY + 34, TO8_PALETTE.gray, TEXT_SCALE);
+    drawThomsonText(renderer, options.contextLabel, contentX + 8, contentY + 58, TO8_PALETTE.cyan, TEXT_SCALE);
   }
 
   renderer.fillRect(panelX + 8, panelY + PANEL_HEIGHT - 24, PANEL_WIDTH - 16, 1, TO8_PALETTE.blue);
-  drawThomsonText(renderer, "ECHAP: RETOUR", panelX + 14, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
-  drawThomsonText(renderer, "HAUT/BAS: CATEGORIE", panelX + 124, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
+  drawThomsonText(renderer, "Echap: retour", panelX + 14, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
+  drawThomsonText(renderer, "Haut/bas: categorie", panelX + 124, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
 }
 
 /** Rend les options d'affichage deja actives. */
 function renderDisplayContent(renderer: Renderer, x: number, y: number): void {
   const lines = [
-    { text: "MODE", color: TO8_PALETTE.gray },
+    { text: "Mode", color: TO8_PALETTE.gray },
     { text: getDisplayModeLabel(), color: TO8_PALETTE.cyan },
-    { text: "ZOOM", color: TO8_PALETTE.gray },
+    { text: "Zoom", color: TO8_PALETTE.gray },
     { text: getDisplayZoomLabel(), color: TO8_PALETTE.lightGreen },
-    { text: "ENTREE: MODE", color: TO8_PALETTE.white },
-    { text: "< >: ZOOM", color: TO8_PALETTE.white }
+    { text: "Entree: mode", color: TO8_PALETTE.white },
+    { text: "< >: zoom", color: TO8_PALETTE.white }
   ] as const;
 
   lines.forEach((line, index) => {
@@ -101,12 +101,12 @@ function renderDisplayContent(renderer: Renderer, x: number, y: number): void {
 /** Rend les credits et informations de version. */
 function renderAboutContent(renderer: Renderer, x: number, y: number): void {
   const lines = [
-    { text: "JEU ORIGINAL 1986", color: TO8_PALETTE.gray },
-    { text: "PHILIPPE BRUNEEL", color: TO8_PALETTE.white },
-    { text: "CHRISTIAN LEMAIRE", color: TO8_PALETTE.white },
-    { text: "MODIFICATION 2026", color: TO8_PALETTE.gray },
-    { text: "GITHUB.COM/KARLOS-FR", color: TO8_PALETTE.cyan },
-    { text: `VERSION ${APP_VERSION}`, color: TO8_PALETTE.lightGreen }
+    { text: "Jeu original 1986", color: TO8_PALETTE.gray },
+    { text: "Philippe Bruneel", color: TO8_PALETTE.white },
+    { text: "Christian Lemaire", color: TO8_PALETTE.white },
+    { text: "Modification 2026", color: TO8_PALETTE.gray },
+    { text: "github.com/Karlos-fr", color: TO8_PALETTE.cyan },
+    { text: `Version ${APP_VERSION}`, color: TO8_PALETTE.lightGreen }
   ] as const;
 
   lines.forEach((line, index) => {
@@ -127,7 +127,7 @@ function renderCategoryTabs(renderer: Renderer, x: number, y: number, selectedIn
 
     drawThomsonText(
       renderer,
-      OPTIONS_MENU_CATEGORIES[index].toUpperCase(),
+      OPTIONS_MENU_CATEGORIES[index],
       x + (selected ? 14 : 8),
       tabY,
       selected ? TO8_PALETTE.white : TO8_PALETTE.gray,
