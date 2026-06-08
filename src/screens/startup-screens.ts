@@ -12,7 +12,12 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { gameAudio } from "../audio/audio-engine";
-import { cycleDisplayZoom, getOptionsPopinRenderScale, toggleDisplayMode } from "../display-options";
+import {
+  cycleDisplayDensity,
+  cycleDisplayZoom,
+  getOptionsPopinRenderScale,
+  toggleDisplayStretchToViewport
+} from "../display-options";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import {
   OPTIONS_MENU_CATEGORIES,
@@ -278,8 +283,11 @@ export class StartupTitleScene implements Scene {
       if (input.justPressed.right) {
         cycleDisplayZoom(1);
       }
-      if (input.justPressed.confirm || input.justPressed.action) {
-        toggleDisplayMode();
+      if (input.justPressed.confirm) {
+        toggleDisplayStretchToViewport();
+      }
+      if (input.justPressed.action && !input.justPressed.confirm) {
+        cycleDisplayDensity(1);
       }
     }
     return true;

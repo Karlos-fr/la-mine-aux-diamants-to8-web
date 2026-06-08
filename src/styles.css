@@ -282,7 +282,7 @@ body.startup-screen-fixed-aspect #game-screen {
 /* Panneau options au style TO8, mais compose en HTML. */
 .options-popin {
   width: min(880px, calc(100vw - 32px));
-  height: min(500px, calc(100vh - 32px));
+  height: min(610px, calc(100vh - 32px));
   border: 3px solid #00ffff;
   padding: 20px 24px 16px;
   background: #101018;
@@ -348,7 +348,7 @@ body.startup-screen-fixed-aspect #game-screen {
 /* Panneau de contenu de la categorie. */
 .options-popin__content {
   min-width: 0;
-  height: 280px;
+  height: 388px;
   border: 3px solid #4a4a4f;
   padding: 20px 22px;
   background: #080810;

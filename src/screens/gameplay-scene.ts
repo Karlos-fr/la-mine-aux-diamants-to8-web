@@ -57,10 +57,11 @@ import type { Size2D, TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
 import {
+  cycleDisplayDensity,
   cycleDisplayZoom,
   getGameplayRenderSize,
   getOptionsPopinRenderScale,
-  toggleDisplayMode
+  toggleDisplayStretchToViewport
 } from "../display-options";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
 import {
@@ -306,10 +307,6 @@ export class GameplayScene implements Scene {
   });
   /** Taille de rendu d'une tuile a l'ecran. */
   private readonly tileSize = RENDER_TILE_SIZE;
-  /** Decalage horizontal de la zone de jeu. */
-  private readonly boardOffsetX = 0;
-  /** Decalage vertical de la zone de jeu. */
-  private readonly boardOffsetY = 0;
   /** Viewport logique courant sur le niveau global. */
   private readonly viewport: ViewportState;
   /** Largeur totale du niveau courant en cellules. */
@@ -510,8 +507,11 @@ export class GameplayScene implements Scene {
       if (input.justPressed.right) {
         cycleDisplayZoom(1);
       }
-      if (input.justPressed.confirm || input.justPressed.action) {
-        toggleDisplayMode();
+      if (input.justPressed.confirm) {
+        toggleDisplayStretchToViewport();
+      }
+      if (input.justPressed.action && !input.justPressed.confirm) {
+        cycleDisplayDensity(1);
       }
       this.updateViewportSize();
     }
@@ -648,8 +648,8 @@ export class GameplayScene implements Scene {
         rows: this.viewport.rows
       },
       tileSize: this.tileSize,
-      boardOffsetX: this.boardOffsetX,
-      boardOffsetY: this.boardOffsetY,
+      boardOffsetX: this.getBoardOffsetX(),
+      boardOffsetY: this.getBoardOffsetY(),
       tileIds: {
         monster: MONSTER_TILE_ID,
         diamond: DIAMOND_TILE_ID,
@@ -706,6 +706,16 @@ export class GameplayScene implements Scene {
     this.viewport.rows = rows;
     this.viewport.x = clamp(this.viewport.x, CAMERA_MIN_X, Math.max(CAMERA_MIN_X, this.levelWidth - columns));
     this.viewport.y = clamp(this.viewport.y, CAMERA_MIN_Y, Math.max(CAMERA_MIN_Y, this.levelHeight - rows));
+  }
+
+  /** Centre horizontalement le niveau quand la fenetre visible est plus large que le niveau. */
+  private getBoardOffsetX(): number {
+    return Math.max(0, Math.floor((this.viewport.columns - this.levelWidth) * this.tileSize / 2));
+  }
+
+  /** Centre verticalement le niveau quand la fenetre visible est plus haute que le niveau. */
+  private getBoardOffsetY(): number {
+    return Math.max(0, Math.floor((this.viewport.rows - this.levelHeight) * this.tileSize / 2));
   }
 
   /** Trouve la premiere entite visuelle active occupant la cellule de grille donnee. */

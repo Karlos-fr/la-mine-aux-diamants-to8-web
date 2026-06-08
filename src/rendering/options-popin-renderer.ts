@@ -5,7 +5,12 @@
  */
 
 import { APP_VERSION } from "../app-version";
-import { getDisplayModeLabel, getDisplayZoomLabel } from "../display-options";
+import {
+  getDisplayDensityLabel,
+  getDisplayModeLabel,
+  getDisplayStretchLabel,
+  getDisplayZoomLabel
+} from "../display-options";
 import type { Renderer } from "../engine/renderer";
 
 /** Categories prevues pour la future configuration. */
@@ -57,7 +62,9 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
     selectedCategory,
     options.contextLabel,
     getDisplayModeLabel(),
-    getDisplayZoomLabel()
+    getDisplayZoomLabel(),
+    getDisplayStretchLabel(),
+    getDisplayDensityLabel()
   ].join(":");
 
   dom.root.hidden = false;
@@ -167,8 +174,13 @@ function renderCategoryContent(container: HTMLDivElement, category: string, cont
       { text: getDisplayModeLabel(), colorClass: "options-popin__line--cyan" },
       { text: "Zoom", colorClass: "options-popin__line--muted" },
       { text: getDisplayZoomLabel(), colorClass: "options-popin__line--green" },
-      { text: "Entree: mode" },
-      { text: "< >: zoom" }
+      { text: "Etirage navigateur", colorClass: "options-popin__line--muted" },
+      { text: getDisplayStretchLabel(), colorClass: "options-popin__line--cyan" },
+      { text: "Densite", colorClass: "options-popin__line--muted" },
+      { text: getDisplayDensityLabel(), colorClass: "options-popin__line--green" },
+      { text: "< >: zoom" },
+      { text: "Entree: etirage" },
+      { text: "Ctrl: densite" }
     ]);
     return;
   }
