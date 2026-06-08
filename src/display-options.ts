@@ -1,7 +1,7 @@
 /**
  * Role: Centralise les options d'affichage runtime.
- * Scope: Pilote la taille CSS du canvas et la resolution logique gameplay.
- * ISO: Le mode origine conserve la surface TO8 320x200; les autres modes sont des choix modernes d'ergonomie.
+ * Scope: Pilote zoom CSS, etirage navigateur, densite de cellules et resolution logique gameplay.
+ * ISO: La densite x1 conserve la grille TO8 20x10 avec HUD; zoom et etirage sont des choix modernes d'ergonomie.
  * Notes: Les options sont persistees localement et doivent rester non bloquantes si le stockage echoue.
  */
 
@@ -78,18 +78,6 @@ export function getDisplayStretchLabel(): string {
 /** Retourne le libelle court de la densite courante. */
 export function getDisplayDensityLabel(): string {
   return `x${displayOptions.density}`;
-}
-
-/** Retourne l'echelle CSS effective entre resolution logique gameplay et canvas navigateur. */
-export function getDisplayCssScale(): number {
-  const cssSize = getCanvasCssSize();
-  const renderSize = getGameplayRenderSize();
-  return Math.max(1, Math.min(cssSize.width / renderSize.width, cssSize.height / renderSize.height));
-}
-
-/** Retourne l'echelle logique de l'overlay options pour garder une taille UX stable. */
-export function getOptionsPopinRenderScale(): number {
-  return getDisplayCssScale() <= 1 ? 2 : 1;
 }
 
 /** Active ou desactive l'etirage du canvas dans l'espace navigateur. */

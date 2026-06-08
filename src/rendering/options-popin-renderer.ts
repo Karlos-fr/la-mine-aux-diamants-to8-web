@@ -1,6 +1,6 @@
 /**
  * Role: Pilote la pop-in d'options commune au titre et au gameplay.
- * Scope: Fournit l'UX HTML superposee au canvas, sans options actives persistantes.
+ * Scope: Fournit l'UX HTML superposee au canvas et rend les categories d'options actives.
  * ISO: Le style reste proche TO8 via cadres pixels et police Thomson chargee.
  */
 
@@ -11,7 +11,6 @@ import {
   getDisplayStretchLabel,
   getDisplayZoomLabel
 } from "../display-options";
-import type { Renderer } from "../engine/renderer";
 
 /** Categories prevues pour la future configuration. */
 export const OPTIONS_MENU_CATEGORIES = [
@@ -32,8 +31,6 @@ export interface OptionsPopinRenderOptions {
   readonly selectedCategoryIndex: number;
   /** Libelle contextuel affiche dans la zone de contenu. */
   readonly contextLabel: string;
-  /** Conserve la compatibilite avec l'ancien rendu canvas; ignore en HTML. */
-  readonly visualScale?: number;
 }
 
 /** References DOM internes pour mettre a jour la pop-in sans recreer l'arbre. */
@@ -48,13 +45,17 @@ interface OptionsPopinDom {
   readonly categoryItems: readonly HTMLDivElement[];
 }
 
+/** DOM persistant de la pop-in, reutilise pour eviter de recreer les noeuds a chaque frame. */
 let popinDom: OptionsPopinDom | undefined;
+
+/** Timer court qui masque l'overlay si aucune scene ne le rend pendant quelques frames. */
 let hideTimeout: number | undefined;
+
+/** Signature du dernier contenu rendu, pour limiter les mutations DOM au strict necessaire. */
 let renderedSignature = "";
 
 /** Rend la pop-in d'options par-dessus la scene courante. */
-export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRenderOptions): void {
-  void renderer;
+export function renderOptionsPopin(options: OptionsPopinRenderOptions): void {
   const dom = ensureOptionsPopinDom();
   const selectedCategory = OPTIONS_MENU_CATEGORIES[options.selectedCategoryIndex] ?? OPTIONS_MENU_CATEGORIES[0];
   const signature = [
@@ -155,36 +156,51 @@ function renderCategoryContent(container: HTMLDivElement, category: string, cont
   container.replaceChildren();
 
   if (category === "A propos") {
-    appendLines(container, [
-      { text: "Jeu original 1986", colorClass: "options-popin__line--muted" },
-      { text: "Philippe Bruneel" },
-      { text: "Christian Lemaire" },
-      { text: "", colorClass: "options-popin__line--spacer" },
-      { text: "Modification 2026", colorClass: "options-popin__line--muted" },
-      { text: "github.com/Karlos-fr", colorClass: "options-popin__line--cyan", href: "https://github.com/Karlos-fr" },
-      { text: "", colorClass: "options-popin__line--spacer" },
-      { text: `Version ${APP_VERSION}`, colorClass: "options-popin__line--green" }
-    ]);
+    renderAboutContent(container);
     return;
   }
 
   if (category === "Affichage") {
-    appendLines(container, [
-      { text: "Mode", colorClass: "options-popin__line--muted" },
-      { text: getDisplayModeLabel(), colorClass: "options-popin__line--cyan" },
-      { text: "Zoom", colorClass: "options-popin__line--muted" },
-      { text: getDisplayZoomLabel(), colorClass: "options-popin__line--green" },
-      { text: "Etirage navigateur", colorClass: "options-popin__line--muted" },
-      { text: getDisplayStretchLabel(), colorClass: "options-popin__line--cyan" },
-      { text: "Densite", colorClass: "options-popin__line--muted" },
-      { text: getDisplayDensityLabel(), colorClass: "options-popin__line--green" },
-      { text: "< >: zoom" },
-      { text: "Entree: etirage" },
-      { text: "Ctrl: densite" }
-    ]);
+    renderDisplayContent(container);
     return;
   }
 
+  renderPlaceholderContent(container, contextLabel);
+}
+
+/** Rend le contenu informatif et credits de la categorie A propos. */
+function renderAboutContent(container: HTMLDivElement): void {
+  appendLines(container, [
+    { text: "Jeu original 1986", colorClass: "options-popin__line--muted" },
+    { text: "Philippe Bruneel" },
+    { text: "Christian Lemaire" },
+    { text: "", colorClass: "options-popin__line--spacer" },
+    { text: "Modification 2026", colorClass: "options-popin__line--muted" },
+    { text: "github.com/Karlos-fr", colorClass: "options-popin__line--cyan", href: "https://github.com/Karlos-fr" },
+    { text: "", colorClass: "options-popin__line--spacer" },
+    { text: `Version ${APP_VERSION}`, colorClass: "options-popin__line--green" }
+  ]);
+}
+
+/** Rend les preferences d'affichage actives et leurs raccourcis clavier. */
+function renderDisplayContent(container: HTMLDivElement): void {
+  appendLines(container, [
+    { text: "Mode", colorClass: "options-popin__line--muted" },
+    { text: getDisplayModeLabel(), colorClass: "options-popin__line--cyan" },
+    { text: "Zoom", colorClass: "options-popin__line--muted" },
+    { text: getDisplayZoomLabel(), colorClass: "options-popin__line--green" },
+    { text: "Etirage navigateur", colorClass: "options-popin__line--muted" },
+    { text: getDisplayStretchLabel(), colorClass: "options-popin__line--cyan" },
+    { text: "Densite", colorClass: "options-popin__line--muted" },
+    { text: getDisplayDensityLabel(), colorClass: "options-popin__line--green" },
+    { text: "< >: zoom" },
+    { text: "Entree: etirage" },
+    { text: "Ctrl: densite" }
+  ]);
+}
+
+/** Rend le contenu temporaire des categories sans options actives pour l'instant. */
+function renderPlaceholderContent(container: HTMLDivElement, contextLabel: string): void {
   appendLines(container, [
     { text: "Options a venir", colorClass: "options-popin__line--muted" },
     { text: contextLabel, colorClass: "options-popin__line--cyan" }

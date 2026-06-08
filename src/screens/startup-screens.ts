@@ -12,18 +12,9 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { gameAudio } from "../audio/audio-engine";
-import {
-  cycleDisplayDensity,
-  cycleDisplayZoom,
-  getOptionsPopinRenderScale,
-  toggleDisplayStretchToViewport
-} from "../display-options";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
-import {
-  OPTIONS_MENU_CATEGORIES,
-  OPTIONS_MENU_CATEGORY_COUNT,
-  renderOptionsPopin
-} from "../rendering/options-popin-renderer";
+import { updateOptionsPopinInput } from "../options-popin-controller";
+import { renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
 
@@ -249,48 +240,27 @@ export class StartupTitleScene implements Scene {
     });
 
     if (this.optionsOpen) {
-      renderOptionsPopin(renderer, {
+      renderOptionsPopin({
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Ecran titre",
-        visualScale: getOptionsPopinRenderScale()
+        contextLabel: "Ecran titre"
       });
     }
   }
 
   /** Gere l'ouverture et la navigation de la pop-in d'options. */
   private updateOptionsPopin(input: InputState): boolean {
-    if (input.justPressed.cancel) {
-      this.optionsOpen = !this.optionsOpen;
+    const result = updateOptionsPopinInput(input, {
+      isOpen: this.optionsOpen,
+      selectedCategoryIndex: this.selectedOptionsCategoryIndex
+    });
+    this.optionsOpen = result.isOpen;
+    this.selectedOptionsCategoryIndex = result.selectedCategoryIndex;
+    if (result.toggledOpen) {
       this.attractIdleTicks = 0;
       this.attractIdleElapsed = 0;
-      return true;
     }
 
-    if (!this.optionsOpen) {
-      return false;
-    }
-
-    if (input.justPressed.up) {
-      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex - 1);
-    }
-    if (input.justPressed.down) {
-      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
-    }
-    if (isDisplayOptionsCategory(this.selectedOptionsCategoryIndex)) {
-      if (input.justPressed.left) {
-        cycleDisplayZoom(-1);
-      }
-      if (input.justPressed.right) {
-        cycleDisplayZoom(1);
-      }
-      if (input.justPressed.confirm) {
-        toggleDisplayStretchToViewport();
-      }
-      if (input.justPressed.action && !input.justPressed.confirm) {
-        cycleDisplayDensity(1);
-      }
-    }
-    return true;
+    return result.consumed;
   }
 
   /** Charge une liste de frames image dans le cache fourni. */
@@ -327,14 +297,4 @@ function hasAnyJustPressedInput(input: InputState): boolean {
     input.justPressed.action ||
     input.justPressed.cancel
   );
-}
-
-/** Contraint l'index de categorie avec boucle. */
-function wrapOptionCategory(index: number): number {
-  return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
-}
-
-/** Indique si la categorie active pilote les options d'affichage. */
-function isDisplayOptionsCategory(index: number): boolean {
-  return OPTIONS_MENU_CATEGORIES[index] === "Affichage";
 }

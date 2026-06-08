@@ -56,19 +56,10 @@ import {
 import type { Size2D, TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
-import {
-  cycleDisplayDensity,
-  cycleDisplayZoom,
-  getGameplayRenderSize,
-  getOptionsPopinRenderScale,
-  toggleDisplayStretchToViewport
-} from "../display-options";
+import { getGameplayRenderSize } from "../display-options";
+import { updateOptionsPopinInput } from "../options-popin-controller";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
-import {
-  OPTIONS_MENU_CATEGORIES,
-  OPTIONS_MENU_CATEGORY_COUNT,
-  renderOptionsPopin
-} from "../rendering/options-popin-renderer";
+import { renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { TileFrameCache } from "../rendering/tile-frame-cache";
 
 /** Horloge generique pour les animations cycliques de rendu. */
@@ -485,38 +476,17 @@ export class GameplayScene implements Scene {
       return false;
     }
 
-    if (input.justPressed.cancel) {
-      this.optionsOpen = !this.optionsOpen;
-      return true;
-    }
-
-    if (!this.optionsOpen) {
-      return false;
-    }
-
-    if (input.justPressed.up) {
-      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex - 1);
-    }
-    if (input.justPressed.down) {
-      this.selectedOptionsCategoryIndex = wrapOptionCategory(this.selectedOptionsCategoryIndex + 1);
-    }
-    if (isDisplayOptionsCategory(this.selectedOptionsCategoryIndex)) {
-      if (input.justPressed.left) {
-        cycleDisplayZoom(-1);
-      }
-      if (input.justPressed.right) {
-        cycleDisplayZoom(1);
-      }
-      if (input.justPressed.confirm) {
-        toggleDisplayStretchToViewport();
-      }
-      if (input.justPressed.action && !input.justPressed.confirm) {
-        cycleDisplayDensity(1);
-      }
+    const result = updateOptionsPopinInput(input, {
+      isOpen: this.optionsOpen,
+      selectedCategoryIndex: this.selectedOptionsCategoryIndex
+    });
+    this.optionsOpen = result.isOpen;
+    this.selectedOptionsCategoryIndex = result.selectedCategoryIndex;
+    if (result.displayOptionsChanged) {
       this.updateViewportSize();
     }
 
-    return true;
+    return result.consumed;
   }
 
   /** Nettoie les marqueurs temporaires du tick courant. */
@@ -679,10 +649,9 @@ export class GameplayScene implements Scene {
     });
 
     if (this.optionsOpen) {
-      renderOptionsPopin(renderer, {
+      renderOptionsPopin({
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Jeu en pause",
-        visualScale: getOptionsPopinRenderScale()
+        contextLabel: "Jeu en pause"
       });
     }
   }
@@ -2173,16 +2142,6 @@ function smoothStep(progress: number): number {
 /** Indique si deux cellules sont identiques ou adjacentes orthogonalement. */
 function isAdjacentOrSameCell(firstX: number, firstY: number, secondX: number, secondY: number): boolean {
   return Math.abs(firstX - secondX) + Math.abs(firstY - secondY) <= 1;
-}
-
-/** Contraint l'index de categorie d'options avec boucle. */
-function wrapOptionCategory(index: number): number {
-  return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
-}
-
-/** Indique si la categorie active pilote les options d'affichage. */
-function isDisplayOptionsCategory(index: number): boolean {
-  return OPTIONS_MENU_CATEGORIES[index] === "Affichage";
 }
 
 /** Incremente un compteur decimal avec retour a zero selon le nombre de chiffres configure. */
