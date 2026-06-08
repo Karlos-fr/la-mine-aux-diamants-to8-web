@@ -10,6 +10,7 @@ function readGitCommit(): string {
 }
 
 export default defineConfig({
+  base: "/la-mine-aux-diamants-to8-web/",
   define: {
     __APP_VERSION__: JSON.stringify(readGitCommit())
   },
