@@ -1,5 +1,5 @@
 /**
- * Role: Expose le catalogue de niveaux disponible pour la vitrine moderne.
+ * Role: Expose la vitrine de niveaux disponible pour l'interface moderne.
  * Scope: Convertit les sources JSON validees en metadonnees affichables, sans construire d'UI.
  * ISO: Les donnees viennent des niveaux modernes extraits ou edites, pas des PNG de documentation.
  * Notes: Les champs de progression restent neutres tant que le module de progression n'est pas branche.
@@ -8,13 +8,13 @@
 import { getModernLevelSource, LEVEL_COUNT, type ModernLevelJson, type ModernLevelSourceKind } from "../game/level-loader";
 
 /** Statut fonctionnel d'un niveau dans la vitrine. */
-export type LevelCatalogAvailability = "available" | "locked";
+export type LevelShowcaseAvailability = "available" | "locked";
 
-/** Statut documentaire d'un niveau special dans le catalogue. */
-export type LevelCatalogKind = ModernLevelSourceKind | "custom";
+/** Statut documentaire d'un niveau special dans la vitrine. */
+export type LevelShowcaseKind = ModernLevelSourceKind | "custom";
 
 /** Metadonnees de progression exposees par la vitrine. */
-export interface LevelCatalogProgressSummary {
+export interface LevelShowcaseProgressSummary {
   /** Indique si le niveau est verrouille par les futures regles de progression. */
   readonly locked: boolean;
   /** Condition de deblocage affichee dans la fiche niveau. */
@@ -29,8 +29,8 @@ export interface LevelCatalogProgressSummary {
   readonly completed: boolean;
 }
 
-/** Entree stable du catalogue utilisee par la future scene vitrine. */
-export interface LevelCatalogEntry {
+/** Entree stable de la vitrine utilisee par la scene moderne. */
+export interface LevelShowcaseEntry {
   /** Numero jouable utilise par `createGameplayScene`. */
   readonly levelNumber: number;
   /** Identifiant stable issu du JSON moderne. */
@@ -52,15 +52,15 @@ export interface LevelCatalogEntry {
   /** Score ajoute par diamant collecte. */
   readonly scoreStep: number;
   /** Nature documentaire du niveau. */
-  readonly kind: LevelCatalogKind;
+  readonly kind: LevelShowcaseKind;
   /** Indique si le niveau est un niveau special ou debug. */
   readonly special: boolean;
   /** Libelle court expliquant la nature speciale du niveau, si besoin. */
   readonly specialLabel: string | null;
   /** Statut fonctionnel de disponibilite pour les futures regles de progression. */
-  readonly availability: LevelCatalogAvailability;
+  readonly availability: LevelShowcaseAvailability;
   /** Resume de progression affiche par la fiche niveau. */
-  readonly progress: LevelCatalogProgressSummary;
+  readonly progress: LevelShowcaseProgressSummary;
   /** Source JSON complete, conservee pour le rendu dynamique de preview. */
   readonly source: ModernLevelJson;
 }
@@ -68,29 +68,29 @@ export interface LevelCatalogEntry {
 /** Message de deblocage neutre tant que tous les niveaux sont disponibles. */
 const DEFAULT_UNLOCK_CONDITION = "Disponible";
 
-/** Retourne le catalogue ordonne de tous les niveaux modernes connus. */
-export function getLevelCatalogEntries(): LevelCatalogEntry[] {
-  const entries: LevelCatalogEntry[] = [];
+/** Retourne la liste ordonnee de tous les niveaux modernes connus pour la vitrine. */
+export function getLevelShowcaseEntries(): LevelShowcaseEntry[] {
+  const entries: LevelShowcaseEntry[] = [];
   for (let levelNumber = 1; levelNumber <= LEVEL_COUNT; levelNumber += 1) {
     const source = getModernLevelSource(levelNumber);
     if (!source) {
       continue;
     }
 
-    entries.push(createLevelCatalogEntry(levelNumber, source));
+    entries.push(createLevelShowcaseEntry(levelNumber, source));
   }
 
   return entries;
 }
 
-/** Retourne une entree de catalogue par numero jouable. */
-export function getLevelCatalogEntry(levelNumber: number): LevelCatalogEntry | undefined {
+/** Retourne une entree de vitrine par numero jouable. */
+export function getLevelShowcaseEntry(levelNumber: number): LevelShowcaseEntry | undefined {
   const source = getModernLevelSource(levelNumber);
-  return source ? createLevelCatalogEntry(levelNumber, source) : undefined;
+  return source ? createLevelShowcaseEntry(levelNumber, source) : undefined;
 }
 
 /** Convertit un JSON moderne valide en entree de vitrine. */
-function createLevelCatalogEntry(levelNumber: number, source: ModernLevelJson): LevelCatalogEntry {
+function createLevelShowcaseEntry(levelNumber: number, source: ModernLevelJson): LevelShowcaseEntry {
   const kind = source.source?.kind ?? "normal";
   const specialLabel = getSpecialLevelLabel(kind);
   const locked = false;
@@ -123,7 +123,7 @@ function createLevelCatalogEntry(levelNumber: number, source: ModernLevelJson): 
 }
 
 /** Retourne un libelle clair pour les niveaux hors progression normale. */
-function getSpecialLevelLabel(kind: LevelCatalogKind): string | null {
+function getSpecialLevelLabel(kind: LevelShowcaseKind): string | null {
   if (kind === "attract") {
     return "Mode attract cache";
   }

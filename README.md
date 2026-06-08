@@ -138,7 +138,7 @@ src/
   editor/          Editeur de niveaux
   engine/          Boucle, input, renderer canvas et scenes
   game/            Runtime gameplay, grille, timing, systemes
-  level-gallery/   Catalogue, progression et previews de niveaux
+  level-showcase/  Vitrine, progression et previews de niveaux
   rendering/       Rendu gameplay, HUD, entites, tuiles
   screens/         Scenes principales
 ```

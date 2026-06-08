@@ -457,7 +457,7 @@ body.startup-screen-fixed-aspect #game-screen {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 25;
+  z-index: 80;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -686,7 +686,7 @@ body.startup-screen-fixed-aspect #game-screen {
 
 /* Bouton debug pour activer le mode fantome pendant les tests de niveaux. */
 .debug-attract-button,
-.debug-gallery-button,
+.debug-showcase-button,
 .debug-ghost-button,
 .debug-editor-button {
   min-height: 19px;
@@ -745,10 +745,6 @@ body.level-editor-active {
   overflow: hidden;
   background: var(--editor-bg);
   color: var(--editor-text);
-}
-
-body.level-editor-active .debug-toolbar {
-  display: none;
 }
 
 body.level-editor-active #game-screen {
@@ -1178,17 +1174,18 @@ body.level-editor-active #game-screen {
 }
 
 /* Vitrine des niveaux ------------------------------------------------------- */
-body.level-gallery-active {
+body.level-showcase-active {
   overflow: auto;
   background: #000;
 }
 
-body.level-gallery-active .debug-toolbar,
-body.level-gallery-active #game-screen {
+body.level-showcase-active #game-screen {
   display: none;
 }
 
-.level-gallery-shell {
+.level-showcase-shell {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 100vh;
   padding: 24px;
   color: #00ffff;
@@ -1200,7 +1197,7 @@ body.level-gallery-active #game-screen {
   font-family: "Thomson 8 Bit", monospace;
 }
 
-.level-gallery-header {
+.level-showcase-header {
   display: flex;
   align-items: end;
   justify-content: space-between;
@@ -1213,13 +1210,13 @@ body.level-gallery-active #game-screen {
   box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.28);
 }
 
-.level-gallery-eyebrow {
+.level-showcase-eyebrow {
   margin: 0 0 8px;
   color: #58ff58;
   font-size: 12px;
 }
 
-.level-gallery-title {
+.level-showcase-title {
   margin: 0;
   color: #ffe45c;
   font-size: 32px;
@@ -1227,29 +1224,29 @@ body.level-gallery-active #game-screen {
   line-height: 1;
 }
 
-.level-gallery-subtitle {
+.level-showcase-subtitle {
   margin: 10px 0 0;
   color: rgba(0, 255, 255, 0.82);
   font-size: 13px;
   line-height: 1.5;
 }
 
-.level-gallery-count {
+.level-showcase-count {
   margin: 0;
   color: #58ff58;
   font-size: 14px;
   white-space: nowrap;
 }
 
-.level-gallery-list {
+.level-showcase-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   width: min(1280px, 100%);
   margin: 0 auto;
 }
 
-.level-gallery-card {
+.level-showcase-card {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 12px;
@@ -1260,14 +1257,14 @@ body.level-gallery-active #game-screen {
   box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.22);
 }
 
-.level-gallery-card[data-selected="true"] {
+.level-showcase-card[data-selected="true"] {
   border-color: #00ffff;
   box-shadow:
     inset 0 0 0 1px #0001fe,
     0 0 0 2px rgba(0, 255, 255, 0.24);
 }
 
-.level-gallery-preview-button {
+.level-showcase-preview-button {
   display: grid;
   place-items: center;
   align-self: start;
@@ -1278,23 +1275,23 @@ body.level-gallery-active #game-screen {
   background: rgba(0, 0, 0, 0.78);
 }
 
-.level-gallery-preview-button:focus-visible {
+.level-showcase-preview-button:focus-visible {
   outline: 2px solid #58ff58;
   outline-offset: 2px;
 }
 
-.level-gallery-preview {
+.level-showcase-preview {
   display: block;
   max-width: 100%;
   height: auto;
   image-rendering: pixelated;
 }
 
-.level-gallery-card-body {
+.level-showcase-card-body {
   min-width: 0;
 }
 
-.level-gallery-card-title {
+.level-showcase-card-title {
   margin: 0 0 10px;
   color: #fff;
   font-size: 16px;
@@ -1303,7 +1300,7 @@ body.level-gallery-active #game-screen {
   overflow-wrap: anywhere;
 }
 
-.level-gallery-badge {
+.level-showcase-badge {
   display: inline-block;
   margin: 0 0 10px;
   border: 1px solid #58ff58;
@@ -1313,7 +1310,7 @@ body.level-gallery-active #game-screen {
   font-size: 10px;
 }
 
-.level-gallery-meta {
+.level-showcase-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 14px;
@@ -1323,18 +1320,18 @@ body.level-gallery-active #game-screen {
   line-height: 1.35;
 }
 
-.level-gallery-meta dt {
+.level-showcase-meta dt {
   margin-bottom: 2px;
   color: rgba(0, 255, 255, 0.68);
 }
 
-.level-gallery-meta dd {
+.level-showcase-meta dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.level-gallery-detail {
+.level-showcase-detail {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -1344,7 +1341,7 @@ body.level-gallery-active #game-screen {
   background: rgba(0, 0, 0, 0.72);
 }
 
-.level-gallery-detail-panel {
+.level-showcase-detail-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 16px;
@@ -1362,7 +1359,7 @@ body.level-gallery-active #game-screen {
     0 16px 48px rgba(0, 0, 0, 0.7);
 }
 
-.level-gallery-detail-header {
+.level-showcase-detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1371,7 +1368,7 @@ body.level-gallery-active #game-screen {
   padding-bottom: 12px;
 }
 
-.level-gallery-detail-title {
+.level-showcase-detail-title {
   margin: 0;
   color: #ffe45c;
   font-size: 24px;
@@ -1379,8 +1376,8 @@ body.level-gallery-active #game-screen {
   line-height: 1.2;
 }
 
-.level-gallery-detail-close,
-.level-gallery-play-button {
+.level-showcase-detail-close,
+.level-showcase-play-button {
   min-height: 34px;
   border: 1px solid #00ffff;
   border-radius: 0;
@@ -1391,7 +1388,7 @@ body.level-gallery-active #game-screen {
   font-size: 12px;
 }
 
-.level-gallery-detail-close {
+.level-showcase-detail-close {
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -1399,13 +1396,13 @@ body.level-gallery-active #game-screen {
   padding: 0;
 }
 
-.level-gallery-detail-close:focus-visible,
-.level-gallery-play-button:focus-visible {
+.level-showcase-detail-close:focus-visible,
+.level-showcase-play-button:focus-visible {
   outline: 2px solid #58ff58;
   outline-offset: 2px;
 }
 
-.level-gallery-detail-content {
+.level-showcase-detail-content {
   display: grid;
   grid-template-columns: minmax(320px, 2fr) minmax(280px, 1fr);
   gap: 18px;
@@ -1413,14 +1410,14 @@ body.level-gallery-active #game-screen {
   overflow: auto;
 }
 
-.level-gallery-detail-preview {
+.level-showcase-detail-preview {
   align-self: start;
   justify-self: center;
   border: 1px solid rgba(0, 255, 255, 0.52);
   background: #000;
 }
 
-.level-gallery-detail-meta {
+.level-showcase-detail-meta {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-content: start;
@@ -1434,125 +1431,125 @@ body.level-gallery-active #game-screen {
   line-height: 1.35;
 }
 
-.level-gallery-detail-meta dt {
+.level-showcase-detail-meta dt {
   color: rgba(0, 255, 255, 0.72);
 }
 
-.level-gallery-detail-meta dd {
+.level-showcase-detail-meta dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.level-gallery-detail-actions {
+.level-showcase-detail-actions {
   display: flex;
   justify-content: flex-end;
   border-top: 2px solid #0001fe;
   padding-top: 12px;
 }
 
-.level-gallery-play-button {
+.level-showcase-play-button {
   min-width: 128px;
   color: #58ff58;
   border-color: #58ff58;
 }
 
-.level-gallery-play-button:disabled {
+.level-showcase-play-button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
 }
 
 @media (max-width: 960px) {
-  .level-gallery-shell {
+  .level-showcase-shell {
     padding: 16px;
   }
 
-  .level-gallery-header {
+  .level-showcase-header {
     align-items: start;
     flex-direction: column;
   }
 
-  .level-gallery-list {
+  .level-showcase-list {
     grid-template-columns: 1fr;
   }
 
-  .level-gallery-detail-content {
+  .level-showcase-detail-content {
     grid-template-columns: 1fr;
   }
 
-  .level-gallery-detail-preview {
+  .level-showcase-detail-preview {
     max-width: 100%;
   }
 }
 
 @media (max-width: 640px) {
-  .level-gallery-shell {
+  .level-showcase-shell {
     padding: 10px;
   }
 
-  .level-gallery-header,
-  .level-gallery-card,
-  .level-gallery-detail-panel {
+  .level-showcase-header,
+  .level-showcase-card,
+  .level-showcase-detail-panel {
     padding: 10px;
   }
 
-  .level-gallery-title {
+  .level-showcase-title {
     font-size: 24px;
   }
 
-  .level-gallery-subtitle,
-  .level-gallery-count {
+  .level-showcase-subtitle,
+  .level-showcase-count {
     font-size: 11px;
   }
 
-  .level-gallery-list {
+  .level-showcase-list {
     gap: 10px;
   }
 
-  .level-gallery-preview-button {
+  .level-showcase-preview-button {
     padding: 6px;
   }
 
-  .level-gallery-card-title {
+  .level-showcase-card-title {
     font-size: 15px;
   }
 
-  .level-gallery-meta,
-  .level-gallery-detail-meta {
+  .level-showcase-meta,
+  .level-showcase-detail-meta {
     grid-template-columns: 1fr;
     gap: 4px;
     font-size: 10px;
   }
 
-  .level-gallery-detail {
+  .level-showcase-detail {
     align-items: start;
     padding: 10px;
     overflow: auto;
   }
 
-  .level-gallery-detail-panel {
+  .level-showcase-detail-panel {
     max-height: none;
   }
 
-  .level-gallery-detail-header {
+  .level-showcase-detail-header {
     align-items: start;
     flex-direction: column;
   }
 
-  .level-gallery-detail-title {
+  .level-showcase-detail-title {
     font-size: 18px;
   }
 
-  .level-gallery-detail-actions {
+  .level-showcase-detail-actions {
     justify-content: stretch;
   }
 
-  .level-gallery-detail-close,
-  .level-gallery-play-button {
+  .level-showcase-detail-close,
+  .level-showcase-play-button {
     font-size: 10px;
   }
 
-  .level-gallery-play-button {
+  .level-showcase-play-button {
     width: 100%;
   }
 }

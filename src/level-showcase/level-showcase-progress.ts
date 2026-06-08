@@ -5,12 +5,12 @@
  * Notes: Tous les niveaux restent debloques tant que les regles de progression ne sont pas decidees.
  */
 
-import type { LevelCatalogEntry, LevelCatalogProgressSummary } from "./level-catalog";
+import type { LevelShowcaseEntry, LevelShowcaseProgressSummary } from "./level-showcase-catalog";
 
 /** Version de schema locale pour permettre des migrations futures. */
 const LEVEL_PROGRESS_SCHEMA_VERSION = 1;
 /** Cle de stockage navigateur dediee a la progression de la vitrine. */
-const LEVEL_PROGRESS_STORAGE_KEY = "la-mine-level-gallery-progress";
+const LEVEL_PROGRESS_STORAGE_KEY = "la-mine-level-showcase-progress";
 /** Condition neutre tant que le deblocage progressif n'est pas active. */
 const DEFAULT_UNLOCK_CONDITION = "Disponible";
 
@@ -29,7 +29,7 @@ export interface StoredLevelProgress {
 }
 
 /** Etat complet de progression locale. */
-export interface LevelGalleryProgressState {
+export interface LevelShowcaseProgressState {
   /** Version de schema de l'objet stocke. */
   readonly schemaVersion: 1;
   /** Progression indexee par identifiant stable de niveau. */
@@ -49,7 +49,7 @@ export interface LevelCompletionProgressResult {
 }
 
 /** Cree un etat de progression vide mais valide. */
-export function createEmptyLevelGalleryProgress(): LevelGalleryProgressState {
+export function createEmptyLevelShowcaseProgress(): LevelShowcaseProgressState {
   return {
     schemaVersion: LEVEL_PROGRESS_SCHEMA_VERSION,
     levels: {}
@@ -57,53 +57,53 @@ export function createEmptyLevelGalleryProgress(): LevelGalleryProgressState {
 }
 
 /** Charge la progression depuis le navigateur avec fallback silencieux. */
-export function loadLevelGalleryProgress(): LevelGalleryProgressState {
+export function loadLevelShowcaseProgress(): LevelShowcaseProgressState {
   if (!canUseLocalStorage()) {
-    return createEmptyLevelGalleryProgress();
+    return createEmptyLevelShowcaseProgress();
   }
 
   try {
     const raw = window.localStorage.getItem(LEVEL_PROGRESS_STORAGE_KEY);
     if (!raw) {
-      return createEmptyLevelGalleryProgress();
+      return createEmptyLevelShowcaseProgress();
     }
 
-    return normalizeLevelGalleryProgress(JSON.parse(raw));
+    return normalizeLevelShowcaseProgress(JSON.parse(raw));
   } catch {
-    return createEmptyLevelGalleryProgress();
+    return createEmptyLevelShowcaseProgress();
   }
 }
 
 /** Persiste la progression locale si le stockage navigateur est disponible. */
-export function saveLevelGalleryProgress(progress: LevelGalleryProgressState): void {
+export function saveLevelShowcaseProgress(progress: LevelShowcaseProgressState): void {
   if (!canUseLocalStorage()) {
     return;
   }
 
   try {
-    window.localStorage.setItem(LEVEL_PROGRESS_STORAGE_KEY, JSON.stringify(normalizeLevelGalleryProgress(progress)));
+    window.localStorage.setItem(LEVEL_PROGRESS_STORAGE_KEY, JSON.stringify(normalizeLevelShowcaseProgress(progress)));
   } catch {
     // Le stockage local est une aide de confort; le jeu doit rester fonctionnel sans lui.
   }
 }
 
 /** Retourne la progression stockee d'un niveau ou une valeur vide. */
-export function getStoredLevelProgress(progress: LevelGalleryProgressState, levelId: string): StoredLevelProgress {
+export function getStoredLevelProgress(progress: LevelShowcaseProgressState, levelId: string): StoredLevelProgress {
   return normalizeStoredLevelProgress(progress.levels[levelId]);
 }
 
 /** Indique si un niveau est accessible selon les futures regles de deblocage. */
-export function isLevelUnlocked(_level: LevelCatalogEntry, _progress: LevelGalleryProgressState): boolean {
+export function isLevelUnlocked(_level: LevelShowcaseEntry, _progress: LevelShowcaseProgressState): boolean {
   return true;
 }
 
 /** Retourne le libelle de condition de deblocage actuellement applicable. */
-export function getLevelUnlockCondition(_level: LevelCatalogEntry, _progress: LevelGalleryProgressState): string {
+export function getLevelUnlockCondition(_level: LevelShowcaseEntry, _progress: LevelShowcaseProgressState): string {
   return DEFAULT_UNLOCK_CONDITION;
 }
 
 /** Construit le resume de progression attendu par les fiches de niveau. */
-export function getLevelProgressSummary(level: LevelCatalogEntry, progress: LevelGalleryProgressState): LevelCatalogProgressSummary {
+export function getLevelProgressSummary(level: LevelShowcaseEntry, progress: LevelShowcaseProgressState): LevelShowcaseProgressSummary {
   const stored = getStoredLevelProgress(progress, level.id);
   const locked = !isLevelUnlocked(level, progress);
 
@@ -119,10 +119,10 @@ export function getLevelProgressSummary(level: LevelCatalogEntry, progress: Leve
 
 /** Met a jour immuablement la progression apres completion d'un niveau. */
 export function updateLevelCompletionProgress(
-  progress: LevelGalleryProgressState,
-  level: Pick<LevelCatalogEntry, "id">,
+  progress: LevelShowcaseProgressState,
+  level: Pick<LevelShowcaseEntry, "id">,
   result: LevelCompletionProgressResult
-): LevelGalleryProgressState {
+): LevelShowcaseProgressState {
   const previous = getStoredLevelProgress(progress, level.id);
   return {
     schemaVersion: LEVEL_PROGRESS_SCHEMA_VERSION,
@@ -145,9 +145,9 @@ function canUseLocalStorage(): boolean {
 }
 
 /** Normalise un objet inconnu vers le schema de progression courant. */
-function normalizeLevelGalleryProgress(value: unknown): LevelGalleryProgressState {
+function normalizeLevelShowcaseProgress(value: unknown): LevelShowcaseProgressState {
   if (!isRecord(value) || value.schemaVersion !== LEVEL_PROGRESS_SCHEMA_VERSION || !isRecord(value.levels)) {
-    return createEmptyLevelGalleryProgress();
+    return createEmptyLevelShowcaseProgress();
   }
 
   const levels: Record<string, StoredLevelProgress> = {};

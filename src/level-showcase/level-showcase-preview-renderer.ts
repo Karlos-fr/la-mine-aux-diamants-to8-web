@@ -23,7 +23,7 @@ const PREVIEW_EXIT_MARKER_COLOR = "#00ffff";
 const PREVIEW_PLAYER_FALLBACK_COLOR = "#ff0000";
 
 /** Options de rendu pour une miniature de niveau. */
-export interface LevelPreviewRenderOptions {
+export interface LevelShowcasePreviewRenderOptions {
   /** Largeur maximale du canvas destination. */
   readonly maxWidth?: number;
   /** Hauteur maximale du canvas destination. */
@@ -35,7 +35,7 @@ export interface LevelPreviewRenderOptions {
 }
 
 /** Resultat geometrique d'un rendu de preview. */
-export interface LevelPreviewRenderResult {
+export interface LevelShowcasePreviewRenderResult {
   /** Largeur reelle du canvas apres rendu. */
   readonly width: number;
   /** Hauteur reelle du canvas apres rendu. */
@@ -71,7 +71,7 @@ const PREVIEW_FALLBACK_COLORS: Readonly<Record<ModernTileType, string>> = {
 };
 
 /** Renderer reutilisable par la liste et la fiche de la vitrine. */
-export class LevelPreviewRenderer {
+export class LevelShowcasePreviewRenderer {
   /** Assets runtime optionnels; les fallbacks permettent un rendu avant chargement. */
   private assets: LoadedRuntimeAssets | null = null;
 
@@ -84,8 +84,8 @@ export class LevelPreviewRenderer {
   renderLevelPreview(
     canvas: HTMLCanvasElement,
     level: ModernLevelJson,
-    options: LevelPreviewRenderOptions = {}
-  ): LevelPreviewRenderResult {
+    options: LevelShowcasePreviewRenderOptions = {}
+  ): LevelShowcasePreviewRenderResult {
     const cellSize = resolvePreviewCellSize(level, options);
     const width = level.width * cellSize;
     const height = level.height * cellSize;
@@ -216,7 +216,7 @@ export class LevelPreviewRenderer {
 }
 
 /** Calcule une taille de cellule entiere qui conserve les proportions du niveau. */
-function resolvePreviewCellSize(level: ModernLevelJson, options: LevelPreviewRenderOptions): number {
+function resolvePreviewCellSize(level: ModernLevelJson, options: LevelShowcasePreviewRenderOptions): number {
   const maxWidth = Math.max(1, Math.floor(options.maxWidth ?? DEFAULT_PREVIEW_MAX_WIDTH));
   const maxHeight = Math.max(1, Math.floor(options.maxHeight ?? DEFAULT_PREVIEW_MAX_HEIGHT));
   const maxCellSize = Math.floor(Math.min(maxWidth / level.width, maxHeight / level.height));
