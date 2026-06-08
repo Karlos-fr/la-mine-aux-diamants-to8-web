@@ -23,8 +23,12 @@ if (!root) {
   throw new Error("Element #app introuvable.");
 }
 
+/** Parametres applicatifs optionnels transmis dans la query string. */
+const routeParams = new URLSearchParams(window.location.search);
 /** Mode applicatif optionnel transmis dans la query string. */
-const mode = new URLSearchParams(window.location.search).get("mode");
+const mode = routeParams.get("mode");
+/** Niveau optionnel transmis dans la query string pour ouvrir directement un niveau. */
+const directLevelNumber = parseDirectLevelNumber(routeParams);
 
 /** Cle de persistance de l'etat d'epinglage de la barre debug. */
 const DEBUG_TOOLBAR_PINNED_STORAGE_KEY = "la-mine-debug-toolbar-pinned";
@@ -168,7 +172,8 @@ if (mode === "gallery") {
   });
   levelPickerButton.append(levelPickerDisplay, levelSelectArrow);
   levelSelectShell.append(levelPickerButton, levelMenu);
-  syncLevelPickerDisplay(levelOptions, levelPickerDisplay, 1);
+  let selectedDebugLevelNumber = directLevelNumber ?? 1;
+  syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
   debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
 
@@ -176,10 +181,9 @@ if (mode === "gallery") {
   const app = createGameApp({
     canvas,
     initialScene: () => {
-      return new StartupInfogramScene();
+      return createInitialSceneFromRoute(mode, directLevelNumber);
     }
   });
-  let selectedDebugLevelNumber = 1;
   const closeLevelMenu = (): void => {
     levelMenu.hidden = true;
     levelPickerButton.setAttribute("aria-expanded", "false");
@@ -239,6 +243,42 @@ if (mode === "gallery") {
   });
   app.start();
   canvas.focus();
+}
+
+/** Cree la scene initiale demandee par l'URL, ou le flux startup historique par defaut. */
+function createInitialSceneFromRoute(mode: string | null, levelNumber: number | null) {
+  if (levelNumber !== null) {
+    return createGameplayScene(levelNumber);
+  }
+
+  if (mode === "editor") {
+    return createLevelEditorScene();
+  }
+
+  if (mode === "showcase") {
+    return createLevelShowcaseScene();
+  }
+
+  if (mode === "attract") {
+    return createAttractGameplayScene(() => new StartupTitleScene());
+  }
+
+  return new StartupInfogramScene();
+}
+
+/** Decode le parametre `level` en numero jouable valide. */
+function parseDirectLevelNumber(params: URLSearchParams): number | null {
+  const rawLevel = params.get("level");
+  if (rawLevel === null) {
+    return null;
+  }
+
+  const levelNumber = Number(rawLevel);
+  if (!Number.isInteger(levelNumber) || levelNumber < 1 || levelNumber > LEVEL_COUNT) {
+    return null;
+  }
+
+  return levelNumber;
 }
 
 /** Synchronise le libelle pixelise du selecteur custom avec son niveau courant. */

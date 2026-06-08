@@ -92,9 +92,26 @@ La logique gameplay reste discrete en cellules de grille. La fluidification ne m
 http://localhost:5173/
 ```
 
+### URLs directes
+
+```text
+http://localhost:5173/?mode=showcase
+http://localhost:5173/?mode=editor
+http://localhost:5173/?mode=attract
+http://localhost:5173/?level=1
+```
+
+Sur GitHub Pages, remplacer la base par :
+
+```text
+https://karlos-fr.github.io/la-mine-aux-diamants-to8-web/
+```
+
+`?level=N` ouvre directement le niveau jouable `N`. Si `level` est valide, il est prioritaire sur `mode`.
+
 ### Vitrine des niveaux
 
-Accessible depuis la barre debug avec le bouton `Niveaux`.
+Accessible depuis la barre debug avec le bouton `Vitrine`, ou directement avec `?mode=showcase`.
 
 Elle affiche :
 
@@ -106,7 +123,7 @@ Elle affiche :
 
 ### Editeur de niveaux
 
-Accessible depuis la barre debug avec le bouton `Editeur`.
+Accessible depuis la barre debug avec le bouton `Editeur`, ou directement avec `?mode=editor`.
 
 L'editeur permet notamment :
 
@@ -126,6 +143,14 @@ http://localhost:5173/?mode=gallery
 ```
 
 Permet d'inspecter les atlas et animations extraits sans passer par le gameplay.
+
+### Attract mode
+
+```text
+http://localhost:5173/?mode=attract
+```
+
+Lance directement la demo automatique originale sans attendre le delai de l'ecran titre.
 
 ## Architecture
 
