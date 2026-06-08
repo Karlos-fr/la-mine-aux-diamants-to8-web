@@ -52,7 +52,13 @@ export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRend
   void renderer;
   const dom = ensureOptionsPopinDom();
   const selectedCategory = OPTIONS_MENU_CATEGORIES[options.selectedCategoryIndex] ?? OPTIONS_MENU_CATEGORIES[0];
-  const signature = `${options.selectedCategoryIndex}:${selectedCategory}:${options.contextLabel}`;
+  const signature = [
+    options.selectedCategoryIndex,
+    selectedCategory,
+    options.contextLabel,
+    getDisplayModeLabel(),
+    getDisplayZoomLabel()
+  ].join(":");
 
   dom.root.hidden = false;
   dom.root.setAttribute("aria-hidden", "false");
@@ -146,8 +152,10 @@ function renderCategoryContent(container: HTMLDivElement, category: string, cont
       { text: "Jeu original 1986", colorClass: "options-popin__line--muted" },
       { text: "Philippe Bruneel" },
       { text: "Christian Lemaire" },
+      { text: "", colorClass: "options-popin__line--spacer" },
       { text: "Modification 2026", colorClass: "options-popin__line--muted" },
       { text: "github.com/Karlos-fr", colorClass: "options-popin__line--cyan", href: "https://github.com/Karlos-fr" },
+      { text: "", colorClass: "options-popin__line--spacer" },
       { text: `Version ${APP_VERSION}`, colorClass: "options-popin__line--green" }
     ]);
     return;

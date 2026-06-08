@@ -256,6 +256,12 @@ button:hover {
   outline: none;
 }
 
+/* Les ecrans startup restent en ratio TO8 meme si le gameplay utilise l'espace navigateur. */
+body.startup-screen-fixed-aspect #game-screen {
+  width: var(--game-canvas-fixed-aspect-css-width, 640px);
+  height: var(--game-canvas-fixed-aspect-css-height, 400px);
+}
+
 /* Overlay HTML de la pop-in options, separe du canvas pour garder un texte net. */
 .options-popin-overlay {
   position: fixed;
@@ -276,7 +282,7 @@ button:hover {
 /* Panneau options au style TO8, mais compose en HTML. */
 .options-popin {
   width: min(880px, calc(100vw - 32px));
-  min-height: 420px;
+  height: min(500px, calc(100vh - 32px));
   border: 3px solid #00ffff;
   padding: 20px 24px 16px;
   background: #101018;
@@ -342,7 +348,7 @@ button:hover {
 /* Panneau de contenu de la categorie. */
 .options-popin__content {
   min-width: 0;
-  min-height: 218px;
+  height: 280px;
   border: 3px solid #4a4a4f;
   padding: 20px 22px;
   background: #080810;
@@ -385,6 +391,10 @@ button:hover {
 
 .options-popin__line--green {
   color: #6fff5f;
+}
+
+.options-popin__line--spacer {
+  min-height: 14px;
 }
 
 /* Lien dans la pop-in, conserve la couleur TO8 au lieu du bleu navigateur. */

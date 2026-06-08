@@ -53,7 +53,7 @@ export function getDisplayOptions(): DisplayOptions {
 
 /** Retourne le libelle court du mode courant pour la pop-in TO8. */
 export function getDisplayModeLabel(): string {
-  return displayOptions.mode === "original" ? "Origine TO8" : "Espace nav";
+  return displayOptions.mode === "original" ? "Origine TO8" : "Espace navigation";
 }
 
 /** Retourne le libelle court du zoom courant pour la pop-in TO8. */
@@ -112,8 +112,11 @@ export function getGameplayRenderSize(): Size2D {
 /** Applique la taille CSS pixel-perfect du canvas via les variables partagees par la feuille de style. */
 export function applyDisplayCanvasLayout(): void {
   const size = getCanvasCssSize();
+  const fixedAspectSize = getViewportFixedAspectCanvasCssSize();
   document.body.style.setProperty("--game-canvas-css-width", `${size.width}px`);
   document.body.style.setProperty("--game-canvas-css-height", `${size.height}px`);
+  document.body.style.setProperty("--game-canvas-fixed-aspect-css-width", `${fixedAspectSize.width}px`);
+  document.body.style.setProperty("--game-canvas-fixed-aspect-css-height", `${fixedAspectSize.height}px`);
 }
 
 /** Calcule la taille CSS effective du canvas, distincte de la resolution logique gameplay. */
@@ -136,6 +139,26 @@ function getCanvasCssSize(): Size2D {
   return {
     width: LOGICAL_WIDTH * displayOptions.zoom,
     height: LOGICAL_HEIGHT * displayOptions.zoom
+  };
+}
+
+/** Calcule la plus grande taille viewport possible en conservant le ratio TO8 320x200. */
+function getViewportFixedAspectCanvasCssSize(): Size2D {
+  const viewportSize = {
+    width: Math.max(MIN_CSS_WIDTH, window.innerWidth),
+    height: Math.max(MIN_CSS_HEIGHT, window.innerHeight)
+  };
+  const widthFromHeight = Math.floor(viewportSize.height * (LOGICAL_WIDTH / LOGICAL_HEIGHT));
+  if (widthFromHeight <= viewportSize.width) {
+    return {
+      width: widthFromHeight,
+      height: viewportSize.height
+    };
+  }
+
+  return {
+    width: viewportSize.width,
+    height: Math.floor(viewportSize.width * (LOGICAL_HEIGHT / LOGICAL_WIDTH))
   };
 }
 

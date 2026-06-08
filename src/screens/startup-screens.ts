@@ -26,6 +26,8 @@ import { createAttractGameplayScene, createGameplayScene } from "./scene-factory
 const TITLE_ATTRACT_IDLE_TICKS = 0x34;
 /** Duree moderne d'un passage de boucle titre `$8DD8`, centralisee dans `runtime-timing.ts`. */
 const TITLE_ATTRACT_IDLE_TICK_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.titleAttractLoopTicks);
+/** Classe CSS qui conserve le ratio TO8 des ecrans startup quelle que soit l'option gameplay. */
+const STARTUP_FIXED_ASPECT_CLASS = "startup-screen-fixed-aspect";
 
 export class StartupInfogramScene implements Scene {
   /** Contexte de scene fourni par le routeur pour naviguer vers l'ecran titre. */
@@ -52,11 +54,13 @@ export class StartupInfogramScene implements Scene {
   /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
+    document.body.classList.add(STARTUP_FIXED_ASPECT_CLASS);
     gameAudio.disarmTitleMusic();
   }
 
   /** Arrete la musique de titre quand le flux quitte l'ecran 2. */
   exit(): void {
+    document.body.classList.remove(STARTUP_FIXED_ASPECT_CLASS);
     gameAudio.stopTitleMusic();
   }
 
@@ -163,11 +167,13 @@ export class StartupTitleScene implements Scene {
   /** Recupere le contexte de navigation de la scene. */
   enter(context: SceneContext): void {
     this.context = context;
+    document.body.classList.add(STARTUP_FIXED_ASPECT_CLASS);
     gameAudio.startTitleMusic();
   }
 
   /** Arrete la musique quand le joueur quitte le second ecran. */
   exit(): void {
+    document.body.classList.remove(STARTUP_FIXED_ASPECT_CLASS);
     gameAudio.stopTitleMusic();
   }
 
