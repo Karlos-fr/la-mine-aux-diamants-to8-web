@@ -1,0 +1,442 @@
+{
+  "generatedBy": "tools/extract-mine-title.mjs",
+  "source": {
+    "portageDir": "C:\\a\\Projets\\to8-porting-kit-v2\\build\\portage\\minediamant-fbi-androides-saphir_to8-mine",
+    "blocksDir": "C:\\a\\Projets\\to8-porting-kit-v2\\build\\portage\\minediamant-fbi-androides-saphir_to8-mine\\memory\\blocks",
+    "routinePath": "C:\\a\\Projets\\to8-porting-kit-v2\\build\\portage\\minediamant-fbi-androides-saphir_to8-mine\\web\\src\\ported\\routines\\9367_routine_entet_9367.ts",
+    "menuRoutinePath": "C:\\a\\Projets\\to8-porting-kit-v2\\build\\portage\\minediamant-fbi-androides-saphir_to8-mine\\web\\src\\ported\\routines\\8DDB_routine_entet_8ddb.ts",
+    "faceRoutinePath": "C:\\a\\Projets\\to8-porting-kit-v2\\build\\portage\\minediamant-fbi-androides-saphir_to8-mine\\web\\src\\ported\\routines\\911B_routine_entet_911b.ts",
+    "dataBlocks": [
+      "ENT.BIN:$7000-$8C62",
+      "ENTET.BIN:$8C63-$9510"
+    ],
+    "routine": "ENTET.BIN:$9367",
+    "rendererHelpers": [
+      "ENTET.BIN:$938D",
+      "ENTET.BIN:$93C0",
+      "ENTET.BIN:$9406"
+    ],
+    "animationRoutines": [
+      "ENTET.BIN:$8EB6",
+      "ENTET.BIN:$8DFF",
+      "ENTET.BIN:$8F2D"
+    ],
+    "note": "The generated TypeScript routine is used as a build-time decoder oracle; the produced PNG is reconstructed from video planes, not copied from docs/title.png."
+  },
+  "screens": [
+    {
+      "id": "startup-02-title-entet-9367",
+      "status": "confirmed",
+      "width": 320,
+      "height": 200,
+      "path": "startup/startup-02-title-entet-9367.png",
+      "rgbaSha256": "c4dbee15110d475699d9a37bed5456966aeff3b29620497ba5e613367625396e",
+      "colorPlaneSha256": "89c6ba6fd268e38d685c3b9b1111679118ff82ef8c963b0f7606735f4360ad13",
+      "shapePlaneSha256": "b7cc68a02e1cc82764a2a907a2bb82916d64b816c364c93df244d9b79cc788c8",
+      "evidence": [
+        "ENTET.BIN:$8C80 calls ENTET.BIN:$9367 during title startup",
+        "ENTET.BIN:$9367 loads Y=$7000 and decodes ENT.BIN data into the 320x16 screen planes",
+        "ENTET.BIN:$8E9E/$8EAA switch between shape and color video pages"
+      ]
+    }
+  ],
+  "animations": [
+    {
+      "id": "title-face",
+      "status": "confirmed",
+      "routine": "ENTET.BIN:$8EB6",
+      "targetAddress": "0x43D8",
+      "source": {
+        "indexTable": "0x8EF0",
+        "glyphBase": "0x905B",
+        "format": "frame index selects 16 bytes: 8 shape rows, then 8 color rows; each row is written at column and column+2"
+      },
+      "frames": [
+        {
+          "id": "title-face-00",
+          "frameNumber": 0,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-00.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-01",
+          "frameNumber": 1,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-01.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-02",
+          "frameNumber": 2,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-02.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-03",
+          "frameNumber": 3,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-03.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-04",
+          "frameNumber": 4,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-04.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-05",
+          "frameNumber": 5,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-05.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-06",
+          "frameNumber": 6,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-06.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-07",
+          "frameNumber": 7,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-07.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-08",
+          "frameNumber": 8,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-08.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-09",
+          "frameNumber": 9,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-09.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-10",
+          "frameNumber": 10,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-10.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-11",
+          "frameNumber": 11,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-11.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-12",
+          "frameNumber": 12,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-12.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        },
+        {
+          "id": "title-face-13",
+          "frameNumber": 13,
+          "frameIndex": "0x01",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-13.png",
+          "rgbaSha256": "db3a82f99097c97c485addf5dba2b5208131f5fe2080a44e411e59b36d28adb5"
+        },
+        {
+          "id": "title-face-14",
+          "frameNumber": 14,
+          "frameIndex": "0x02",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-14.png",
+          "rgbaSha256": "93adada1bc7827c71315037e420df913dfa55612417ddde5f26ac38173d2edcf"
+        },
+        {
+          "id": "title-face-15",
+          "frameNumber": 15,
+          "frameIndex": "0x01",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-15.png",
+          "rgbaSha256": "db3a82f99097c97c485addf5dba2b5208131f5fe2080a44e411e59b36d28adb5"
+        },
+        {
+          "id": "title-face-16",
+          "frameNumber": 16,
+          "frameIndex": "0x00",
+          "x": 192,
+          "y": 24,
+          "width": 24,
+          "height": 8,
+          "path": "startup/animations/title-face-16.png",
+          "rgbaSha256": "dbac44c7ae0bb6bd518434ead8294de799cfce3b9d7b50969768208b3acaecae"
+        }
+      ]
+    },
+    {
+      "id": "title-sparkles",
+      "status": "confirmed",
+      "routine": "ENTET.BIN:$8DFF",
+      "source": {
+        "positionTable": "0x8E46",
+        "indexTable": "0x8E5C",
+        "glyphBase": "0x908B",
+        "format": "each item writes one 8x8 shape glyph and one 8x8 color glyph to its screen address"
+      },
+      "frames": [
+        {
+          "id": "title-sparkle-00",
+          "frameNumber": 0,
+          "positionAddress": "0x4A10",
+          "frameIndex": "0x00",
+          "path": "startup/animations/title-sparkle-00.png",
+          "rgbaSha256": "c4dbee15110d475699d9a37bed5456966aeff3b29620497ba5e613367625396e"
+        },
+        {
+          "id": "title-sparkle-01",
+          "frameNumber": 1,
+          "positionAddress": "0x47DF",
+          "frameIndex": "0x03",
+          "path": "startup/animations/title-sparkle-01.png",
+          "rgbaSha256": "0ad250882a8686fbd7552845100138131b9404d9d8e87d421d5e7598364b8265"
+        },
+        {
+          "id": "title-sparkle-02",
+          "frameNumber": 2,
+          "positionAddress": "0x48CE",
+          "frameIndex": "0x01",
+          "path": "startup/animations/title-sparkle-02.png",
+          "rgbaSha256": "222a09816e438367ef2997cb0120da952caab8b11debf5a91d0384199d574068"
+        },
+        {
+          "id": "title-sparkle-03",
+          "frameNumber": 3,
+          "positionAddress": "0x47B5",
+          "frameIndex": "0x04",
+          "path": "startup/animations/title-sparkle-03.png",
+          "rgbaSha256": "b6273604ec326fc11adb89c6ed4625c49bc6ccf54360d879f612b606d23a1b50"
+        },
+        {
+          "id": "title-sparkle-04",
+          "frameNumber": 4,
+          "positionAddress": "0x4A0D",
+          "frameIndex": "0x02",
+          "path": "startup/animations/title-sparkle-04.png",
+          "rgbaSha256": "128f523b3a1e061565b291696e24945c4f6080e34c44c8daddf1ba4d7d2f843c"
+        },
+        {
+          "id": "title-sparkle-05",
+          "frameNumber": 5,
+          "positionAddress": "0x4DCA",
+          "frameIndex": "0x03",
+          "path": "startup/animations/title-sparkle-05.png",
+          "rgbaSha256": "f05ad9cb125c5dfbde68cf875c83caf780e09bbaff9de0abe33be9fb28e5a4a2"
+        },
+        {
+          "id": "title-sparkle-06",
+          "frameNumber": 6,
+          "positionAddress": "0x52CC",
+          "frameIndex": "0x04",
+          "path": "startup/animations/title-sparkle-06.png",
+          "rgbaSha256": "b094b2d5cb0099ad5b0134058306a1f2a43cd7caec5e675a86d7d9de7c7f3420"
+        },
+        {
+          "id": "title-sparkle-07",
+          "frameNumber": 7,
+          "positionAddress": "0x4506",
+          "frameIndex": "0x02",
+          "path": "startup/animations/title-sparkle-07.png",
+          "rgbaSha256": "7d534af2d159052449fa5a6455ab51ad406906ca8f3dfe45abf92ce8a236e6ef"
+        },
+        {
+          "id": "title-sparkle-08",
+          "frameNumber": 8,
+          "positionAddress": "0x48DE",
+          "frameIndex": "0x01",
+          "path": "startup/animations/title-sparkle-08.png",
+          "rgbaSha256": "191d9b2c3a9a56bab254f60892240744ad4bacd236f29d735fa2e164cbb2ff91"
+        },
+        {
+          "id": "title-sparkle-09",
+          "frameNumber": 9,
+          "positionAddress": "0x4662",
+          "frameIndex": "0x05",
+          "path": "startup/animations/title-sparkle-09.png",
+          "rgbaSha256": "f57a7cebf1bce7fbb55270006d967cf04c8d460a58cc01c079b78ab623956e43"
+        }
+      ]
+    },
+    {
+      "id": "title-feet",
+      "status": "confirmed",
+      "routine": "ENTET.BIN:$8F2D",
+      "targetAddress": "0x5965",
+      "source": {
+        "shapePointerTable": "0x8F92",
+        "colorPointerTable": "0x8F96",
+        "format": "routine $8F6E writes three byte-columns for sixteen rows at $5965"
+      },
+      "frames": [
+        {
+          "id": "title-feet-00",
+          "frameNumber": 0,
+          "shapePointer": "0x8F9C",
+          "colorPointer": "0x8FFB",
+          "x": 144,
+          "y": 162,
+          "width": 24,
+          "height": 16,
+          "path": "startup/animations/title-feet-00.png",
+          "rgbaSha256": "595b0da315a2a424ece11711d88e90f7670f6697d5f63cf4b01e7f35e8ef4b17"
+        },
+        {
+          "id": "title-feet-01",
+          "frameNumber": 1,
+          "shapePointer": "0x8FCB",
+          "colorPointer": "0x902B",
+          "x": 144,
+          "y": 162,
+          "width": 24,
+          "height": 16,
+          "path": "startup/animations/title-feet-01.png",
+          "rgbaSha256": "2afe318d6dccf54b5fe6db422d81a25ffd0aa5405aa6b3b010e6b8d82746e4cb"
+        }
+      ]
+    },
+    {
+      "id": "title-selection",
+      "status": "confirmed",
+      "routine": "ENTET.BIN:$8DDB",
+      "stateAddress": "0x8DDA",
+      "stateTable": "0x9340",
+      "source": {
+        "description": "Simule la routine ENTET.BIN:$8DDB pour les 3 états de curseur de menu",
+        "framesFrom": "0..2"
+      },
+      "frames": [
+        {
+          "id": "title-selection-00",
+          "frameNumber": 0,
+          "state": 0,
+          "path": "startup/animations/title-selection-00.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        },
+        {
+          "id": "title-selection-01",
+          "frameNumber": 1,
+          "state": 1,
+          "path": "startup/animations/title-selection-01.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        },
+        {
+          "id": "title-selection-02",
+          "frameNumber": 2,
+          "state": 2,
+          "path": "startup/animations/title-selection-02.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        }
+      ]
+    },
+    {
+      "id": "title-menu-blocks",
+      "status": "confirmed",
+      "routine": "ENTET.BIN:$911B/$912E/$9141",
+      "source": {
+        "tableBase": {
+          "$911B": "0x91E6 -> 5E09",
+          "$912E": "0x91FB -> 5E00",
+          "$9141": "0x9223 -> 5E0F"
+        },
+        "renderer": "ENTET.BIN:$9154"
+      },
+      "frames": [
+        {
+          "id": "title-menu-911b",
+          "routineAddress": "0x911B",
+          "path": "startup/animations/title-menu-911b.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        },
+        {
+          "id": "title-menu-912e",
+          "routineAddress": "0x912E",
+          "path": "startup/animations/title-menu-912e.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        },
+        {
+          "id": "title-menu-9141",
+          "routineAddress": "0x9141",
+          "path": "startup/animations/title-menu-9141.png",
+          "rgbaSha256": "e53f613447a3a280513e3f272928ff3397ec03070b1fecd066a51e59006262f3"
+        }
+      ]
+    }
+  ]
+}

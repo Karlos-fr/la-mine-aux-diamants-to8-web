@@ -1,0 +1,71 @@
+{
+  "generatedBy": "tools/extract-mine-startup.mjs",
+  "screens": [
+    {
+      "id": "startup-01-infogrames-presents",
+      "status": "confirmed",
+      "width": 320,
+      "height": 200,
+      "path": "startup/startup-01-infogrames-presents.png",
+      "rgbaSha256": "4c9d519283b8c4e92ee16a2415f6ed594e5d4a061b8c1ccb5f2b58ece24002e8",
+      "source": {
+        "mapFile": "INFOGRAM.MAP",
+        "mapPath": "C:\\a\\Projets\\to8_la-mine-aux-diamants_fd\\extraction\\sources\\disk\\infogram_map.bin",
+        "bootRoutine": "web/src/generated/game-entry.ts:showBootSplash",
+        "bootEvidence": [
+          "ctx.basic.loadp(INFOGRAM.MAP, T%(1000))",
+          "ctx.basic.put(11, 3, T%(1000)) -> x=88 y=24",
+          "ctx.firmware.color(7, 0); locate(15, 13); print(PRESENTE)",
+          "BASIC launcher contains palette word &HD6FF before loading LMINE0",
+          "video oracle confirms the INFOGRAMES wordmark/underlines use the orange palette while the armadillo remains light"
+        ]
+      },
+      "layers": [
+        {
+          "id": "infogrames-logo",
+          "x": 88,
+          "y": 24,
+          "width": 136,
+          "height": 72
+        },
+        {
+          "id": "presente-text",
+          "x": 128,
+          "y": 105,
+          "text": "PRESENTE",
+          "paletteIndex": 7
+        },
+        {
+          "id": "title-line-1",
+          "x": 104,
+          "y": 132,
+          "text": "LA MINE",
+          "paletteIndex": 6
+        },
+        {
+          "id": "title-line-2",
+          "x": 64,
+          "y": 158,
+          "text": "AUX DIAMANTS",
+          "paletteIndex": 6
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "infogrames-logo-map",
+      "status": "confirmed",
+      "sourceFile": "INFOGRAM.MAP",
+      "sourcePath": "C:\\a\\Projets\\to8_la-mine-aux-diamants_fd\\extraction\\sources\\disk\\infogram_map.bin",
+      "path": "startup/startup-01-infogrames-logo.png",
+      "width": 136,
+      "height": 72,
+      "mode": "40col",
+      "columns": 17,
+      "loadAddress": "0x0000",
+      "declaredDataLength": 734,
+      "rgbaSha256": "84ebfc15dbcbe140722f0b39d8d19e9d11b385c3e47f48df93225da755a3bf33"
+    }
+  ]
+}

@@ -1,0 +1,3634 @@
+{
+  "levelIndex": 1,
+  "levelNumber": 2,
+  "sourceAddress": "0xA17D",
+  "sourceOffset": "0xA17D",
+  "header": [
+    "0x01",
+    "0x07",
+    "0x14",
+    "0x0C",
+    "0x23",
+    "0x12",
+    "0x1E",
+    "0x0A",
+    "0x02",
+    "0x05",
+    "0x00",
+    "0x0F"
+  ],
+  "headerMeta": {
+    "raw": [
+      "0x01",
+      "0x07",
+      "0x14",
+      "0x0C",
+      "0x23",
+      "0x12",
+      "0x1E",
+      "0x0A",
+      "0x02",
+      "0x05",
+      "0x00",
+      "0x0F"
+    ],
+    "player": {
+      "x": 35,
+      "y": 18,
+      "source": {
+        "byteOffset": 4,
+        "raw": [
+          "0x23",
+          "0x12"
+        ]
+      }
+    },
+    "exit": {
+      "x": 30,
+      "y": 10,
+      "source": {
+        "byteOffset": 6,
+        "raw": [
+          "0x1E",
+          "0x0A"
+        ]
+      }
+    },
+    "time": {
+      "raw": [
+        "0x02",
+        "0x05"
+      ],
+      "raw16": "0x0205",
+      "rawDecimal": 517,
+      "bcd": 205,
+      "bcdString": "02:05",
+      "bcdValid": true
+    },
+    "levelFlags": {
+      "param1": "0x00",
+      "param2": "0x0F"
+    },
+    "memoryFields": {
+      "byte0": 1,
+      "byte1": 7,
+      "reserved16": 263,
+      "reserved28": 5132,
+      "rawMode": 0,
+      "param": 15
+    }
+  },
+  "size": {
+    "width": 38,
+    "height": 20,
+    "stride": 40,
+    "logicalCellCount": 760
+  },
+  "fixture": {
+    "png": "levels/mine-level-02.png",
+    "width": 608,
+    "height": 320,
+    "encodedLength": 488,
+    "sha256": "aa655a3dad8f96016f10542b415bb103dcb97bee9cc80400468421cc0e1072ed"
+  },
+  "playerStart": {
+    "x": 35,
+    "y": 18,
+    "gridAddress": "0xDED3"
+  },
+  "exitsFromHeader": [
+    {
+      "x": 30,
+      "y": 10,
+      "source": "header",
+      "gridAddress": "0xDD8E"
+    }
+  ],
+  "positions": {
+    "diamonds": [
+      {
+        "x": 14,
+        "y": 1,
+        "gridAddress": "0xDC16"
+      },
+      {
+        "x": 34,
+        "y": 2,
+        "gridAddress": "0xDC52"
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "gridAddress": "0xDC82"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "gridAddress": "0xDCD1"
+      },
+      {
+        "x": 9,
+        "y": 6,
+        "gridAddress": "0xDCD9"
+      },
+      {
+        "x": 15,
+        "y": 6,
+        "gridAddress": "0xDCDF"
+      },
+      {
+        "x": 24,
+        "y": 6,
+        "gridAddress": "0xDCE8"
+      },
+      {
+        "x": 7,
+        "y": 8,
+        "gridAddress": "0xDD27"
+      },
+      {
+        "x": 8,
+        "y": 10,
+        "gridAddress": "0xDD78"
+      },
+      {
+        "x": 35,
+        "y": 10,
+        "gridAddress": "0xDD93"
+      },
+      {
+        "x": 2,
+        "y": 12,
+        "gridAddress": "0xDDC2"
+      },
+      {
+        "x": 10,
+        "y": 12,
+        "gridAddress": "0xDDCA"
+      },
+      {
+        "x": 21,
+        "y": 12,
+        "gridAddress": "0xDDD5"
+      },
+      {
+        "x": 27,
+        "y": 12,
+        "gridAddress": "0xDDDB"
+      },
+      {
+        "x": 14,
+        "y": 13,
+        "gridAddress": "0xDDF6"
+      },
+      {
+        "x": 32,
+        "y": 13,
+        "gridAddress": "0xDE08"
+      },
+      {
+        "x": 26,
+        "y": 18,
+        "gridAddress": "0xDECA"
+      },
+      {
+        "x": 35,
+        "y": 18,
+        "gridAddress": "0xDED3"
+      }
+    ],
+    "rocks": [
+      {
+        "x": 12,
+        "y": 0,
+        "gridAddress": "0xDBEC"
+      },
+      {
+        "x": 14,
+        "y": 0,
+        "gridAddress": "0xDBEE"
+      },
+      {
+        "x": 17,
+        "y": 0,
+        "gridAddress": "0xDBF1"
+      },
+      {
+        "x": 21,
+        "y": 0,
+        "gridAddress": "0xDBF5"
+      },
+      {
+        "x": 28,
+        "y": 0,
+        "gridAddress": "0xDBFC"
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "gridAddress": "0xDC0A"
+      },
+      {
+        "x": 6,
+        "y": 1,
+        "gridAddress": "0xDC0E"
+      },
+      {
+        "x": 7,
+        "y": 1,
+        "gridAddress": "0xDC0F"
+      },
+      {
+        "x": 9,
+        "y": 1,
+        "gridAddress": "0xDC11"
+      },
+      {
+        "x": 16,
+        "y": 1,
+        "gridAddress": "0xDC18"
+      },
+      {
+        "x": 19,
+        "y": 1,
+        "gridAddress": "0xDC1B"
+      },
+      {
+        "x": 24,
+        "y": 1,
+        "gridAddress": "0xDC20"
+      },
+      {
+        "x": 27,
+        "y": 1,
+        "gridAddress": "0xDC23"
+      },
+      {
+        "x": 30,
+        "y": 1,
+        "gridAddress": "0xDC26"
+      },
+      {
+        "x": 31,
+        "y": 1,
+        "gridAddress": "0xDC27"
+      },
+      {
+        "x": 35,
+        "y": 1,
+        "gridAddress": "0xDC2B"
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "gridAddress": "0xDC31"
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "gridAddress": "0xDC35"
+      },
+      {
+        "x": 11,
+        "y": 2,
+        "gridAddress": "0xDC3B"
+      },
+      {
+        "x": 14,
+        "y": 2,
+        "gridAddress": "0xDC3E"
+      },
+      {
+        "x": 20,
+        "y": 2,
+        "gridAddress": "0xDC44"
+      },
+      {
+        "x": 21,
+        "y": 2,
+        "gridAddress": "0xDC45"
+      },
+      {
+        "x": 24,
+        "y": 2,
+        "gridAddress": "0xDC48"
+      },
+      {
+        "x": 26,
+        "y": 2,
+        "gridAddress": "0xDC4A"
+      },
+      {
+        "x": 30,
+        "y": 2,
+        "gridAddress": "0xDC4E"
+      },
+      {
+        "x": 32,
+        "y": 2,
+        "gridAddress": "0xDC50"
+      },
+      {
+        "x": 36,
+        "y": 2,
+        "gridAddress": "0xDC54"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "gridAddress": "0xDC5B"
+      },
+      {
+        "x": 8,
+        "y": 3,
+        "gridAddress": "0xDC60"
+      },
+      {
+        "x": 12,
+        "y": 3,
+        "gridAddress": "0xDC64"
+      },
+      {
+        "x": 17,
+        "y": 3,
+        "gridAddress": "0xDC69"
+      },
+      {
+        "x": 18,
+        "y": 3,
+        "gridAddress": "0xDC6A"
+      },
+      {
+        "x": 28,
+        "y": 3,
+        "gridAddress": "0xDC74"
+      },
+      {
+        "x": 33,
+        "y": 3,
+        "gridAddress": "0xDC79"
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "gridAddress": "0xDC80"
+      },
+      {
+        "x": 34,
+        "y": 4,
+        "gridAddress": "0xDCA2"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "gridAddress": "0xDCA9"
+      },
+      {
+        "x": 3,
+        "y": 5,
+        "gridAddress": "0xDCAB"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "gridAddress": "0xDCAD"
+      },
+      {
+        "x": 21,
+        "y": 5,
+        "gridAddress": "0xDCBD"
+      },
+      {
+        "x": 10,
+        "y": 6,
+        "gridAddress": "0xDCDA"
+      },
+      {
+        "x": 18,
+        "y": 6,
+        "gridAddress": "0xDCE2"
+      },
+      {
+        "x": 25,
+        "y": 6,
+        "gridAddress": "0xDCE9"
+      },
+      {
+        "x": 29,
+        "y": 6,
+        "gridAddress": "0xDCED"
+      },
+      {
+        "x": 36,
+        "y": 6,
+        "gridAddress": "0xDCF4"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "gridAddress": "0xDCF9"
+      },
+      {
+        "x": 3,
+        "y": 7,
+        "gridAddress": "0xDCFB"
+      },
+      {
+        "x": 6,
+        "y": 7,
+        "gridAddress": "0xDCFE"
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "gridAddress": "0xDCFF"
+      },
+      {
+        "x": 12,
+        "y": 7,
+        "gridAddress": "0xDD04"
+      },
+      {
+        "x": 26,
+        "y": 7,
+        "gridAddress": "0xDD12"
+      },
+      {
+        "x": 30,
+        "y": 7,
+        "gridAddress": "0xDD16"
+      },
+      {
+        "x": 34,
+        "y": 7,
+        "gridAddress": "0xDD1A"
+      },
+      {
+        "x": 2,
+        "y": 8,
+        "gridAddress": "0xDD22"
+      },
+      {
+        "x": 11,
+        "y": 8,
+        "gridAddress": "0xDD2B"
+      },
+      {
+        "x": 26,
+        "y": 8,
+        "gridAddress": "0xDD3A"
+      },
+      {
+        "x": 28,
+        "y": 8,
+        "gridAddress": "0xDD3C"
+      },
+      {
+        "x": 35,
+        "y": 8,
+        "gridAddress": "0xDD43"
+      },
+      {
+        "x": 9,
+        "y": 9,
+        "gridAddress": "0xDD51"
+      },
+      {
+        "x": 14,
+        "y": 9,
+        "gridAddress": "0xDD56"
+      },
+      {
+        "x": 0,
+        "y": 10,
+        "gridAddress": "0xDD70"
+      },
+      {
+        "x": 1,
+        "y": 10,
+        "gridAddress": "0xDD71"
+      },
+      {
+        "x": 3,
+        "y": 10,
+        "gridAddress": "0xDD73"
+      },
+      {
+        "x": 5,
+        "y": 10,
+        "gridAddress": "0xDD75"
+      },
+      {
+        "x": 6,
+        "y": 10,
+        "gridAddress": "0xDD76"
+      },
+      {
+        "x": 34,
+        "y": 10,
+        "gridAddress": "0xDD92"
+      },
+      {
+        "x": 36,
+        "y": 10,
+        "gridAddress": "0xDD94"
+      },
+      {
+        "x": 0,
+        "y": 11,
+        "gridAddress": "0xDD98"
+      },
+      {
+        "x": 2,
+        "y": 11,
+        "gridAddress": "0xDD9A"
+      },
+      {
+        "x": 8,
+        "y": 11,
+        "gridAddress": "0xDDA0"
+      },
+      {
+        "x": 10,
+        "y": 11,
+        "gridAddress": "0xDDA2"
+      },
+      {
+        "x": 13,
+        "y": 11,
+        "gridAddress": "0xDDA5"
+      },
+      {
+        "x": 18,
+        "y": 11,
+        "gridAddress": "0xDDAA"
+      },
+      {
+        "x": 7,
+        "y": 12,
+        "gridAddress": "0xDDC7"
+      },
+      {
+        "x": 8,
+        "y": 12,
+        "gridAddress": "0xDDC8"
+      },
+      {
+        "x": 16,
+        "y": 12,
+        "gridAddress": "0xDDD0"
+      },
+      {
+        "x": 19,
+        "y": 12,
+        "gridAddress": "0xDDD3"
+      },
+      {
+        "x": 24,
+        "y": 12,
+        "gridAddress": "0xDDD8"
+      },
+      {
+        "x": 28,
+        "y": 12,
+        "gridAddress": "0xDDDC"
+      },
+      {
+        "x": 31,
+        "y": 12,
+        "gridAddress": "0xDDDF"
+      },
+      {
+        "x": 35,
+        "y": 12,
+        "gridAddress": "0xDDE3"
+      },
+      {
+        "x": 1,
+        "y": 13,
+        "gridAddress": "0xDDE9"
+      },
+      {
+        "x": 10,
+        "y": 13,
+        "gridAddress": "0xDDF2"
+      },
+      {
+        "x": 11,
+        "y": 13,
+        "gridAddress": "0xDDF3"
+      },
+      {
+        "x": 13,
+        "y": 13,
+        "gridAddress": "0xDDF5"
+      },
+      {
+        "x": 17,
+        "y": 13,
+        "gridAddress": "0xDDF9"
+      },
+      {
+        "x": 23,
+        "y": 13,
+        "gridAddress": "0xDDFF"
+      },
+      {
+        "x": 25,
+        "y": 13,
+        "gridAddress": "0xDE01"
+      },
+      {
+        "x": 26,
+        "y": 13,
+        "gridAddress": "0xDE02"
+      },
+      {
+        "x": 2,
+        "y": 14,
+        "gridAddress": "0xDE12"
+      },
+      {
+        "x": 6,
+        "y": 14,
+        "gridAddress": "0xDE16"
+      },
+      {
+        "x": 7,
+        "y": 14,
+        "gridAddress": "0xDE17"
+      },
+      {
+        "x": 15,
+        "y": 14,
+        "gridAddress": "0xDE1F"
+      },
+      {
+        "x": 21,
+        "y": 14,
+        "gridAddress": "0xDE25"
+      },
+      {
+        "x": 23,
+        "y": 14,
+        "gridAddress": "0xDE27"
+      },
+      {
+        "x": 25,
+        "y": 14,
+        "gridAddress": "0xDE29"
+      },
+      {
+        "x": 29,
+        "y": 14,
+        "gridAddress": "0xDE2D"
+      },
+      {
+        "x": 34,
+        "y": 14,
+        "gridAddress": "0xDE32"
+      },
+      {
+        "x": 1,
+        "y": 15,
+        "gridAddress": "0xDE39"
+      },
+      {
+        "x": 11,
+        "y": 15,
+        "gridAddress": "0xDE43"
+      },
+      {
+        "x": 14,
+        "y": 15,
+        "gridAddress": "0xDE46"
+      },
+      {
+        "x": 18,
+        "y": 15,
+        "gridAddress": "0xDE4A"
+      },
+      {
+        "x": 22,
+        "y": 15,
+        "gridAddress": "0xDE4E"
+      },
+      {
+        "x": 8,
+        "y": 17,
+        "gridAddress": "0xDE90"
+      },
+      {
+        "x": 11,
+        "y": 17,
+        "gridAddress": "0xDE93"
+      },
+      {
+        "x": 16,
+        "y": 17,
+        "gridAddress": "0xDE98"
+      },
+      {
+        "x": 20,
+        "y": 17,
+        "gridAddress": "0xDE9C"
+      },
+      {
+        "x": 31,
+        "y": 17,
+        "gridAddress": "0xDEA7"
+      },
+      {
+        "x": 36,
+        "y": 17,
+        "gridAddress": "0xDEAC"
+      },
+      {
+        "x": 0,
+        "y": 18,
+        "gridAddress": "0xDEB0"
+      },
+      {
+        "x": 8,
+        "y": 18,
+        "gridAddress": "0xDEB8"
+      },
+      {
+        "x": 14,
+        "y": 18,
+        "gridAddress": "0xDEBE"
+      },
+      {
+        "x": 29,
+        "y": 18,
+        "gridAddress": "0xDECD"
+      },
+      {
+        "x": 0,
+        "y": 19,
+        "gridAddress": "0xDED8"
+      },
+      {
+        "x": 1,
+        "y": 19,
+        "gridAddress": "0xDED9"
+      },
+      {
+        "x": 7,
+        "y": 19,
+        "gridAddress": "0xDEDF"
+      },
+      {
+        "x": 33,
+        "y": 19,
+        "gridAddress": "0xDEF9"
+      }
+    ],
+    "walls": [
+      {
+        "x": 0,
+        "y": 0,
+        "gridAddress": "0xDBE0"
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "gridAddress": "0xDBE1"
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "gridAddress": "0xDBE2"
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "gridAddress": "0xDBE3"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "gridAddress": "0xDBE4"
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "gridAddress": "0xDBE5"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "gridAddress": "0xDBE6"
+      },
+      {
+        "x": 7,
+        "y": 0,
+        "gridAddress": "0xDBE7"
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "gridAddress": "0xDBE8"
+      },
+      {
+        "x": 9,
+        "y": 0,
+        "gridAddress": "0xDBE9"
+      },
+      {
+        "x": 10,
+        "y": 0,
+        "gridAddress": "0xDBEA"
+      },
+      {
+        "x": 11,
+        "y": 0,
+        "gridAddress": "0xDBEB"
+      },
+      {
+        "x": 13,
+        "y": 0,
+        "gridAddress": "0xDBED"
+      },
+      {
+        "x": 15,
+        "y": 0,
+        "gridAddress": "0xDBEF"
+      },
+      {
+        "x": 16,
+        "y": 0,
+        "gridAddress": "0xDBF0"
+      },
+      {
+        "x": 18,
+        "y": 0,
+        "gridAddress": "0xDBF2"
+      },
+      {
+        "x": 19,
+        "y": 0,
+        "gridAddress": "0xDBF3"
+      },
+      {
+        "x": 20,
+        "y": 0,
+        "gridAddress": "0xDBF4"
+      },
+      {
+        "x": 22,
+        "y": 0,
+        "gridAddress": "0xDBF6"
+      },
+      {
+        "x": 23,
+        "y": 0,
+        "gridAddress": "0xDBF7"
+      },
+      {
+        "x": 24,
+        "y": 0,
+        "gridAddress": "0xDBF8"
+      },
+      {
+        "x": 25,
+        "y": 0,
+        "gridAddress": "0xDBF9"
+      },
+      {
+        "x": 26,
+        "y": 0,
+        "gridAddress": "0xDBFA"
+      },
+      {
+        "x": 27,
+        "y": 0,
+        "gridAddress": "0xDBFB"
+      },
+      {
+        "x": 29,
+        "y": 0,
+        "gridAddress": "0xDBFD"
+      },
+      {
+        "x": 30,
+        "y": 0,
+        "gridAddress": "0xDBFE"
+      },
+      {
+        "x": 31,
+        "y": 0,
+        "gridAddress": "0xDBFF"
+      },
+      {
+        "x": 32,
+        "y": 0,
+        "gridAddress": "0xDC00"
+      },
+      {
+        "x": 34,
+        "y": 0,
+        "gridAddress": "0xDC02"
+      },
+      {
+        "x": 35,
+        "y": 0,
+        "gridAddress": "0xDC03"
+      },
+      {
+        "x": 36,
+        "y": 0,
+        "gridAddress": "0xDC04"
+      },
+      {
+        "x": 37,
+        "y": 0,
+        "gridAddress": "0xDC05"
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "gridAddress": "0xDC08"
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "gridAddress": "0xDC09"
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "gridAddress": "0xDC0B"
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "gridAddress": "0xDC0C"
+      },
+      {
+        "x": 5,
+        "y": 1,
+        "gridAddress": "0xDC0D"
+      },
+      {
+        "x": 8,
+        "y": 1,
+        "gridAddress": "0xDC10"
+      },
+      {
+        "x": 10,
+        "y": 1,
+        "gridAddress": "0xDC12"
+      },
+      {
+        "x": 11,
+        "y": 1,
+        "gridAddress": "0xDC13"
+      },
+      {
+        "x": 12,
+        "y": 1,
+        "gridAddress": "0xDC14"
+      },
+      {
+        "x": 13,
+        "y": 1,
+        "gridAddress": "0xDC15"
+      },
+      {
+        "x": 15,
+        "y": 1,
+        "gridAddress": "0xDC17"
+      },
+      {
+        "x": 17,
+        "y": 1,
+        "gridAddress": "0xDC19"
+      },
+      {
+        "x": 18,
+        "y": 1,
+        "gridAddress": "0xDC1A"
+      },
+      {
+        "x": 20,
+        "y": 1,
+        "gridAddress": "0xDC1C"
+      },
+      {
+        "x": 21,
+        "y": 1,
+        "gridAddress": "0xDC1D"
+      },
+      {
+        "x": 23,
+        "y": 1,
+        "gridAddress": "0xDC1F"
+      },
+      {
+        "x": 25,
+        "y": 1,
+        "gridAddress": "0xDC21"
+      },
+      {
+        "x": 26,
+        "y": 1,
+        "gridAddress": "0xDC22"
+      },
+      {
+        "x": 28,
+        "y": 1,
+        "gridAddress": "0xDC24"
+      },
+      {
+        "x": 29,
+        "y": 1,
+        "gridAddress": "0xDC25"
+      },
+      {
+        "x": 32,
+        "y": 1,
+        "gridAddress": "0xDC28"
+      },
+      {
+        "x": 34,
+        "y": 1,
+        "gridAddress": "0xDC2A"
+      },
+      {
+        "x": 36,
+        "y": 1,
+        "gridAddress": "0xDC2C"
+      },
+      {
+        "x": 37,
+        "y": 1,
+        "gridAddress": "0xDC2D"
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "gridAddress": "0xDC30"
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "gridAddress": "0xDC32"
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "gridAddress": "0xDC33"
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "gridAddress": "0xDC34"
+      },
+      {
+        "x": 6,
+        "y": 2,
+        "gridAddress": "0xDC36"
+      },
+      {
+        "x": 7,
+        "y": 2,
+        "gridAddress": "0xDC37"
+      },
+      {
+        "x": 8,
+        "y": 2,
+        "gridAddress": "0xDC38"
+      },
+      {
+        "x": 9,
+        "y": 2,
+        "gridAddress": "0xDC39"
+      },
+      {
+        "x": 10,
+        "y": 2,
+        "gridAddress": "0xDC3A"
+      },
+      {
+        "x": 12,
+        "y": 2,
+        "gridAddress": "0xDC3C"
+      },
+      {
+        "x": 13,
+        "y": 2,
+        "gridAddress": "0xDC3D"
+      },
+      {
+        "x": 16,
+        "y": 2,
+        "gridAddress": "0xDC40"
+      },
+      {
+        "x": 17,
+        "y": 2,
+        "gridAddress": "0xDC41"
+      },
+      {
+        "x": 18,
+        "y": 2,
+        "gridAddress": "0xDC42"
+      },
+      {
+        "x": 19,
+        "y": 2,
+        "gridAddress": "0xDC43"
+      },
+      {
+        "x": 23,
+        "y": 2,
+        "gridAddress": "0xDC47"
+      },
+      {
+        "x": 25,
+        "y": 2,
+        "gridAddress": "0xDC49"
+      },
+      {
+        "x": 27,
+        "y": 2,
+        "gridAddress": "0xDC4B"
+      },
+      {
+        "x": 28,
+        "y": 2,
+        "gridAddress": "0xDC4C"
+      },
+      {
+        "x": 29,
+        "y": 2,
+        "gridAddress": "0xDC4D"
+      },
+      {
+        "x": 31,
+        "y": 2,
+        "gridAddress": "0xDC4F"
+      },
+      {
+        "x": 33,
+        "y": 2,
+        "gridAddress": "0xDC51"
+      },
+      {
+        "x": 35,
+        "y": 2,
+        "gridAddress": "0xDC53"
+      },
+      {
+        "x": 37,
+        "y": 2,
+        "gridAddress": "0xDC55"
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "gridAddress": "0xDC58"
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "gridAddress": "0xDC59"
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "gridAddress": "0xDC5A"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "gridAddress": "0xDC5C"
+      },
+      {
+        "x": 5,
+        "y": 3,
+        "gridAddress": "0xDC5D"
+      },
+      {
+        "x": 6,
+        "y": 3,
+        "gridAddress": "0xDC5E"
+      },
+      {
+        "x": 7,
+        "y": 3,
+        "gridAddress": "0xDC5F"
+      },
+      {
+        "x": 9,
+        "y": 3,
+        "gridAddress": "0xDC61"
+      },
+      {
+        "x": 10,
+        "y": 3,
+        "gridAddress": "0xDC62"
+      },
+      {
+        "x": 11,
+        "y": 3,
+        "gridAddress": "0xDC63"
+      },
+      {
+        "x": 13,
+        "y": 3,
+        "gridAddress": "0xDC65"
+      },
+      {
+        "x": 14,
+        "y": 3,
+        "gridAddress": "0xDC66"
+      },
+      {
+        "x": 16,
+        "y": 3,
+        "gridAddress": "0xDC68"
+      },
+      {
+        "x": 19,
+        "y": 3,
+        "gridAddress": "0xDC6B"
+      },
+      {
+        "x": 20,
+        "y": 3,
+        "gridAddress": "0xDC6C"
+      },
+      {
+        "x": 21,
+        "y": 3,
+        "gridAddress": "0xDC6D"
+      },
+      {
+        "x": 23,
+        "y": 3,
+        "gridAddress": "0xDC6F"
+      },
+      {
+        "x": 24,
+        "y": 3,
+        "gridAddress": "0xDC70"
+      },
+      {
+        "x": 25,
+        "y": 3,
+        "gridAddress": "0xDC71"
+      },
+      {
+        "x": 26,
+        "y": 3,
+        "gridAddress": "0xDC72"
+      },
+      {
+        "x": 27,
+        "y": 3,
+        "gridAddress": "0xDC73"
+      },
+      {
+        "x": 29,
+        "y": 3,
+        "gridAddress": "0xDC75"
+      },
+      {
+        "x": 30,
+        "y": 3,
+        "gridAddress": "0xDC76"
+      },
+      {
+        "x": 31,
+        "y": 3,
+        "gridAddress": "0xDC77"
+      },
+      {
+        "x": 32,
+        "y": 3,
+        "gridAddress": "0xDC78"
+      },
+      {
+        "x": 34,
+        "y": 3,
+        "gridAddress": "0xDC7A"
+      },
+      {
+        "x": 35,
+        "y": 3,
+        "gridAddress": "0xDC7B"
+      },
+      {
+        "x": 36,
+        "y": 3,
+        "gridAddress": "0xDC7C"
+      },
+      {
+        "x": 37,
+        "y": 3,
+        "gridAddress": "0xDC7D"
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "gridAddress": "0xDC81"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "gridAddress": "0xDC83"
+      },
+      {
+        "x": 33,
+        "y": 4,
+        "gridAddress": "0xDCA1"
+      },
+      {
+        "x": 35,
+        "y": 4,
+        "gridAddress": "0xDCA3"
+      },
+      {
+        "x": 0,
+        "y": 5,
+        "gridAddress": "0xDCA8"
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "gridAddress": "0xDCAA"
+      },
+      {
+        "x": 6,
+        "y": 5,
+        "gridAddress": "0xDCAE"
+      },
+      {
+        "x": 7,
+        "y": 5,
+        "gridAddress": "0xDCAF"
+      },
+      {
+        "x": 8,
+        "y": 5,
+        "gridAddress": "0xDCB0"
+      },
+      {
+        "x": 9,
+        "y": 5,
+        "gridAddress": "0xDCB1"
+      },
+      {
+        "x": 10,
+        "y": 5,
+        "gridAddress": "0xDCB2"
+      },
+      {
+        "x": 11,
+        "y": 5,
+        "gridAddress": "0xDCB3"
+      },
+      {
+        "x": 12,
+        "y": 5,
+        "gridAddress": "0xDCB4"
+      },
+      {
+        "x": 13,
+        "y": 5,
+        "gridAddress": "0xDCB5"
+      },
+      {
+        "x": 14,
+        "y": 5,
+        "gridAddress": "0xDCB6"
+      },
+      {
+        "x": 15,
+        "y": 5,
+        "gridAddress": "0xDCB7"
+      },
+      {
+        "x": 16,
+        "y": 5,
+        "gridAddress": "0xDCB8"
+      },
+      {
+        "x": 17,
+        "y": 5,
+        "gridAddress": "0xDCB9"
+      },
+      {
+        "x": 18,
+        "y": 5,
+        "gridAddress": "0xDCBA"
+      },
+      {
+        "x": 19,
+        "y": 5,
+        "gridAddress": "0xDCBB"
+      },
+      {
+        "x": 20,
+        "y": 5,
+        "gridAddress": "0xDCBC"
+      },
+      {
+        "x": 22,
+        "y": 5,
+        "gridAddress": "0xDCBE"
+      },
+      {
+        "x": 23,
+        "y": 5,
+        "gridAddress": "0xDCBF"
+      },
+      {
+        "x": 24,
+        "y": 5,
+        "gridAddress": "0xDCC0"
+      },
+      {
+        "x": 25,
+        "y": 5,
+        "gridAddress": "0xDCC1"
+      },
+      {
+        "x": 26,
+        "y": 5,
+        "gridAddress": "0xDCC2"
+      },
+      {
+        "x": 27,
+        "y": 5,
+        "gridAddress": "0xDCC3"
+      },
+      {
+        "x": 28,
+        "y": 5,
+        "gridAddress": "0xDCC4"
+      },
+      {
+        "x": 29,
+        "y": 5,
+        "gridAddress": "0xDCC5"
+      },
+      {
+        "x": 30,
+        "y": 5,
+        "gridAddress": "0xDCC6"
+      },
+      {
+        "x": 31,
+        "y": 5,
+        "gridAddress": "0xDCC7"
+      },
+      {
+        "x": 33,
+        "y": 5,
+        "gridAddress": "0xDCC9"
+      },
+      {
+        "x": 34,
+        "y": 5,
+        "gridAddress": "0xDCCA"
+      },
+      {
+        "x": 35,
+        "y": 5,
+        "gridAddress": "0xDCCB"
+      },
+      {
+        "x": 36,
+        "y": 5,
+        "gridAddress": "0xDCCC"
+      },
+      {
+        "x": 0,
+        "y": 6,
+        "gridAddress": "0xDCD0"
+      },
+      {
+        "x": 2,
+        "y": 6,
+        "gridAddress": "0xDCD2"
+      },
+      {
+        "x": 3,
+        "y": 6,
+        "gridAddress": "0xDCD3"
+      },
+      {
+        "x": 5,
+        "y": 6,
+        "gridAddress": "0xDCD5"
+      },
+      {
+        "x": 6,
+        "y": 6,
+        "gridAddress": "0xDCD6"
+      },
+      {
+        "x": 7,
+        "y": 6,
+        "gridAddress": "0xDCD7"
+      },
+      {
+        "x": 8,
+        "y": 6,
+        "gridAddress": "0xDCD8"
+      },
+      {
+        "x": 11,
+        "y": 6,
+        "gridAddress": "0xDCDB"
+      },
+      {
+        "x": 12,
+        "y": 6,
+        "gridAddress": "0xDCDC"
+      },
+      {
+        "x": 13,
+        "y": 6,
+        "gridAddress": "0xDCDD"
+      },
+      {
+        "x": 14,
+        "y": 6,
+        "gridAddress": "0xDCDE"
+      },
+      {
+        "x": 16,
+        "y": 6,
+        "gridAddress": "0xDCE0"
+      },
+      {
+        "x": 17,
+        "y": 6,
+        "gridAddress": "0xDCE1"
+      },
+      {
+        "x": 19,
+        "y": 6,
+        "gridAddress": "0xDCE3"
+      },
+      {
+        "x": 20,
+        "y": 6,
+        "gridAddress": "0xDCE4"
+      },
+      {
+        "x": 21,
+        "y": 6,
+        "gridAddress": "0xDCE5"
+      },
+      {
+        "x": 22,
+        "y": 6,
+        "gridAddress": "0xDCE6"
+      },
+      {
+        "x": 23,
+        "y": 6,
+        "gridAddress": "0xDCE7"
+      },
+      {
+        "x": 26,
+        "y": 6,
+        "gridAddress": "0xDCEA"
+      },
+      {
+        "x": 27,
+        "y": 6,
+        "gridAddress": "0xDCEB"
+      },
+      {
+        "x": 28,
+        "y": 6,
+        "gridAddress": "0xDCEC"
+      },
+      {
+        "x": 30,
+        "y": 6,
+        "gridAddress": "0xDCEE"
+      },
+      {
+        "x": 31,
+        "y": 6,
+        "gridAddress": "0xDCEF"
+      },
+      {
+        "x": 33,
+        "y": 6,
+        "gridAddress": "0xDCF1"
+      },
+      {
+        "x": 34,
+        "y": 6,
+        "gridAddress": "0xDCF2"
+      },
+      {
+        "x": 35,
+        "y": 6,
+        "gridAddress": "0xDCF3"
+      },
+      {
+        "x": 0,
+        "y": 7,
+        "gridAddress": "0xDCF8"
+      },
+      {
+        "x": 2,
+        "y": 7,
+        "gridAddress": "0xDCFA"
+      },
+      {
+        "x": 5,
+        "y": 7,
+        "gridAddress": "0xDCFD"
+      },
+      {
+        "x": 8,
+        "y": 7,
+        "gridAddress": "0xDD00"
+      },
+      {
+        "x": 9,
+        "y": 7,
+        "gridAddress": "0xDD01"
+      },
+      {
+        "x": 10,
+        "y": 7,
+        "gridAddress": "0xDD02"
+      },
+      {
+        "x": 11,
+        "y": 7,
+        "gridAddress": "0xDD03"
+      },
+      {
+        "x": 13,
+        "y": 7,
+        "gridAddress": "0xDD05"
+      },
+      {
+        "x": 14,
+        "y": 7,
+        "gridAddress": "0xDD06"
+      },
+      {
+        "x": 15,
+        "y": 7,
+        "gridAddress": "0xDD07"
+      },
+      {
+        "x": 16,
+        "y": 7,
+        "gridAddress": "0xDD08"
+      },
+      {
+        "x": 17,
+        "y": 7,
+        "gridAddress": "0xDD09"
+      },
+      {
+        "x": 18,
+        "y": 7,
+        "gridAddress": "0xDD0A"
+      },
+      {
+        "x": 19,
+        "y": 7,
+        "gridAddress": "0xDD0B"
+      },
+      {
+        "x": 20,
+        "y": 7,
+        "gridAddress": "0xDD0C"
+      },
+      {
+        "x": 21,
+        "y": 7,
+        "gridAddress": "0xDD0D"
+      },
+      {
+        "x": 22,
+        "y": 7,
+        "gridAddress": "0xDD0E"
+      },
+      {
+        "x": 23,
+        "y": 7,
+        "gridAddress": "0xDD0F"
+      },
+      {
+        "x": 24,
+        "y": 7,
+        "gridAddress": "0xDD10"
+      },
+      {
+        "x": 25,
+        "y": 7,
+        "gridAddress": "0xDD11"
+      },
+      {
+        "x": 27,
+        "y": 7,
+        "gridAddress": "0xDD13"
+      },
+      {
+        "x": 28,
+        "y": 7,
+        "gridAddress": "0xDD14"
+      },
+      {
+        "x": 29,
+        "y": 7,
+        "gridAddress": "0xDD15"
+      },
+      {
+        "x": 31,
+        "y": 7,
+        "gridAddress": "0xDD17"
+      },
+      {
+        "x": 33,
+        "y": 7,
+        "gridAddress": "0xDD19"
+      },
+      {
+        "x": 35,
+        "y": 7,
+        "gridAddress": "0xDD1B"
+      },
+      {
+        "x": 36,
+        "y": 7,
+        "gridAddress": "0xDD1C"
+      },
+      {
+        "x": 37,
+        "y": 7,
+        "gridAddress": "0xDD1D"
+      },
+      {
+        "x": 0,
+        "y": 8,
+        "gridAddress": "0xDD20"
+      },
+      {
+        "x": 1,
+        "y": 8,
+        "gridAddress": "0xDD21"
+      },
+      {
+        "x": 3,
+        "y": 8,
+        "gridAddress": "0xDD23"
+      },
+      {
+        "x": 5,
+        "y": 8,
+        "gridAddress": "0xDD25"
+      },
+      {
+        "x": 6,
+        "y": 8,
+        "gridAddress": "0xDD26"
+      },
+      {
+        "x": 8,
+        "y": 8,
+        "gridAddress": "0xDD28"
+      },
+      {
+        "x": 9,
+        "y": 8,
+        "gridAddress": "0xDD29"
+      },
+      {
+        "x": 10,
+        "y": 8,
+        "gridAddress": "0xDD2A"
+      },
+      {
+        "x": 12,
+        "y": 8,
+        "gridAddress": "0xDD2C"
+      },
+      {
+        "x": 13,
+        "y": 8,
+        "gridAddress": "0xDD2D"
+      },
+      {
+        "x": 14,
+        "y": 8,
+        "gridAddress": "0xDD2E"
+      },
+      {
+        "x": 15,
+        "y": 8,
+        "gridAddress": "0xDD2F"
+      },
+      {
+        "x": 23,
+        "y": 8,
+        "gridAddress": "0xDD37"
+      },
+      {
+        "x": 24,
+        "y": 8,
+        "gridAddress": "0xDD38"
+      },
+      {
+        "x": 25,
+        "y": 8,
+        "gridAddress": "0xDD39"
+      },
+      {
+        "x": 27,
+        "y": 8,
+        "gridAddress": "0xDD3B"
+      },
+      {
+        "x": 29,
+        "y": 8,
+        "gridAddress": "0xDD3D"
+      },
+      {
+        "x": 30,
+        "y": 8,
+        "gridAddress": "0xDD3E"
+      },
+      {
+        "x": 31,
+        "y": 8,
+        "gridAddress": "0xDD3F"
+      },
+      {
+        "x": 33,
+        "y": 8,
+        "gridAddress": "0xDD41"
+      },
+      {
+        "x": 34,
+        "y": 8,
+        "gridAddress": "0xDD42"
+      },
+      {
+        "x": 36,
+        "y": 8,
+        "gridAddress": "0xDD44"
+      },
+      {
+        "x": 37,
+        "y": 8,
+        "gridAddress": "0xDD45"
+      },
+      {
+        "x": 0,
+        "y": 9,
+        "gridAddress": "0xDD48"
+      },
+      {
+        "x": 1,
+        "y": 9,
+        "gridAddress": "0xDD49"
+      },
+      {
+        "x": 2,
+        "y": 9,
+        "gridAddress": "0xDD4A"
+      },
+      {
+        "x": 3,
+        "y": 9,
+        "gridAddress": "0xDD4B"
+      },
+      {
+        "x": 5,
+        "y": 9,
+        "gridAddress": "0xDD4D"
+      },
+      {
+        "x": 6,
+        "y": 9,
+        "gridAddress": "0xDD4E"
+      },
+      {
+        "x": 7,
+        "y": 9,
+        "gridAddress": "0xDD4F"
+      },
+      {
+        "x": 8,
+        "y": 9,
+        "gridAddress": "0xDD50"
+      },
+      {
+        "x": 10,
+        "y": 9,
+        "gridAddress": "0xDD52"
+      },
+      {
+        "x": 11,
+        "y": 9,
+        "gridAddress": "0xDD53"
+      },
+      {
+        "x": 12,
+        "y": 9,
+        "gridAddress": "0xDD54"
+      },
+      {
+        "x": 13,
+        "y": 9,
+        "gridAddress": "0xDD55"
+      },
+      {
+        "x": 15,
+        "y": 9,
+        "gridAddress": "0xDD57"
+      },
+      {
+        "x": 16,
+        "y": 9,
+        "gridAddress": "0xDD58"
+      },
+      {
+        "x": 17,
+        "y": 9,
+        "gridAddress": "0xDD59"
+      },
+      {
+        "x": 18,
+        "y": 9,
+        "gridAddress": "0xDD5A"
+      },
+      {
+        "x": 19,
+        "y": 9,
+        "gridAddress": "0xDD5B"
+      },
+      {
+        "x": 20,
+        "y": 9,
+        "gridAddress": "0xDD5C"
+      },
+      {
+        "x": 22,
+        "y": 9,
+        "gridAddress": "0xDD5E"
+      },
+      {
+        "x": 23,
+        "y": 9,
+        "gridAddress": "0xDD5F"
+      },
+      {
+        "x": 24,
+        "y": 9,
+        "gridAddress": "0xDD60"
+      },
+      {
+        "x": 25,
+        "y": 9,
+        "gridAddress": "0xDD61"
+      },
+      {
+        "x": 26,
+        "y": 9,
+        "gridAddress": "0xDD62"
+      },
+      {
+        "x": 27,
+        "y": 9,
+        "gridAddress": "0xDD63"
+      },
+      {
+        "x": 28,
+        "y": 9,
+        "gridAddress": "0xDD64"
+      },
+      {
+        "x": 30,
+        "y": 9,
+        "gridAddress": "0xDD66"
+      },
+      {
+        "x": 31,
+        "y": 9,
+        "gridAddress": "0xDD67"
+      },
+      {
+        "x": 33,
+        "y": 9,
+        "gridAddress": "0xDD69"
+      },
+      {
+        "x": 34,
+        "y": 9,
+        "gridAddress": "0xDD6A"
+      },
+      {
+        "x": 35,
+        "y": 9,
+        "gridAddress": "0xDD6B"
+      },
+      {
+        "x": 36,
+        "y": 9,
+        "gridAddress": "0xDD6C"
+      },
+      {
+        "x": 2,
+        "y": 10,
+        "gridAddress": "0xDD72"
+      },
+      {
+        "x": 7,
+        "y": 10,
+        "gridAddress": "0xDD77"
+      },
+      {
+        "x": 9,
+        "y": 10,
+        "gridAddress": "0xDD79"
+      },
+      {
+        "x": 10,
+        "y": 10,
+        "gridAddress": "0xDD7A"
+      },
+      {
+        "x": 11,
+        "y": 10,
+        "gridAddress": "0xDD7B"
+      },
+      {
+        "x": 33,
+        "y": 10,
+        "gridAddress": "0xDD91"
+      },
+      {
+        "x": 1,
+        "y": 11,
+        "gridAddress": "0xDD99"
+      },
+      {
+        "x": 3,
+        "y": 11,
+        "gridAddress": "0xDD9B"
+      },
+      {
+        "x": 5,
+        "y": 11,
+        "gridAddress": "0xDD9D"
+      },
+      {
+        "x": 6,
+        "y": 11,
+        "gridAddress": "0xDD9E"
+      },
+      {
+        "x": 7,
+        "y": 11,
+        "gridAddress": "0xDD9F"
+      },
+      {
+        "x": 9,
+        "y": 11,
+        "gridAddress": "0xDDA1"
+      },
+      {
+        "x": 11,
+        "y": 11,
+        "gridAddress": "0xDDA3"
+      },
+      {
+        "x": 12,
+        "y": 11,
+        "gridAddress": "0xDDA4"
+      },
+      {
+        "x": 14,
+        "y": 11,
+        "gridAddress": "0xDDA6"
+      },
+      {
+        "x": 15,
+        "y": 11,
+        "gridAddress": "0xDDA7"
+      },
+      {
+        "x": 16,
+        "y": 11,
+        "gridAddress": "0xDDA8"
+      },
+      {
+        "x": 17,
+        "y": 11,
+        "gridAddress": "0xDDA9"
+      },
+      {
+        "x": 19,
+        "y": 11,
+        "gridAddress": "0xDDAB"
+      },
+      {
+        "x": 20,
+        "y": 11,
+        "gridAddress": "0xDDAC"
+      },
+      {
+        "x": 21,
+        "y": 11,
+        "gridAddress": "0xDDAD"
+      },
+      {
+        "x": 22,
+        "y": 11,
+        "gridAddress": "0xDDAE"
+      },
+      {
+        "x": 23,
+        "y": 11,
+        "gridAddress": "0xDDAF"
+      },
+      {
+        "x": 24,
+        "y": 11,
+        "gridAddress": "0xDDB0"
+      },
+      {
+        "x": 25,
+        "y": 11,
+        "gridAddress": "0xDDB1"
+      },
+      {
+        "x": 26,
+        "y": 11,
+        "gridAddress": "0xDDB2"
+      },
+      {
+        "x": 27,
+        "y": 11,
+        "gridAddress": "0xDDB3"
+      },
+      {
+        "x": 28,
+        "y": 11,
+        "gridAddress": "0xDDB4"
+      },
+      {
+        "x": 29,
+        "y": 11,
+        "gridAddress": "0xDDB5"
+      },
+      {
+        "x": 30,
+        "y": 11,
+        "gridAddress": "0xDDB6"
+      },
+      {
+        "x": 31,
+        "y": 11,
+        "gridAddress": "0xDDB7"
+      },
+      {
+        "x": 32,
+        "y": 11,
+        "gridAddress": "0xDDB8"
+      },
+      {
+        "x": 33,
+        "y": 11,
+        "gridAddress": "0xDDB9"
+      },
+      {
+        "x": 34,
+        "y": 11,
+        "gridAddress": "0xDDBA"
+      },
+      {
+        "x": 35,
+        "y": 11,
+        "gridAddress": "0xDDBB"
+      },
+      {
+        "x": 36,
+        "y": 11,
+        "gridAddress": "0xDDBC"
+      },
+      {
+        "x": 0,
+        "y": 12,
+        "gridAddress": "0xDDC0"
+      },
+      {
+        "x": 1,
+        "y": 12,
+        "gridAddress": "0xDDC1"
+      },
+      {
+        "x": 3,
+        "y": 12,
+        "gridAddress": "0xDDC3"
+      },
+      {
+        "x": 5,
+        "y": 12,
+        "gridAddress": "0xDDC5"
+      },
+      {
+        "x": 6,
+        "y": 12,
+        "gridAddress": "0xDDC6"
+      },
+      {
+        "x": 9,
+        "y": 12,
+        "gridAddress": "0xDDC9"
+      },
+      {
+        "x": 11,
+        "y": 12,
+        "gridAddress": "0xDDCB"
+      },
+      {
+        "x": 12,
+        "y": 12,
+        "gridAddress": "0xDDCC"
+      },
+      {
+        "x": 13,
+        "y": 12,
+        "gridAddress": "0xDDCD"
+      },
+      {
+        "x": 14,
+        "y": 12,
+        "gridAddress": "0xDDCE"
+      },
+      {
+        "x": 15,
+        "y": 12,
+        "gridAddress": "0xDDCF"
+      },
+      {
+        "x": 17,
+        "y": 12,
+        "gridAddress": "0xDDD1"
+      },
+      {
+        "x": 18,
+        "y": 12,
+        "gridAddress": "0xDDD2"
+      },
+      {
+        "x": 20,
+        "y": 12,
+        "gridAddress": "0xDDD4"
+      },
+      {
+        "x": 22,
+        "y": 12,
+        "gridAddress": "0xDDD6"
+      },
+      {
+        "x": 23,
+        "y": 12,
+        "gridAddress": "0xDDD7"
+      },
+      {
+        "x": 25,
+        "y": 12,
+        "gridAddress": "0xDDD9"
+      },
+      {
+        "x": 26,
+        "y": 12,
+        "gridAddress": "0xDDDA"
+      },
+      {
+        "x": 29,
+        "y": 12,
+        "gridAddress": "0xDDDD"
+      },
+      {
+        "x": 30,
+        "y": 12,
+        "gridAddress": "0xDDDE"
+      },
+      {
+        "x": 32,
+        "y": 12,
+        "gridAddress": "0xDDE0"
+      },
+      {
+        "x": 33,
+        "y": 12,
+        "gridAddress": "0xDDE1"
+      },
+      {
+        "x": 34,
+        "y": 12,
+        "gridAddress": "0xDDE2"
+      },
+      {
+        "x": 36,
+        "y": 12,
+        "gridAddress": "0xDDE4"
+      },
+      {
+        "x": 0,
+        "y": 13,
+        "gridAddress": "0xDDE8"
+      },
+      {
+        "x": 2,
+        "y": 13,
+        "gridAddress": "0xDDEA"
+      },
+      {
+        "x": 3,
+        "y": 13,
+        "gridAddress": "0xDDEB"
+      },
+      {
+        "x": 5,
+        "y": 13,
+        "gridAddress": "0xDDED"
+      },
+      {
+        "x": 6,
+        "y": 13,
+        "gridAddress": "0xDDEE"
+      },
+      {
+        "x": 7,
+        "y": 13,
+        "gridAddress": "0xDDEF"
+      },
+      {
+        "x": 8,
+        "y": 13,
+        "gridAddress": "0xDDF0"
+      },
+      {
+        "x": 9,
+        "y": 13,
+        "gridAddress": "0xDDF1"
+      },
+      {
+        "x": 12,
+        "y": 13,
+        "gridAddress": "0xDDF4"
+      },
+      {
+        "x": 15,
+        "y": 13,
+        "gridAddress": "0xDDF7"
+      },
+      {
+        "x": 16,
+        "y": 13,
+        "gridAddress": "0xDDF8"
+      },
+      {
+        "x": 18,
+        "y": 13,
+        "gridAddress": "0xDDFA"
+      },
+      {
+        "x": 19,
+        "y": 13,
+        "gridAddress": "0xDDFB"
+      },
+      {
+        "x": 20,
+        "y": 13,
+        "gridAddress": "0xDDFC"
+      },
+      {
+        "x": 21,
+        "y": 13,
+        "gridAddress": "0xDDFD"
+      },
+      {
+        "x": 22,
+        "y": 13,
+        "gridAddress": "0xDDFE"
+      },
+      {
+        "x": 24,
+        "y": 13,
+        "gridAddress": "0xDE00"
+      },
+      {
+        "x": 27,
+        "y": 13,
+        "gridAddress": "0xDE03"
+      },
+      {
+        "x": 28,
+        "y": 13,
+        "gridAddress": "0xDE04"
+      },
+      {
+        "x": 29,
+        "y": 13,
+        "gridAddress": "0xDE05"
+      },
+      {
+        "x": 30,
+        "y": 13,
+        "gridAddress": "0xDE06"
+      },
+      {
+        "x": 31,
+        "y": 13,
+        "gridAddress": "0xDE07"
+      },
+      {
+        "x": 33,
+        "y": 13,
+        "gridAddress": "0xDE09"
+      },
+      {
+        "x": 34,
+        "y": 13,
+        "gridAddress": "0xDE0A"
+      },
+      {
+        "x": 35,
+        "y": 13,
+        "gridAddress": "0xDE0B"
+      },
+      {
+        "x": 36,
+        "y": 13,
+        "gridAddress": "0xDE0C"
+      },
+      {
+        "x": 37,
+        "y": 13,
+        "gridAddress": "0xDE0D"
+      },
+      {
+        "x": 0,
+        "y": 14,
+        "gridAddress": "0xDE10"
+      },
+      {
+        "x": 1,
+        "y": 14,
+        "gridAddress": "0xDE11"
+      },
+      {
+        "x": 3,
+        "y": 14,
+        "gridAddress": "0xDE13"
+      },
+      {
+        "x": 5,
+        "y": 14,
+        "gridAddress": "0xDE15"
+      },
+      {
+        "x": 8,
+        "y": 14,
+        "gridAddress": "0xDE18"
+      },
+      {
+        "x": 9,
+        "y": 14,
+        "gridAddress": "0xDE19"
+      },
+      {
+        "x": 10,
+        "y": 14,
+        "gridAddress": "0xDE1A"
+      },
+      {
+        "x": 11,
+        "y": 14,
+        "gridAddress": "0xDE1B"
+      },
+      {
+        "x": 12,
+        "y": 14,
+        "gridAddress": "0xDE1C"
+      },
+      {
+        "x": 13,
+        "y": 14,
+        "gridAddress": "0xDE1D"
+      },
+      {
+        "x": 14,
+        "y": 14,
+        "gridAddress": "0xDE1E"
+      },
+      {
+        "x": 16,
+        "y": 14,
+        "gridAddress": "0xDE20"
+      },
+      {
+        "x": 17,
+        "y": 14,
+        "gridAddress": "0xDE21"
+      },
+      {
+        "x": 18,
+        "y": 14,
+        "gridAddress": "0xDE22"
+      },
+      {
+        "x": 19,
+        "y": 14,
+        "gridAddress": "0xDE23"
+      },
+      {
+        "x": 20,
+        "y": 14,
+        "gridAddress": "0xDE24"
+      },
+      {
+        "x": 22,
+        "y": 14,
+        "gridAddress": "0xDE26"
+      },
+      {
+        "x": 24,
+        "y": 14,
+        "gridAddress": "0xDE28"
+      },
+      {
+        "x": 26,
+        "y": 14,
+        "gridAddress": "0xDE2A"
+      },
+      {
+        "x": 27,
+        "y": 14,
+        "gridAddress": "0xDE2B"
+      },
+      {
+        "x": 28,
+        "y": 14,
+        "gridAddress": "0xDE2C"
+      },
+      {
+        "x": 30,
+        "y": 14,
+        "gridAddress": "0xDE2E"
+      },
+      {
+        "x": 31,
+        "y": 14,
+        "gridAddress": "0xDE2F"
+      },
+      {
+        "x": 32,
+        "y": 14,
+        "gridAddress": "0xDE30"
+      },
+      {
+        "x": 35,
+        "y": 14,
+        "gridAddress": "0xDE33"
+      },
+      {
+        "x": 37,
+        "y": 14,
+        "gridAddress": "0xDE35"
+      },
+      {
+        "x": 0,
+        "y": 15,
+        "gridAddress": "0xDE38"
+      },
+      {
+        "x": 2,
+        "y": 15,
+        "gridAddress": "0xDE3A"
+      },
+      {
+        "x": 3,
+        "y": 15,
+        "gridAddress": "0xDE3B"
+      },
+      {
+        "x": 5,
+        "y": 15,
+        "gridAddress": "0xDE3D"
+      },
+      {
+        "x": 6,
+        "y": 15,
+        "gridAddress": "0xDE3E"
+      },
+      {
+        "x": 7,
+        "y": 15,
+        "gridAddress": "0xDE3F"
+      },
+      {
+        "x": 8,
+        "y": 15,
+        "gridAddress": "0xDE40"
+      },
+      {
+        "x": 9,
+        "y": 15,
+        "gridAddress": "0xDE41"
+      },
+      {
+        "x": 10,
+        "y": 15,
+        "gridAddress": "0xDE42"
+      },
+      {
+        "x": 12,
+        "y": 15,
+        "gridAddress": "0xDE44"
+      },
+      {
+        "x": 13,
+        "y": 15,
+        "gridAddress": "0xDE45"
+      },
+      {
+        "x": 15,
+        "y": 15,
+        "gridAddress": "0xDE47"
+      },
+      {
+        "x": 16,
+        "y": 15,
+        "gridAddress": "0xDE48"
+      },
+      {
+        "x": 19,
+        "y": 15,
+        "gridAddress": "0xDE4B"
+      },
+      {
+        "x": 20,
+        "y": 15,
+        "gridAddress": "0xDE4C"
+      },
+      {
+        "x": 21,
+        "y": 15,
+        "gridAddress": "0xDE4D"
+      },
+      {
+        "x": 23,
+        "y": 15,
+        "gridAddress": "0xDE4F"
+      },
+      {
+        "x": 24,
+        "y": 15,
+        "gridAddress": "0xDE50"
+      },
+      {
+        "x": 25,
+        "y": 15,
+        "gridAddress": "0xDE51"
+      },
+      {
+        "x": 26,
+        "y": 15,
+        "gridAddress": "0xDE52"
+      },
+      {
+        "x": 29,
+        "y": 15,
+        "gridAddress": "0xDE55"
+      },
+      {
+        "x": 30,
+        "y": 15,
+        "gridAddress": "0xDE56"
+      },
+      {
+        "x": 31,
+        "y": 15,
+        "gridAddress": "0xDE57"
+      },
+      {
+        "x": 32,
+        "y": 15,
+        "gridAddress": "0xDE58"
+      },
+      {
+        "x": 37,
+        "y": 15,
+        "gridAddress": "0xDE5D"
+      },
+      {
+        "x": 0,
+        "y": 16,
+        "gridAddress": "0xDE60"
+      },
+      {
+        "x": 1,
+        "y": 16,
+        "gridAddress": "0xDE61"
+      },
+      {
+        "x": 3,
+        "y": 16,
+        "gridAddress": "0xDE63"
+      },
+      {
+        "x": 4,
+        "y": 17,
+        "gridAddress": "0xDE8C"
+      },
+      {
+        "x": 5,
+        "y": 17,
+        "gridAddress": "0xDE8D"
+      },
+      {
+        "x": 6,
+        "y": 17,
+        "gridAddress": "0xDE8E"
+      },
+      {
+        "x": 7,
+        "y": 17,
+        "gridAddress": "0xDE8F"
+      },
+      {
+        "x": 9,
+        "y": 17,
+        "gridAddress": "0xDE91"
+      },
+      {
+        "x": 10,
+        "y": 17,
+        "gridAddress": "0xDE92"
+      },
+      {
+        "x": 12,
+        "y": 17,
+        "gridAddress": "0xDE94"
+      },
+      {
+        "x": 13,
+        "y": 17,
+        "gridAddress": "0xDE95"
+      },
+      {
+        "x": 14,
+        "y": 17,
+        "gridAddress": "0xDE96"
+      },
+      {
+        "x": 15,
+        "y": 17,
+        "gridAddress": "0xDE97"
+      },
+      {
+        "x": 17,
+        "y": 17,
+        "gridAddress": "0xDE99"
+      },
+      {
+        "x": 18,
+        "y": 17,
+        "gridAddress": "0xDE9A"
+      },
+      {
+        "x": 19,
+        "y": 17,
+        "gridAddress": "0xDE9B"
+      },
+      {
+        "x": 21,
+        "y": 17,
+        "gridAddress": "0xDE9D"
+      },
+      {
+        "x": 22,
+        "y": 17,
+        "gridAddress": "0xDE9E"
+      },
+      {
+        "x": 24,
+        "y": 17,
+        "gridAddress": "0xDEA0"
+      },
+      {
+        "x": 25,
+        "y": 17,
+        "gridAddress": "0xDEA1"
+      },
+      {
+        "x": 26,
+        "y": 17,
+        "gridAddress": "0xDEA2"
+      },
+      {
+        "x": 27,
+        "y": 17,
+        "gridAddress": "0xDEA3"
+      },
+      {
+        "x": 28,
+        "y": 17,
+        "gridAddress": "0xDEA4"
+      },
+      {
+        "x": 29,
+        "y": 17,
+        "gridAddress": "0xDEA5"
+      },
+      {
+        "x": 30,
+        "y": 17,
+        "gridAddress": "0xDEA6"
+      },
+      {
+        "x": 32,
+        "y": 17,
+        "gridAddress": "0xDEA8"
+      },
+      {
+        "x": 33,
+        "y": 17,
+        "gridAddress": "0xDEA9"
+      },
+      {
+        "x": 35,
+        "y": 17,
+        "gridAddress": "0xDEAB"
+      },
+      {
+        "x": 37,
+        "y": 17,
+        "gridAddress": "0xDEAD"
+      },
+      {
+        "x": 5,
+        "y": 18,
+        "gridAddress": "0xDEB5"
+      },
+      {
+        "x": 7,
+        "y": 18,
+        "gridAddress": "0xDEB7"
+      },
+      {
+        "x": 9,
+        "y": 18,
+        "gridAddress": "0xDEB9"
+      },
+      {
+        "x": 10,
+        "y": 18,
+        "gridAddress": "0xDEBA"
+      },
+      {
+        "x": 11,
+        "y": 18,
+        "gridAddress": "0xDEBB"
+      },
+      {
+        "x": 12,
+        "y": 18,
+        "gridAddress": "0xDEBC"
+      },
+      {
+        "x": 13,
+        "y": 18,
+        "gridAddress": "0xDEBD"
+      },
+      {
+        "x": 15,
+        "y": 18,
+        "gridAddress": "0xDEBF"
+      },
+      {
+        "x": 16,
+        "y": 18,
+        "gridAddress": "0xDEC0"
+      },
+      {
+        "x": 17,
+        "y": 18,
+        "gridAddress": "0xDEC1"
+      },
+      {
+        "x": 18,
+        "y": 18,
+        "gridAddress": "0xDEC2"
+      },
+      {
+        "x": 19,
+        "y": 18,
+        "gridAddress": "0xDEC3"
+      },
+      {
+        "x": 20,
+        "y": 18,
+        "gridAddress": "0xDEC4"
+      },
+      {
+        "x": 21,
+        "y": 18,
+        "gridAddress": "0xDEC5"
+      },
+      {
+        "x": 22,
+        "y": 18,
+        "gridAddress": "0xDEC6"
+      },
+      {
+        "x": 25,
+        "y": 18,
+        "gridAddress": "0xDEC9"
+      },
+      {
+        "x": 27,
+        "y": 18,
+        "gridAddress": "0xDECB"
+      },
+      {
+        "x": 30,
+        "y": 18,
+        "gridAddress": "0xDECE"
+      },
+      {
+        "x": 31,
+        "y": 18,
+        "gridAddress": "0xDECF"
+      },
+      {
+        "x": 32,
+        "y": 18,
+        "gridAddress": "0xDED0"
+      },
+      {
+        "x": 33,
+        "y": 18,
+        "gridAddress": "0xDED1"
+      },
+      {
+        "x": 34,
+        "y": 18,
+        "gridAddress": "0xDED2"
+      },
+      {
+        "x": 36,
+        "y": 18,
+        "gridAddress": "0xDED4"
+      },
+      {
+        "x": 37,
+        "y": 18,
+        "gridAddress": "0xDED5"
+      },
+      {
+        "x": 5,
+        "y": 19,
+        "gridAddress": "0xDEDD"
+      },
+      {
+        "x": 6,
+        "y": 19,
+        "gridAddress": "0xDEDE"
+      },
+      {
+        "x": 8,
+        "y": 19,
+        "gridAddress": "0xDEE0"
+      },
+      {
+        "x": 9,
+        "y": 19,
+        "gridAddress": "0xDEE1"
+      },
+      {
+        "x": 10,
+        "y": 19,
+        "gridAddress": "0xDEE2"
+      },
+      {
+        "x": 12,
+        "y": 19,
+        "gridAddress": "0xDEE4"
+      },
+      {
+        "x": 13,
+        "y": 19,
+        "gridAddress": "0xDEE5"
+      },
+      {
+        "x": 14,
+        "y": 19,
+        "gridAddress": "0xDEE6"
+      },
+      {
+        "x": 15,
+        "y": 19,
+        "gridAddress": "0xDEE7"
+      },
+      {
+        "x": 22,
+        "y": 19,
+        "gridAddress": "0xDEEE"
+      },
+      {
+        "x": 23,
+        "y": 19,
+        "gridAddress": "0xDEEF"
+      },
+      {
+        "x": 24,
+        "y": 19,
+        "gridAddress": "0xDEF0"
+      },
+      {
+        "x": 25,
+        "y": 19,
+        "gridAddress": "0xDEF1"
+      },
+      {
+        "x": 26,
+        "y": 19,
+        "gridAddress": "0xDEF2"
+      },
+      {
+        "x": 29,
+        "y": 19,
+        "gridAddress": "0xDEF5"
+      },
+      {
+        "x": 32,
+        "y": 19,
+        "gridAddress": "0xDEF8"
+      },
+      {
+        "x": 34,
+        "y": 19,
+        "gridAddress": "0xDEFA"
+      },
+      {
+        "x": 35,
+        "y": 19,
+        "gridAddress": "0xDEFB"
+      },
+      {
+        "x": 36,
+        "y": 19,
+        "gridAddress": "0xDEFC"
+      }
+    ],
+    "exits": [
+      {
+        "x": 4,
+        "y": 4,
+        "gridAddress": "0xDC84"
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "gridAddress": "0xDC85"
+      },
+      {
+        "x": 6,
+        "y": 4,
+        "gridAddress": "0xDC86"
+      },
+      {
+        "x": 7,
+        "y": 4,
+        "gridAddress": "0xDC87"
+      },
+      {
+        "x": 8,
+        "y": 4,
+        "gridAddress": "0xDC88"
+      },
+      {
+        "x": 9,
+        "y": 4,
+        "gridAddress": "0xDC89"
+      },
+      {
+        "x": 10,
+        "y": 4,
+        "gridAddress": "0xDC8A"
+      },
+      {
+        "x": 11,
+        "y": 4,
+        "gridAddress": "0xDC8B"
+      },
+      {
+        "x": 12,
+        "y": 4,
+        "gridAddress": "0xDC8C"
+      },
+      {
+        "x": 13,
+        "y": 4,
+        "gridAddress": "0xDC8D"
+      },
+      {
+        "x": 14,
+        "y": 4,
+        "gridAddress": "0xDC8E"
+      },
+      {
+        "x": 15,
+        "y": 4,
+        "gridAddress": "0xDC8F"
+      },
+      {
+        "x": 16,
+        "y": 4,
+        "gridAddress": "0xDC90"
+      },
+      {
+        "x": 17,
+        "y": 4,
+        "gridAddress": "0xDC91"
+      },
+      {
+        "x": 18,
+        "y": 4,
+        "gridAddress": "0xDC92"
+      },
+      {
+        "x": 19,
+        "y": 4,
+        "gridAddress": "0xDC93"
+      },
+      {
+        "x": 20,
+        "y": 4,
+        "gridAddress": "0xDC94"
+      },
+      {
+        "x": 21,
+        "y": 4,
+        "gridAddress": "0xDC95"
+      },
+      {
+        "x": 22,
+        "y": 4,
+        "gridAddress": "0xDC96"
+      },
+      {
+        "x": 23,
+        "y": 4,
+        "gridAddress": "0xDC97"
+      },
+      {
+        "x": 24,
+        "y": 4,
+        "gridAddress": "0xDC98"
+      },
+      {
+        "x": 25,
+        "y": 4,
+        "gridAddress": "0xDC99"
+      },
+      {
+        "x": 26,
+        "y": 4,
+        "gridAddress": "0xDC9A"
+      },
+      {
+        "x": 27,
+        "y": 4,
+        "gridAddress": "0xDC9B"
+      },
+      {
+        "x": 28,
+        "y": 4,
+        "gridAddress": "0xDC9C"
+      },
+      {
+        "x": 29,
+        "y": 4,
+        "gridAddress": "0xDC9D"
+      },
+      {
+        "x": 30,
+        "y": 4,
+        "gridAddress": "0xDC9E"
+      },
+      {
+        "x": 31,
+        "y": 4,
+        "gridAddress": "0xDC9F"
+      },
+      {
+        "x": 32,
+        "y": 4,
+        "gridAddress": "0xDCA0"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "gridAddress": "0xDCAC"
+      },
+      {
+        "x": 32,
+        "y": 5,
+        "gridAddress": "0xDCC8"
+      },
+      {
+        "x": 4,
+        "y": 6,
+        "gridAddress": "0xDCD4"
+      },
+      {
+        "x": 32,
+        "y": 6,
+        "gridAddress": "0xDCF0"
+      },
+      {
+        "x": 4,
+        "y": 7,
+        "gridAddress": "0xDCFC"
+      },
+      {
+        "x": 32,
+        "y": 7,
+        "gridAddress": "0xDD18"
+      },
+      {
+        "x": 4,
+        "y": 8,
+        "gridAddress": "0xDD24"
+      },
+      {
+        "x": 32,
+        "y": 8,
+        "gridAddress": "0xDD40"
+      },
+      {
+        "x": 4,
+        "y": 9,
+        "gridAddress": "0xDD4C"
+      },
+      {
+        "x": 29,
+        "y": 9,
+        "gridAddress": "0xDD65"
+      },
+      {
+        "x": 32,
+        "y": 9,
+        "gridAddress": "0xDD68"
+      },
+      {
+        "x": 4,
+        "y": 10,
+        "gridAddress": "0xDD74"
+      },
+      {
+        "x": 12,
+        "y": 10,
+        "gridAddress": "0xDD7C"
+      },
+      {
+        "x": 13,
+        "y": 10,
+        "gridAddress": "0xDD7D"
+      },
+      {
+        "x": 14,
+        "y": 10,
+        "gridAddress": "0xDD7E"
+      },
+      {
+        "x": 15,
+        "y": 10,
+        "gridAddress": "0xDD7F"
+      },
+      {
+        "x": 16,
+        "y": 10,
+        "gridAddress": "0xDD80"
+      },
+      {
+        "x": 17,
+        "y": 10,
+        "gridAddress": "0xDD81"
+      },
+      {
+        "x": 18,
+        "y": 10,
+        "gridAddress": "0xDD82"
+      },
+      {
+        "x": 19,
+        "y": 10,
+        "gridAddress": "0xDD83"
+      },
+      {
+        "x": 20,
+        "y": 10,
+        "gridAddress": "0xDD84"
+      },
+      {
+        "x": 21,
+        "y": 10,
+        "gridAddress": "0xDD85"
+      },
+      {
+        "x": 22,
+        "y": 10,
+        "gridAddress": "0xDD86"
+      },
+      {
+        "x": 23,
+        "y": 10,
+        "gridAddress": "0xDD87"
+      },
+      {
+        "x": 24,
+        "y": 10,
+        "gridAddress": "0xDD88"
+      },
+      {
+        "x": 25,
+        "y": 10,
+        "gridAddress": "0xDD89"
+      },
+      {
+        "x": 26,
+        "y": 10,
+        "gridAddress": "0xDD8A"
+      },
+      {
+        "x": 27,
+        "y": 10,
+        "gridAddress": "0xDD8B"
+      },
+      {
+        "x": 28,
+        "y": 10,
+        "gridAddress": "0xDD8C"
+      },
+      {
+        "x": 29,
+        "y": 10,
+        "gridAddress": "0xDD8D"
+      },
+      {
+        "x": 30,
+        "y": 10
+      },
+      {
+        "x": 31,
+        "y": 10,
+        "gridAddress": "0xDD8F"
+      },
+      {
+        "x": 32,
+        "y": 10,
+        "gridAddress": "0xDD90"
+      },
+      {
+        "x": 4,
+        "y": 11,
+        "gridAddress": "0xDD9C"
+      },
+      {
+        "x": 4,
+        "y": 12,
+        "gridAddress": "0xDDC4"
+      },
+      {
+        "x": 4,
+        "y": 13,
+        "gridAddress": "0xDDEC"
+      },
+      {
+        "x": 4,
+        "y": 14,
+        "gridAddress": "0xDE14"
+      },
+      {
+        "x": 4,
+        "y": 15,
+        "gridAddress": "0xDE3C"
+      },
+      {
+        "x": 4,
+        "y": 16,
+        "gridAddress": "0xDE64"
+      },
+      {
+        "x": 5,
+        "y": 16,
+        "gridAddress": "0xDE65"
+      },
+      {
+        "x": 6,
+        "y": 16,
+        "gridAddress": "0xDE66"
+      },
+      {
+        "x": 7,
+        "y": 16,
+        "gridAddress": "0xDE67"
+      },
+      {
+        "x": 8,
+        "y": 16,
+        "gridAddress": "0xDE68"
+      },
+      {
+        "x": 9,
+        "y": 16,
+        "gridAddress": "0xDE69"
+      },
+      {
+        "x": 10,
+        "y": 16,
+        "gridAddress": "0xDE6A"
+      },
+      {
+        "x": 11,
+        "y": 16,
+        "gridAddress": "0xDE6B"
+      },
+      {
+        "x": 12,
+        "y": 16,
+        "gridAddress": "0xDE6C"
+      },
+      {
+        "x": 13,
+        "y": 16,
+        "gridAddress": "0xDE6D"
+      },
+      {
+        "x": 14,
+        "y": 16,
+        "gridAddress": "0xDE6E"
+      },
+      {
+        "x": 15,
+        "y": 16,
+        "gridAddress": "0xDE6F"
+      },
+      {
+        "x": 16,
+        "y": 16,
+        "gridAddress": "0xDE70"
+      },
+      {
+        "x": 17,
+        "y": 16,
+        "gridAddress": "0xDE71"
+      },
+      {
+        "x": 18,
+        "y": 16,
+        "gridAddress": "0xDE72"
+      },
+      {
+        "x": 19,
+        "y": 16,
+        "gridAddress": "0xDE73"
+      },
+      {
+        "x": 20,
+        "y": 16,
+        "gridAddress": "0xDE74"
+      },
+      {
+        "x": 21,
+        "y": 16,
+        "gridAddress": "0xDE75"
+      },
+      {
+        "x": 22,
+        "y": 16,
+        "gridAddress": "0xDE76"
+      },
+      {
+        "x": 23,
+        "y": 16,
+        "gridAddress": "0xDE77"
+      },
+      {
+        "x": 24,
+        "y": 16,
+        "gridAddress": "0xDE78"
+      },
+      {
+        "x": 25,
+        "y": 16,
+        "gridAddress": "0xDE79"
+      },
+      {
+        "x": 26,
+        "y": 16,
+        "gridAddress": "0xDE7A"
+      },
+      {
+        "x": 27,
+        "y": 16,
+        "gridAddress": "0xDE7B"
+      },
+      {
+        "x": 28,
+        "y": 16,
+        "gridAddress": "0xDE7C"
+      },
+      {
+        "x": 29,
+        "y": 16,
+        "gridAddress": "0xDE7D"
+      },
+      {
+        "x": 30,
+        "y": 16,
+        "gridAddress": "0xDE7E"
+      },
+      {
+        "x": 31,
+        "y": 16,
+        "gridAddress": "0xDE7F"
+      },
+      {
+        "x": 32,
+        "y": 16,
+        "gridAddress": "0xDE80"
+      },
+      {
+        "x": 33,
+        "y": 16,
+        "gridAddress": "0xDE81"
+      },
+      {
+        "x": 34,
+        "y": 16,
+        "gridAddress": "0xDE82"
+      },
+      {
+        "x": 35,
+        "y": 16,
+        "gridAddress": "0xDE83"
+      },
+      {
+        "x": 36,
+        "y": 16,
+        "gridAddress": "0xDE84"
+      },
+      {
+        "x": 37,
+        "y": 16,
+        "gridAddress": "0xDE85"
+      },
+      {
+        "x": 34,
+        "y": 17,
+        "gridAddress": "0xDEAA"
+      },
+      {
+        "x": 37,
+        "y": 19,
+        "gridAddress": "0xDEFD"
+      }
+    ]
+  },
+  "counts": {
+    "0x00": 117,
+    "0x01": 462,
+    "0x02": 6,
+    "0x03": 18,
+    "0x04": 103,
+    "0x05": 54
+  },
+  "tileClassification": {
+    "diamonds": 18,
+    "rocks": 117,
+    "walls": 462,
+    "exits": 103,
+    "monsters": 6
+  },
+  "checksums": {
+    "headerSha256": "f9e28488f8f306eb5db31c66f091ba123fa573b6c9b3ab6d8b7d3c17b6c63b5e"
+  }
+}
