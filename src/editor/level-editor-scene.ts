@@ -82,6 +82,12 @@ const EDITOR_ANIMATION_FRAME_DURATIONS = {
 } as const;
 /** Couleur tres discrete de la grille editeur, volontairement non multipliee par cellule. */
 const EDITOR_GRID_OVERLAY_COLOR = "rgba(134, 255, 222, 0.12)";
+/** Remplissage translucide du rectangle en cours de pose. */
+const EDITOR_RECTANGLE_DRAFT_FILL_COLOR = "rgba(88, 200, 240, 0.18)";
+/** Contour principal du rectangle en cours de pose. */
+const EDITOR_RECTANGLE_DRAFT_BORDER_COLOR = "#00ffff";
+/** Contour secondaire donnant un aspect TO8/pixel net a la selection. */
+const EDITOR_RECTANGLE_DRAFT_INNER_BORDER_COLOR = "#0001fe";
 
 /** Scene editeur moderne, branchee sur le routeur de scenes existant. */
 export class LevelEditorScene implements Scene {
@@ -197,6 +203,7 @@ export class LevelEditorScene implements Scene {
     renderer.clear("#07100d");
     this.renderGrid(renderer);
     this.renderMarkers(renderer);
+    this.renderRectangleDraft(renderer);
     this.renderHover(renderer);
   }
 
@@ -308,6 +315,38 @@ export class LevelEditorScene implements Scene {
     const screenX = this.viewport.gridX + visibleX * tileSize;
     const screenY = this.viewport.gridY + visibleY * tileSize;
     renderer.strokeRect(screenX + 1, screenY + 1, tileSize - 2, tileSize - 2, TO8_PALETTE.yellow);
+  }
+
+  /** Rend la zone rectangle pendant le drag, sans modifier les tuiles avant relachement. */
+  private renderRectangleDraft(renderer: Renderer): void {
+    if (!this.rectangleDraft) {
+      return;
+    }
+
+    const minX = Math.min(this.rectangleDraft.start.x, this.rectangleDraft.end.x);
+    const maxX = Math.max(this.rectangleDraft.start.x, this.rectangleDraft.end.x);
+    const minY = Math.min(this.rectangleDraft.start.y, this.rectangleDraft.end.y);
+    const maxY = Math.max(this.rectangleDraft.start.y, this.rectangleDraft.end.y);
+    const visibleMinX = Math.max(minX, this.viewport.offsetX);
+    const visibleMaxX = Math.min(maxX, this.viewport.offsetX + this.viewport.visibleColumns - 1);
+    const visibleMinY = Math.max(minY, this.viewport.offsetY);
+    const visibleMaxY = Math.min(maxY, this.viewport.offsetY + this.viewport.visibleRows - 1);
+
+    if (visibleMinX > visibleMaxX || visibleMinY > visibleMaxY) {
+      return;
+    }
+
+    const tileSize = this.getRenderedTileSize();
+    const screenX = this.viewport.gridX + (visibleMinX - this.viewport.offsetX) * tileSize;
+    const screenY = this.viewport.gridY + (visibleMinY - this.viewport.offsetY) * tileSize;
+    const width = (visibleMaxX - visibleMinX + 1) * tileSize;
+    const height = (visibleMaxY - visibleMinY + 1) * tileSize;
+
+    renderer.fillRect(screenX + 1, screenY + 1, Math.max(1, width - 2), Math.max(1, height - 2), EDITOR_RECTANGLE_DRAFT_FILL_COLOR);
+    renderer.strokeRect(screenX, screenY, width, height, EDITOR_RECTANGLE_DRAFT_BORDER_COLOR);
+    if (width > 4 && height > 4) {
+      renderer.strokeRect(screenX + 2, screenY + 2, width - 4, height - 4, EDITOR_RECTANGLE_DRAFT_INNER_BORDER_COLOR);
+    }
   }
 
   /** Monte l'IHM moderne DOM autour du canvas existant. */
@@ -489,6 +528,7 @@ export class LevelEditorScene implements Scene {
       if (item.tileType) {
         this.selectedTile = item.tileType;
         this.selectedTool = "pencil";
+        this.rectangleDraft = null;
         this.refreshModernEditorUi();
       }
     });
@@ -516,6 +556,9 @@ export class LevelEditorScene implements Scene {
     button.addEventListener("click", () => {
       if (item.tool) {
         this.selectedTool = item.tool;
+        if (item.tool !== "rectangle") {
+          this.rectangleDraft = null;
+        }
         this.refreshModernEditorUi();
       }
     });
@@ -618,6 +661,9 @@ export class LevelEditorScene implements Scene {
 
     const cell = this.hoverCell;
     if (!cell) {
+      if (this.selectedTool === "rectangle" && input.pointer.justReleased) {
+        this.commitRectangleDraft();
+      }
       return;
     }
 
@@ -647,11 +693,21 @@ export class LevelEditorScene implements Scene {
     } else if (input.pointer.pressed && this.rectangleDraft) {
       this.rectangleDraft = { start: this.rectangleDraft.start, end: cell };
     } else if (input.pointer.justReleased && this.rectangleDraft) {
-      this.recordHistory();
-      applyEditorRectangle(this.editorState, this.selectedTile, { start: this.rectangleDraft.start, end: cell });
-      this.rectangleDraft = null;
-      this.markDirtyAndSaveDraft();
+      this.rectangleDraft = { start: this.rectangleDraft.start, end: cell };
+      this.commitRectangleDraft();
     }
+  }
+
+  /** Valide le rectangle courant sur la derniere cellule connue. */
+  private commitRectangleDraft(): void {
+    if (!this.rectangleDraft) {
+      return;
+    }
+
+    this.recordHistory();
+    applyEditorRectangle(this.editorState, this.selectedTile, this.rectangleDraft);
+    this.rectangleDraft = null;
+    this.markDirtyAndSaveDraft();
   }
 
   /** Deplace le viewport avec la souris lorsque l'outil deplacement est actif. */
