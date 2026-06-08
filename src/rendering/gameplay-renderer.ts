@@ -9,7 +9,7 @@ import { TO8_PALETTE } from "../assets/palette";
 import type { Renderer } from "../engine/renderer";
 import type { TileFrame } from "../engine/render-types";
 import type { EntityState, GameState } from "../game/types";
-import { getInterpolatedFallingObjectGridPosition, isEntityGridPositionVisible } from "./entity-renderer";
+import { getRenderedFallingObjectGridPosition, isEntityGridPositionVisible } from "./entity-renderer";
 import { drawHudSmallCounter, drawHudTextFields } from "./hud-renderer";
 import { getGridCellScreenPosition } from "./level-renderer";
 
@@ -336,14 +336,13 @@ export class GameplayRenderer {
     this.drawEntitiesByLayer(renderer, context, true);
   }
 
-  /** Rend les objets physiques actifs avec interpolation visuelle. */
+  /** Rend les objets physiques actifs selon la progression visuelle courante. */
   private drawPhysicalObjects(renderer: Renderer, context: GameplayRenderContext): void {
     const cullViewportX = Math.floor(context.viewport.x);
     const cullViewportY = Math.floor(context.viewport.y);
 
     for (const fallingObject of context.state.fallingObjects) {
-      const progress = fallingObject.elapsed / fallingObject.duration;
-      const { x: gridX, y: gridY } = getInterpolatedFallingObjectGridPosition(fallingObject, progress);
+      const { x: gridX, y: gridY } = getRenderedFallingObjectGridPosition(fallingObject);
       if (
         gridX < cullViewportX - 1 ||
         gridX >= cullViewportX + context.viewport.columns + 2 ||

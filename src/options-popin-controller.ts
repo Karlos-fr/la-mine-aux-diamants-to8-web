@@ -11,6 +11,7 @@ import {
   toggleDisplayStretchToViewport
 } from "./display-options";
 import type { InputState } from "./engine/input";
+import { toggleSmoothMovement } from "./game-options";
 import { OPTIONS_MENU_CATEGORIES, OPTIONS_MENU_CATEGORY_COUNT } from "./rendering/options-popin-renderer";
 
 /** Etat minimal que les scenes doivent conserver pour la pop-in. */
@@ -32,6 +33,9 @@ export interface OptionsPopinInputResult extends OptionsPopinInputState {
 
   /** Indique si une option d'affichage a change et demande une resynchronisation de rendu. */
   readonly displayOptionsChanged: boolean;
+
+  /** Indique si une option gameplay moderne a change. */
+  readonly gameOptionsChanged: boolean;
 }
 
 /** Applique les commandes clavier communes de la pop-in d'options. */
@@ -45,7 +49,8 @@ export function updateOptionsPopinInput(
       selectedCategoryIndex: state.selectedCategoryIndex,
       consumed: true,
       toggledOpen: true,
-      displayOptionsChanged: false
+      displayOptionsChanged: false,
+      gameOptionsChanged: false
     };
   }
 
@@ -54,7 +59,8 @@ export function updateOptionsPopinInput(
       ...state,
       consumed: false,
       toggledOpen: false,
-      displayOptionsChanged: false
+      displayOptionsChanged: false,
+      gameOptionsChanged: false
     };
   }
 
@@ -67,13 +73,15 @@ export function updateOptionsPopinInput(
   }
 
   const displayOptionsChanged = updateDisplayOptionsFromInput(input, selectedCategoryIndex);
+  const gameOptionsChanged = updateGameOptionsFromInput(input, selectedCategoryIndex);
 
   return {
     isOpen: state.isOpen,
     selectedCategoryIndex,
     consumed: true,
     toggledOpen: false,
-    displayOptionsChanged
+    displayOptionsChanged,
+    gameOptionsChanged
   };
 }
 
@@ -103,6 +111,20 @@ function updateDisplayOptionsFromInput(input: InputState, selectedCategoryIndex:
   return changed;
 }
 
+/** Applique les raccourcis de l'onglet Jeu quand cette categorie est active. */
+function updateGameOptionsFromInput(input: InputState, selectedCategoryIndex: number): boolean {
+  if (!isGameOptionsCategory(selectedCategoryIndex)) {
+    return false;
+  }
+
+  if (!input.justPressed.confirm) {
+    return false;
+  }
+
+  toggleSmoothMovement();
+  return true;
+}
+
 /** Contraint l'index de categorie avec boucle. */
 function wrapOptionCategory(index: number): number {
   return (index + OPTIONS_MENU_CATEGORY_COUNT) % OPTIONS_MENU_CATEGORY_COUNT;
@@ -111,4 +133,9 @@ function wrapOptionCategory(index: number): number {
 /** Indique si la categorie active pilote les options d'affichage. */
 function isDisplayOptionsCategory(index: number): boolean {
   return OPTIONS_MENU_CATEGORIES[index] === "Affichage";
+}
+
+/** Indique si la categorie active pilote les options de ressenti gameplay. */
+function isGameOptionsCategory(index: number): boolean {
+  return OPTIONS_MENU_CATEGORIES[index] === "Jeu";
 }

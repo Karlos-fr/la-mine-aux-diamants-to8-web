@@ -10,7 +10,7 @@ import { FIXED_UPDATE_RATE } from "../engine/constants";
 /** Nombre de ticks logiques TO8 par seconde dans le portage moderne. */
 export const TO8_RUNTIME_TICKS_PER_SECOND = FIXED_UPDATE_RATE;
 
-/** Convertit un nombre entier de ticks TO8 en secondes pour les interpolations modernes. */
+/** Convertit un nombre entier de ticks TO8 en secondes pour les cadences modernes. */
 export function secondsFromTo8Ticks(ticks: number): number {
   return ticks / TO8_RUNTIME_TICKS_PER_SECOND;
 }
@@ -27,20 +27,20 @@ export const TO8_RUNTIME_TIMING = {
   titleAttractLoopTicks: 13,
   /** Demi-pas du blink spawn `0x04` puis noir; `$BE68` boucle 6 fois avec delais CPU `$CD5B`. */
   playerSpawnBlinkStepTicks: 13,
-  /** Duree du pas joueur fluide; approximation moderne arrondie depuis 10,5 ticks. */
+  /** Duree de reference du pas joueur; approximation moderne arrondie depuis 10,5 ticks. */
   playerGridMoveTicks: 11,
   /** Delai avant animation idle, lie a `$CED9` mais encore cadence moderne. */
   playerIdleDelayTicks: 40,
   /** Intervalle de decision monstre; `CA04`/`BC84` sont appeles par boucle ASM, valeur moderne centralisee. */
   monsterMoveIntervalTicks: 14,
-  /** Duree visuelle d'un pas monstre; interpolation moderne decouplee de la decision logique. */
+  /** Duree de reference d'un pas monstre; rendu decouple de la decision logique. */
   monsterGridMoveTicks: 9,
   /**
    * Intervalle de scan physique; `$CB07` parcourt `$DBE0-$DEFF` puis les routines de mouvement
    * utilisent le delai CPU `$CD5B`, donc la physique ne doit pas avancer a chaque petite frame moderne.
    */
   fallingObjectScanTicks: 14,
-  /** Duree visuelle d'une chute/glissade; ralentie pour suivre le scan physique original global. */
+  /** Duree de reference d'une chute/glissade; ralentie pour suivre le scan physique original global. */
   fallingObjectGridMoveTicks: 14,
   /** Duree d'une frame d'explosion; approximation moderne deja entiere. */
   explosionFrameTicks: 6,

@@ -19,6 +19,14 @@ import { RuntimeMutations } from "../game/runtime-mutations";
 import { drainRuntimeEvents, emitRuntimeEvent } from "../game/runtime-events";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import {
+  getCameraMoveDuration,
+  getFallingObjectMoveDuration,
+  getMonsterMoveDuration,
+  getPlayerMoveDuration,
+  getPushedRockMoveDuration
+} from "../game/movement-timing";
+import { getMovementRenderProgress } from "../game/movement-visuals";
+import {
   AttractScriptInputSource,
   KeyboardPlayerInputSource,
   type PlayerInputSource
@@ -82,7 +90,7 @@ interface ViewportState {
   rows: number;
 }
 
-/** Mouvement fluide entre deux cellules de grille. */
+/** Mouvement case par case entre deux cellules de grille. */
 interface GridMoveState {
   /** Colonne de depart. */
   readonly fromX: number;
@@ -94,13 +102,13 @@ interface GridMoveState {
   readonly toY: number;
   /** Effet logique a appliquer a l'arrivee complete. */
   readonly arrivalEffect?: RuntimeTileArrivalEffect;
-  /** Temps ecoule dans l'interpolation. */
+  /** Temps ecoule dans le pas. */
   elapsed: number;
-  /** Duree totale de l'interpolation. */
+  /** Duree totale du pas; le rendu peut interpoler ou rester discret. */
   readonly duration: number;
 }
 
-/** Alias semantique pour les mouvements interpoles de camera. */
+/** Alias semantique pour les mouvements de camera. */
 type CameraMoveState = GridMoveState;
 /** Taille de rendu d'une tuile TO8. */
 const RENDER_TILE_SIZE = 16;
@@ -138,29 +146,19 @@ const LEVEL_COMPLETION_BONUS_STEP_DURATION = secondsFromTo8Ticks(
 const LEVEL_COMPLETION_TRANSITION_DELAY = secondsFromTo8Ticks(
   TO8_RUNTIME_TIMING.levelCompletionTransitionDelayTicks
 );
-/** Duree moderne du mouvement joueur fluide d'une cellule, derivee des ticks TO8. */
-const PLAYER_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerGridMoveTicks);
 /** Delai moderne avant de relancer le cycle idle confirme par `KIT.BIN:$CED9`. */
 const PLAYER_IDLE_DELAY = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerIdleDelayTicks);
 /** Duree d'une frame de marche pendant un pas joueur. */
-const PLAYER_WALK_FRAME_DURATION = PLAYER_GRID_MOVE_DURATION / 3;
+const PLAYER_WALK_FRAME_DURATION = getPlayerMoveDuration() / 3;
 /** Maintien court de la derniere frame de marche apres l'arrivee. */
 const PLAYER_WALK_FINAL_FRAME_HOLD_DURATION = PLAYER_WALK_FRAME_DURATION;
-/** Duree d'interpolation camera alignee sur le joueur. */
-const CAMERA_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 /** Intervalle de decision des monstres, derive des ticks TO8. */
 const MONSTER_MOVE_INTERVAL = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterMoveIntervalTicks);
-/** Duree d'interpolation d'un pas monstre, derivee des ticks TO8. */
-const MONSTER_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterGridMoveTicks);
 /** Intervalle de scan des rochers/diamants prets a tomber, derive des ticks TO8. */
 const FALLING_OBJECT_SCAN_INTERVAL = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.fallingObjectScanTicks);
-/** Duree d'interpolation d'un objet physique, derivee des ticks TO8. */
-const FALLING_OBJECT_GRID_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.fallingObjectGridMoveTicks);
-/** Duree d'interpolation d'un rocher pousse, synchronisee avec le pas joueur. */
-const PUSHED_ROCK_GRID_MOVE_DURATION = PLAYER_GRID_MOVE_DURATION;
 /** Tile runtime temporaire du monstre actif. */
 const MONSTER_RUNTIME_ACTIVE_TILE_ID = RUNTIME_TILE.monsterActive;
-/** Trace runtime temporaire de monstre, nettoyee a la fin du pas fluide. */
+/** Trace runtime temporaire de monstre, nettoyee a la fin du pas. */
 const MONSTER_RUNTIME_TRAIL_TILE_ID = RUNTIME_TILE.monsterTrail;
 /** Tuile creusable par le joueur. */
 const PLAYER_DIGGABLE_TILE_ID = RUNTIME_TILE.earth;
@@ -567,7 +565,7 @@ export class GameplayScene implements Scene {
             toY,
             arrivalEffect: collision.arrivalEffect,
             elapsed: 0,
-            duration: PLAYER_GRID_MOVE_DURATION
+            duration: getPlayerMoveDuration()
           };
         } else if (this.gameplayMode === "attract") {
           this.attractInputSource?.advanceScriptTick();
@@ -726,7 +724,7 @@ export class GameplayScene implements Scene {
     return entity.gridX === gridX && entity.gridY === gridY;
   }
 
-  /** Avance le pas joueur fluide actuellement en cours. */
+  /** Avance le pas joueur en gardant la fluidite comme simple choix de rendu. */
   private advancePlayerMove(dt: number): void {
     if (!this.playerMove) {
       return;
@@ -734,9 +732,9 @@ export class GameplayScene implements Scene {
 
     this.playerMove.elapsed += dt;
     const progress = clamp(this.playerMove.elapsed / this.playerMove.duration, 0, 1);
-    const easedProgress = smoothStep(progress);
-    this.state.player.gridX = lerp(this.playerMove.fromX, this.playerMove.toX, easedProgress);
-    this.state.player.gridY = lerp(this.playerMove.fromY, this.playerMove.toY, easedProgress);
+    const renderProgress = getMovementRenderProgress(this.playerMove.elapsed, this.playerMove.duration);
+    this.state.player.gridX = lerp(this.playerMove.fromX, this.playerMove.toX, renderProgress);
+    this.state.player.gridY = lerp(this.playerMove.fromY, this.playerMove.toY, renderProgress);
 
     if (progress >= 1) {
       this.holdPlayerFinalMoveFrame();
@@ -812,7 +810,7 @@ export class GameplayScene implements Scene {
     clock.accumulator = 0;
   }
 
-  /** Demarre un scroll camera fluide quand le joueur franchit la marge viewport ASM. */
+  /** Demarre un scroll camera quand le joueur franchit la marge viewport ASM. */
   private advanceCameraAfterPlayerStep(fromX: number, fromY: number, moveX: number, moveY: number): void {
     this.cameraMove = advanceCameraAfterPlayerStepSystem(this.viewport, fromX, fromY, moveX, moveY, {
       leftMargin: CAMERA_LEFT_MARGIN,
@@ -823,11 +821,11 @@ export class GameplayScene implements Scene {
       minY: CAMERA_MIN_Y,
       levelWidth: this.levelWidth,
       levelHeight: this.levelHeight,
-      moveDuration: CAMERA_GRID_MOVE_DURATION
+      moveDuration: getCameraMoveDuration()
     }) ?? this.cameraMove;
   }
 
-  /** Avance l'interpolation camera vers l'origine viewport cible. */
+  /** Avance le mouvement camera vers l'origine viewport cible. */
   private advanceCameraMove(dt: number): void {
     this.cameraMove = advanceCameraMoveSystem(this.cameraMove, dt);
   }
@@ -1028,7 +1026,7 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Avance les scans d'objets en chute et leurs animations fluides actives. */
+  /** Avance les scans d'objets en chute et leurs mouvements actifs. */
   private advanceFallingObjects(dt: number): void {
     if (this.state.levelComplete) {
       return;
@@ -1162,7 +1160,7 @@ export class GameplayScene implements Scene {
     return tileId === RUNTIME_EMPTY_TILE_ID || tileId === MONSTER_RUNTIME_TRAIL_TILE_ID;
   }
 
-  /** Demarre un mouvement fluide d'objet en chute et met immediatement la grille runtime a jour. */
+  /** Demarre un mouvement d'objet en chute et met immediatement la grille runtime a jour. */
   private startFallingObject(
     fromX: number,
     fromY: number,
@@ -1171,7 +1169,7 @@ export class GameplayScene implements Scene {
     tileId: number,
     moveKind: "fall" | "slide",
     finalTileId = tileId,
-    duration = FALLING_OBJECT_GRID_MOVE_DURATION
+    duration = getFallingObjectMoveDuration()
   ): void {
     const kind = finalTileId === DIAMOND_TILE_ID || finalTileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
     const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
@@ -1218,11 +1216,11 @@ export class GameplayScene implements Scene {
       toX,
       toY,
       elapsed: 0,
-      duration: PUSHED_ROCK_GRID_MOVE_DURATION
+      duration: getPushedRockMoveDuration()
     });
   }
 
-  /** Finalise un objet physique quand son mouvement fluide atteint la destination. */
+  /** Finalise un objet physique quand sa duree de mouvement atteint la destination. */
   private completeFallingObject(fallingObject: FallingObjectRuntimeState): boolean {
     const impact = this.applyFallingObjectImpact(fallingObject);
     if (impact === "explosion") {
@@ -1281,7 +1279,7 @@ export class GameplayScene implements Scene {
     });
   }
 
-  /** Synchronise l'entite visuelle correspondant a une tuile runtime en chute. */
+  /** Synchronise le rendu d'une entite physique sans modifier sa cadence runtime. */
   private syncFallingObjectEntity(fallingObject: FallingObjectRuntimeState): void {
     if (!fallingObject.entityId) {
       return;
@@ -1292,10 +1290,9 @@ export class GameplayScene implements Scene {
       return;
     }
 
-    const progress = clamp(fallingObject.elapsed / fallingObject.duration, 0, 1);
-    const easedProgress = smoothStep(progress);
-    entity.gridX = lerp(fallingObject.fromX, fallingObject.toX, easedProgress);
-    entity.gridY = lerp(fallingObject.fromY, fallingObject.toY, easedProgress);
+    const renderProgress = getMovementRenderProgress(fallingObject.elapsed, fallingObject.duration);
+    entity.gridX = lerp(fallingObject.fromX, fallingObject.toX, renderProgress);
+    entity.gridY = lerp(fallingObject.fromY, fallingObject.toY, renderProgress);
     entity.x = entity.gridX * this.state.level.tileSize;
     entity.y = entity.gridY * this.state.level.tileSize;
   }
@@ -1659,7 +1656,7 @@ export class GameplayScene implements Scene {
     ) ?? null;
   }
 
-  /** Repercute les positions des monstres runtime dans leurs entites visuelles. */
+  /** Repercute les positions des monstres runtime sans laisser la fluidite piloter la logique. */
   private syncMonsterEntitiesFromRuntimeState(): void {
     for (const monster of this.state.monsters) {
       const entity = this.state.entities.find((item) => item.id === monster.entityId);
@@ -1670,10 +1667,9 @@ export class GameplayScene implements Scene {
       entity.gridX = monster.gridX;
       entity.gridY = monster.gridY;
       if (monster.movement) {
-        const progress = clamp(monster.movement.elapsed / monster.movement.duration, 0, 1);
-        const easedProgress = smoothStep(progress);
-        entity.gridX = lerp(monster.movement.fromX, monster.movement.toX, easedProgress);
-        entity.gridY = lerp(monster.movement.fromY, monster.movement.toY, easedProgress);
+        const renderProgress = getMovementRenderProgress(monster.movement.elapsed, monster.movement.duration);
+        entity.gridX = lerp(monster.movement.fromX, monster.movement.toX, renderProgress);
+        entity.gridY = lerp(monster.movement.fromY, monster.movement.toY, renderProgress);
       }
 
       entity.x = entity.gridX * this.state.level.tileSize;
@@ -1696,7 +1692,7 @@ export class GameplayScene implements Scene {
     }
   }
 
-  /** Retourne la cellule joueur utilisee par le contact monstre, sans anticiper le pas fluide moderne. */
+  /** Retourne la cellule joueur utilisee par le contact monstre, sans anticiper le pas en cours. */
   private getPlayerMonsterContactCell(): { readonly x: number; readonly y: number } {
     if (this.playerMove) {
       return {
@@ -1738,7 +1734,7 @@ export class GameplayScene implements Scene {
     return null;
   }
 
-  /** Retourne la cellule visible d'un monstre pendant l'interpolation moderne. */
+  /** Retourne la cellule de contact discrete d'un monstre pendant son pas. */
   private getMonsterRenderedContactCell(monster: GameState["monsters"][number]): { readonly x: number; readonly y: number } {
     if (!monster.movement) {
       return {
@@ -1858,11 +1854,11 @@ export class GameplayScene implements Scene {
       runtimeStride: RUNTIME_GRID_STRIDE,
       activeTileId: monster.kind === "specialCreature" ? RUNTIME_TILE.specialCreature : MONSTER_RUNTIME_ACTIVE_TILE_ID,
       trailTileId: MONSTER_RUNTIME_TRAIL_TILE_ID,
-      moveDuration: MONSTER_GRID_MOVE_DURATION
+      moveDuration: getMonsterMoveDuration()
     });
   }
 
-  /** Avance les mouvements fluides actifs d'une famille de monstres et valide les pas termines. */
+  /** Avance les mouvements actifs d'une famille de monstres et valide les pas termines. */
   private advanceMonsterMoves(dt: number, kind: GameplayRuntimeMonsterKind): void {
     if (this.state.levelComplete) {
       return;
@@ -2132,11 +2128,6 @@ function clamp(value: number, min: number, max: number): number {
 /** Interpole lineairement entre deux valeurs numeriques. */
 function lerp(from: number, to: number, progress: number): number {
   return from + (to - from) * progress;
-}
-
-/** Applique une courbe d'easing smooth-step pour l'interpolation camera. */
-function smoothStep(progress: number): number {
-  return progress * progress * (3 - 2 * progress);
 }
 
 /** Indique si deux cellules sont identiques ou adjacentes orthogonalement. */

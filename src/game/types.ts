@@ -77,7 +77,7 @@ export interface MonsterRuntimeState {
   gridY: number;
   /** Cle d'animation utilisee par le rendu. */
   readonly animationKey: "monsterBlink" | "specialCreature";
-  /** Mouvement interpole en cours, ou aucun mouvement. */
+  /** Mouvement case par case en cours, ou aucun mouvement. */
   movement: null | {
     /** Case de depart du mouvement. */
     readonly fromX: number;
@@ -87,9 +87,9 @@ export interface MonsterRuntimeState {
     readonly toX: number;
     /** Case d'arrivee du mouvement. */
     readonly toY: number;
-    /** Temps deja ecoule dans l'interpolation. */
+    /** Temps deja ecoule dans le pas. */
     elapsed: number;
-    /** Duree totale de l'interpolation visuelle. */
+    /** Duree totale du pas; le rendu peut interpoler ou rester discret. */
     readonly duration: number;
   };
 }
@@ -103,7 +103,7 @@ export interface FallingObjectRuntimeState {
   readonly id: string;
   /** Famille physique partageant la logique chute/glissement. */
   readonly kind: "rock" | "diamond";
-  /** Nature du mouvement logique, separee du rendu fluide. */
+  /** Nature du mouvement logique, separee du rendu visuel. */
   readonly moveKind: PhysicalObjectMoveKind;
   /** Tile id statique final a restaurer en fin de mouvement. */
   readonly tileId: number;
@@ -121,9 +121,9 @@ export interface FallingObjectRuntimeState {
   toX: number;
   /** Case cible du mouvement. */
   toY: number;
-  /** Temps deja ecoule dans l'interpolation. */
+  /** Temps deja ecoule dans le pas physique. */
   elapsed: number;
-  /** Duree totale de l'interpolation visuelle. */
+  /** Duree totale du pas physique; le rendu peut interpoler ou rester discret. */
   readonly duration: number;
 }
 

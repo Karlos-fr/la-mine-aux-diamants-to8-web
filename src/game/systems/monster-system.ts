@@ -2,7 +2,7 @@
  * Role: Gere le pas runtime d'un monstre.
  * Scope: Deplace un monstre sur la grille, pose les marqueurs runtime et met a jour son pointeur.
  * ISO: Les routines `CA04` et `BC84` utilisent deux tables de rotation distinctes.
- * Notes: L'interpolation visuelle est stockee dans l'etat mais consommee par la scene/rendu.
+ * Notes: Le mouvement stocke sa duree de reference; la scene decide seulement de la progression rendue.
  */
 
 import type { MonsterRuntimeState } from "../types";
@@ -22,7 +22,7 @@ export interface MonsterSystemContext {
   readonly activeTileId: number;
   /** Tile id de trace laissee par le monstre. */
   readonly trailTileId: number;
-  /** Duree d'interpolation visuelle du pas. */
+  /** Duree de reference du pas. */
   readonly moveDuration: number;
 }
 

@@ -11,6 +11,7 @@ import {
   getDisplayStretchLabel,
   getDisplayZoomLabel
 } from "../display-options";
+import { getSmoothMovementLabel } from "../game-options";
 
 /** Categories prevues pour la future configuration. */
 export const OPTIONS_MENU_CATEGORIES = [
@@ -65,7 +66,8 @@ export function renderOptionsPopin(options: OptionsPopinRenderOptions): void {
     getDisplayModeLabel(),
     getDisplayZoomLabel(),
     getDisplayStretchLabel(),
-    getDisplayDensityLabel()
+    getDisplayDensityLabel(),
+    getSmoothMovementLabel()
   ].join(":");
 
   dom.root.hidden = false;
@@ -165,6 +167,11 @@ function renderCategoryContent(container: HTMLDivElement, category: string, cont
     return;
   }
 
+  if (category === "Jeu") {
+    renderGameContent(container);
+    return;
+  }
+
   renderPlaceholderContent(container, contextLabel);
 }
 
@@ -196,6 +203,15 @@ function renderDisplayContent(container: HTMLDivElement): void {
     { text: "< >: zoom" },
     { text: "Entree: etirage" },
     { text: "Ctrl: densite" }
+  ]);
+}
+
+/** Rend les preferences qui modifient le ressenti gameplay moderne. */
+function renderGameContent(container: HTMLDivElement): void {
+  appendLines(container, [
+    { text: "Mouvements fluides", colorClass: "options-popin__line--muted" },
+    { text: getSmoothMovementLabel(), colorClass: "options-popin__line--green" },
+    { text: "Entree: changer" }
   ]);
 }
 

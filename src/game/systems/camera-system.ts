@@ -1,9 +1,11 @@
 /**
- * Role: Gere la camera logique et son interpolation visuelle.
+ * Role: Gere la camera logique et sa progression visuelle.
  * Scope: Applique les seuils de viewport et calcule la position rendue sans acceder au canvas.
  * ISO: Les marges de declenchement viennent du comportement TO8 deja reporte dans la scene.
- * Notes: La camera reste discrete cote logique et fluide cote rendu.
+ * Notes: La camera reste discrete cote logique; la fluidite ne change que le rendu.
  */
+
+import { getMovementRenderProgress } from "../movement-visuals";
 
 /** Etat logique du viewport exprime en coordonnees de grille. */
 export interface CameraViewportState {
@@ -17,7 +19,7 @@ export interface CameraViewportState {
   readonly rows: number;
 }
 
-/** Mouvement interpole de camera entre deux positions discretes. */
+/** Mouvement de camera entre deux positions discretes. */
 export interface CameraMoveState {
   /** Colonne de depart. */
   readonly fromX: number;
@@ -27,9 +29,9 @@ export interface CameraMoveState {
   readonly toX: number;
   /** Ligne cible. */
   readonly toY: number;
-  /** Temps deja ecoule dans l'interpolation. */
+  /** Temps deja ecoule dans le mouvement. */
   elapsed: number;
-  /** Duree totale de l'interpolation. */
+  /** Duree totale du mouvement; le rendu peut interpoler ou rester discret. */
   readonly duration: number;
 }
 
@@ -51,11 +53,11 @@ export interface CameraSystemConfig {
   readonly levelWidth: number;
   /** Hauteur du niveau en cellules. */
   readonly levelHeight: number;
-  /** Duree de l'interpolation visuelle. */
+  /** Duree de reference du mouvement camera. */
   readonly moveDuration: number;
 }
 
-/** Avance la camera apres un pas joueur discret et retourne une interpolation si le viewport change. */
+/** Avance la camera apres un pas joueur discret et retourne un mouvement si le viewport change. */
 export function advanceCameraAfterPlayerStep(
   viewport: CameraViewportState,
   fromX: number,
@@ -97,7 +99,7 @@ export function advanceCameraAfterPlayerStep(
   };
 }
 
-/** Avance l'interpolation camera en cours et la termine si sa duree est atteinte. */
+/** Avance le mouvement camera en cours et le termine si sa duree est atteinte. */
 export function advanceCameraMove(cameraMove: CameraMoveState | null, dt: number): CameraMoveState | null {
   if (!cameraMove) {
     return null;
@@ -113,8 +115,8 @@ export function getRenderViewportX(viewport: CameraViewportState, cameraMove: Ca
     return viewport.x;
   }
 
-  const progress = clamp(cameraMove.elapsed / cameraMove.duration, 0, 1);
-  return lerp(cameraMove.fromX, cameraMove.toX, smoothStep(progress));
+  const progress = getMovementRenderProgress(cameraMove.elapsed, cameraMove.duration);
+  return lerp(cameraMove.fromX, cameraMove.toX, progress);
 }
 
 /** Calcule la coordonnee Y de viewport a utiliser pour le rendu. */
@@ -123,8 +125,8 @@ export function getRenderViewportY(viewport: CameraViewportState, cameraMove: Ca
     return viewport.y;
   }
 
-  const progress = clamp(cameraMove.elapsed / cameraMove.duration, 0, 1);
-  return lerp(cameraMove.fromY, cameraMove.toY, smoothStep(progress));
+  const progress = getMovementRenderProgress(cameraMove.elapsed, cameraMove.duration);
+  return lerp(cameraMove.fromY, cameraMove.toY, progress);
 }
 
 /** Calcule la borne maximale horizontale en fonction de la largeur du niveau. */
@@ -137,17 +139,7 @@ function getCameraMaxY(viewport: CameraViewportState, config: CameraSystemConfig
   return Math.max(config.minY, config.levelHeight - viewport.rows);
 }
 
-/** Contraint une valeur numerique entre deux bornes. */
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 /** Interpole lineairement deux valeurs. */
 function lerp(from: number, to: number, progress: number): number {
   return from + (to - from) * progress;
-}
-
-/** Lisse une interpolation pour eviter un mouvement camera trop mecanique. */
-function smoothStep(progress: number): number {
-  return progress * progress * (3 - 2 * progress);
 }

@@ -33,7 +33,7 @@ export interface GameplayRuntimeHooks {
   /** Traite le mouvement joueur et l'input clavier du tick. */
   advancePlayerRuntime(dt: number, input: InputState, playerSpawning: boolean): void;
 
-  /** Avance l'interpolation de camera. */
+  /** Avance le mouvement de camera en cours. */
   advanceCameraMove(dt: number): void;
 
   /** Synchronise la position pixel du joueur depuis sa position grille. */
@@ -45,7 +45,7 @@ export interface GameplayRuntimeHooks {
   /** Avance les decisions runtime d'une famille de monstres. */
   advanceMonsterRuntime(dt: number, kind: GameplayRuntimeMonsterKind): void;
 
-  /** Avance les mouvements interpoles d'une famille de monstres. */
+  /** Avance les mouvements actifs d'une famille de monstres. */
   advanceMonsterMoves(dt: number, kind: GameplayRuntimeMonsterKind): void;
 
   /** Synchronise les entites visuelles des monstres. */
