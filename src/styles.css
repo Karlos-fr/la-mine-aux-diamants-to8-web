@@ -444,15 +444,21 @@ button:hover {
 /* Barre debug superposee en haut de page pour selectionner un niveau et activer les aides de test. */
 .debug-toolbar {
   position: fixed;
-  top: 8px;
-  left: 50%;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 25;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 5px;
+  width: 100%;
   border: 1px solid #0001fe;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
   border-radius: 0;
-  padding: 4px;
+  padding: 5px 8px;
   background:
     linear-gradient(rgba(0, 1, 254, 0.15), rgba(0, 1, 254, 0.15)),
     repeating-linear-gradient(
@@ -473,7 +479,74 @@ button:hover {
   box-shadow:
     inset 0 0 0 2px rgba(0, 1, 254, 0.85),
     0 0 0 1px rgba(0, 0, 0, 0.75);
-  transform: translateX(-50%);
+  color: #00ffff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #0001fe;
+  transition:
+    transform 140ms ease,
+    opacity 140ms ease;
+  transform: translateY(0);
+}
+
+/* Barre debug auto-masquee quand elle n'est pas epinglee. */
+.debug-toolbar[data-pinned="false"] {
+  opacity: 0.72;
+  transform: translateY(calc(-100% + 6px));
+}
+
+.debug-toolbar[data-pinned="false"]:hover,
+.debug-toolbar[data-pinned="false"]:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Icone de debug a gauche de la barre. */
+.debug-toolbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: #00ffff;
+}
+
+.debug-toolbar-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Bouton d'epinglage de la barre debug. */
+.debug-toolbar-pin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 25px;
+  min-width: 25px;
+  min-height: 23px;
+  margin-left: auto;
+  border-color: #0001fe;
+  border-radius: 0;
+  padding: 2px;
+  color: #00ffff;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.debug-toolbar-pin-button svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.debug-toolbar-pin-button[aria-pressed="true"] {
+  color: #000000;
+  background: rgba(0, 255, 255, 0.72);
 }
 
 /* Texte DOM rendu depuis les glyphes Thomson proceduraux. */
@@ -501,8 +574,8 @@ button:hover {
 .debug-level-label {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   color: #00ffff;
-  text-shadow: 1px 1px 0 #0001fe;
 }
 
 /* Coque pixelisee du selecteur custom pour afficher les niveaux avec la font TO8. */
@@ -510,7 +583,9 @@ button:hover {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-width: min(330px, 46vw);
+  flex: 1 1 420px;
+  min-width: 260px;
+  max-width: 760px;
   min-height: 19px;
   color: #00ffff;
 }
@@ -525,18 +600,21 @@ button:hover {
   border-color: #0001fe;
   border-radius: 0;
   overflow: hidden;
-  padding: 3px 19px 3px 5px;
+  padding: 4px 22px 4px 7px;
   background: rgba(0, 0, 0, 0.38);
   color: #00ffff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
+  line-height: 1;
   text-align: left;
-  text-shadow: 1px 1px 0 #0001fe;
 }
 
 /* Valeur courante du selecteur, rendue par glyphes proceduraux. */
 .debug-level-picker-display {
-  display: inline-flex;
-  align-items: center;
+  display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Fleche pixelisee du select debug. */
@@ -545,6 +623,8 @@ button:hover {
   right: 5px;
   top: 50%;
   color: #00ffff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -577,11 +657,14 @@ button:hover {
   border: 0;
   border-bottom: 1px solid rgba(0, 1, 254, 0.65);
   border-radius: 0;
-  padding: 3px 5px;
+  padding: 5px 7px;
   color: #00ffff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
+  line-height: 1;
   background: rgba(0, 0, 0, 0.38);
   text-align: left;
-  text-shadow: 1px 1px 0 #0001fe;
+  white-space: nowrap;
 }
 
 /* Option de niveau actuellement selectionnee. */
@@ -598,10 +681,13 @@ button:hover {
   min-height: 19px;
   border-color: #0001fe;
   border-radius: 0;
-  padding: 3px 6px;
+  flex: 0 0 auto;
+  padding: 4px 8px;
   color: #00ffff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
+  line-height: 1;
   background: rgba(0, 0, 0, 0.38);
-  text-shadow: 1px 1px 0 #0001fe;
 }
 
 /* Etat actif du mode fantome. */

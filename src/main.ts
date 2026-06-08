@@ -1,7 +1,6 @@
 import "./styles.css";
 
 import { debugOptions } from "./debug-options";
-import { createThomsonDomText, setThomsonDomText } from "./dom-thomson-text";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
@@ -26,6 +25,9 @@ if (!root) {
 /** Mode applicatif optionnel transmis dans la query string. */
 const mode = new URLSearchParams(window.location.search).get("mode");
 
+/** Cle de persistance de l'etat d'epinglage de la barre debug. */
+const DEBUG_TOOLBAR_PINNED_STORAGE_KEY = "la-mine-debug-toolbar-pinned";
+
 if (mode === "gallery") {
   mountDevAnimationGallery(root);
 } else {
@@ -49,12 +51,23 @@ if (mode === "gallery") {
   /** Barre de controles debug gardee hors canvas pour ne pas polluer le rendu ISO. */
   const debugToolbar = document.createElement("div");
   debugToolbar.className = "debug-toolbar";
+  debugToolbar.dataset.pinned = loadDebugToolbarPinned() ? "true" : "false";
+
+  /** Icone identifiant la barre de debug. */
+  const debugToolbarIcon = document.createElement("span");
+  debugToolbarIcon.className = "debug-toolbar-icon";
+  debugToolbarIcon.setAttribute("aria-hidden", "true");
+  debugToolbarIcon.innerHTML = `
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M9 3h6v3h-1v2h4v3h2v3h-2v4h-3v3H9v-3H6v-4H4v-3h2V8h4V6H9V3Zm0 8h2v2H9v-2Zm4 0h2v2h-2v-2Zm-4 4h6v2H9v-2Z" />
+    </svg>
+  `;
 
   /** Libelle accessible du selecteur de niveau. */
   const levelSelectLabel = document.createElement("label");
   levelSelectLabel.className = "debug-level-label";
   levelSelectLabel.htmlFor = "debug-level-picker";
-  setThomsonDomText(levelSelectLabel, "Niveau", { ariaLabel: "Niveau" });
+  levelSelectLabel.textContent = "Niveau";
 
   /** Liste de selection directe des niveaux modernes disponibles. */
   const levelSelectShell = document.createElement("div");
@@ -75,7 +88,7 @@ if (mode === "gallery") {
   /** Indicateur visuel de select conserve dans le style pixel TO8. */
   const levelSelectArrow = document.createElement("span");
   levelSelectArrow.className = "debug-level-select-arrow";
-  levelSelectArrow.append(createThomsonDomText("v"));
+  levelSelectArrow.textContent = "v";
 
   /** Menu deroulant custom pour appliquer la font procedurale a chaque niveau. */
   const levelMenu = document.createElement("div");
@@ -94,7 +107,8 @@ if (mode === "gallery") {
     optionButton.type = "button";
     optionButton.role = "option";
     optionButton.dataset.levelNumber = String(levelNumber);
-    setThomsonDomText(optionButton, label, { ariaLabel: label, maxLength: 32 });
+    optionButton.textContent = label;
+    optionButton.setAttribute("aria-label", label);
     levelMenu.append(optionButton);
     levelOptions.push({ levelNumber, label, button: optionButton });
   }
@@ -103,32 +117,52 @@ if (mode === "gallery") {
   const attractButton = document.createElement("button");
   attractButton.className = "debug-attract-button";
   attractButton.type = "button";
-  setThomsonDomText(attractButton, "Debug attract", { ariaLabel: "Debug attract" });
+  attractButton.textContent = "Debug attract";
   attractButton.title = "Lancer directement le mode attract scriptable original.";
 
   /** Bouton debug ouvrant l'editeur de niveaux moderne. */
   const editorButton = document.createElement("button");
   editorButton.className = "debug-editor-button";
   editorButton.type = "button";
-  setThomsonDomText(editorButton, "Editeur", { ariaLabel: "Editeur" });
+  editorButton.textContent = "Editeur";
 
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
   ghostButton.className = "debug-ghost-button";
   ghostButton.type = "button";
-  setThomsonDomText(ghostButton, "Ghost: off", { ariaLabel: "Ghost: off" });
+  ghostButton.textContent = "Ghost: off";
+  ghostButton.setAttribute("aria-label", "Ghost: off");
   ghostButton.setAttribute("aria-pressed", "false");
   ghostButton.addEventListener("click", () => {
     debugOptions.ghostMode = !debugOptions.ghostMode;
     const ghostLabel = debugOptions.ghostMode ? "Ghost: on" : "Ghost: off";
-    setThomsonDomText(ghostButton, ghostLabel, { ariaLabel: ghostLabel });
+    ghostButton.textContent = ghostLabel;
+    ghostButton.setAttribute("aria-label", ghostLabel);
     ghostButton.setAttribute("aria-pressed", String(debugOptions.ghostMode));
+    canvas.focus();
+  });
+
+  /** Bouton d'epinglage de la barre debug. */
+  const debugToolbarPinButton = document.createElement("button");
+  debugToolbarPinButton.className = "debug-toolbar-pin-button";
+  debugToolbarPinButton.type = "button";
+  debugToolbarPinButton.innerHTML = `
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M8 3h8v2l-2 2v4l4 4v2h-5v4h-2v-4H6v-2l4-4V7L8 5V3Z" />
+    </svg>
+  `;
+  syncDebugToolbarPinButton(debugToolbar, debugToolbarPinButton);
+  debugToolbarPinButton.addEventListener("click", () => {
+    const nextPinned = debugToolbar.dataset.pinned !== "true";
+    debugToolbar.dataset.pinned = nextPinned ? "true" : "false";
+    saveDebugToolbarPinned(nextPinned);
+    syncDebugToolbarPinButton(debugToolbar, debugToolbarPinButton);
     canvas.focus();
   });
   levelPickerButton.append(levelPickerDisplay, levelSelectArrow);
   levelSelectShell.append(levelPickerButton, levelMenu);
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, 1);
-  debugToolbar.append(levelSelectLabel, levelSelectShell, attractButton, editorButton, ghostButton);
+  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, editorButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -203,7 +237,7 @@ function syncLevelPickerDisplay(
   selectedLevelNumber: number
 ): void {
   const selectedOption = options.find((option) => option.levelNumber === selectedLevelNumber);
-  setThomsonDomText(display, selectedOption?.label ?? "", { maxLength: 28 });
+  display.textContent = selectedOption?.label ?? "";
 }
 
 /** Met a jour l'etat aria/visuel des options du menu custom. */
@@ -214,4 +248,31 @@ function syncLevelMenuSelection(
   options.forEach((option) => {
     option.button.setAttribute("aria-selected", String(option.levelNumber === selectedLevelNumber));
   });
+}
+
+/** Charge l'etat d'epinglage de la barre debug. */
+function loadDebugToolbarPinned(): boolean {
+  try {
+    return window.localStorage.getItem(DEBUG_TOOLBAR_PINNED_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+/** Persiste l'etat d'epinglage de la barre debug. */
+function saveDebugToolbarPinned(pinned: boolean): void {
+  try {
+    window.localStorage.setItem(DEBUG_TOOLBAR_PINNED_STORAGE_KEY, String(pinned));
+  } catch {
+    // Le stockage local est optionnel pour l'UX debug.
+  }
+}
+
+/** Synchronise les libelles accessibles du bouton d'epinglage. */
+function syncDebugToolbarPinButton(toolbar: HTMLElement, button: HTMLButtonElement): void {
+  const pinned = toolbar.dataset.pinned === "true";
+  const label = pinned ? "Masquer automatiquement la barre debug" : "Epingler la barre debug";
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-pressed", String(pinned));
 }
