@@ -510,7 +510,7 @@ export class GameplayScene implements Scene {
       this.advancePlayerMove(dt);
     } else if (!playerSpawning) {
       if (this.gameplayMode === "attract") {
-        this.attractInputSource?.advanceScriptTick();
+        this.attractInputSource?.advanceScriptTick(dt);
         if (this.attractInputSource?.isEnded()) {
           this.queueAttractReturnToTitle();
           return;

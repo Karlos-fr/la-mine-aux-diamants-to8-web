@@ -18,7 +18,8 @@ La logique gameplay doit avancer en ticks entiers. Le rendu moderne peut interpo
 | Systeme | Routine ASM | Cadence moderne | Statut | Justification |
 | --- | --- | ---: | --- | --- |
 | Spawn demi-blink | `$BE68`, `$CD5B` | 13 ticks | Approximation documentee | `$BE68` boucle `$C09D = 0x06`; la temporisation depend de delais CPU et de rendus intermediaires |
-| Mouvement joueur | Routines joueur autour de `$CE..` | 11 ticks | Hypothese moderne | Duree de reference moderne arrondie depuis l'ancienne valeur `0.21s` |
+| Mouvement joueur | Routines joueur autour de `$CE..` | 8,6 ticks | Calibration moderne | Duree ajustee entre 8 et 9 ticks apres comparaison visuelle avec l'original, notamment via le mode attract |
+| Unite script attract | `$CDF9`, `$CE33`, `$CE34`, table `$D878` | 8,6 ticks | Calibration moderne | Les durees raw du script sont des repetitions de commande; une attente `0x10 0x40` dure donc `0x40` unites, alignees par defaut sur le pas joueur |
 | Idle joueur | `$CED9` et metadata joueur | 40 ticks | Hypothese moderne | Delai moderne conserve, exprime en ticks entiers |
 | Decision monstre standard | `$CA04` | 14 ticks | Hypothese moderne centralisee | `$CA04` est appele par boucle principale; la conversion exacte du tour ASM reste indirecte |
 | Decision creature speciale | `$BC84` | 14 ticks | Hypothese moderne centralisee | `$BC84` est appele dans la meme boucle que `$CA04`; cadence commune conservee |

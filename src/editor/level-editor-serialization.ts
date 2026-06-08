@@ -15,6 +15,7 @@ import type {
 import {
   EDITOR_TILE_SIZE,
   createEmptyEditableLevelState,
+  enforceEditableLevelBorder,
   getEditableExplicitTiles,
   setEditableTileAt,
   sortEditableCellsByGridPosition,
@@ -85,6 +86,7 @@ export function importEditableLevelFromJson(source: unknown): EditableLevelState
     setEditableTileAt(state, tile.x, tile.y, tile.type);
   }
   state.entities = [...json.entities].sort(sortEditableCellsByGridPosition);
+  enforceEditableLevelBorder(state);
   return state;
 }
 

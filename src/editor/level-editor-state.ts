@@ -63,7 +63,7 @@ export interface EditableLevelState {
 
 /** Cree un niveau vide compatible avec le format JSON moderne. */
 export function createEmptyEditableLevelState(): EditableLevelState {
-  return {
+  const state: EditableLevelState = {
     schemaVersion: 1,
     id: "level-custom-01",
     label: "Galerie custom",
@@ -82,6 +82,8 @@ export function createEmptyEditableLevelState(): EditableLevelState {
     entities: [],
     sourceKind: "custom"
   };
+  enforceEditableLevelBorder(state);
+  return state;
 }
 
 /** Lit la tuile effective d'une cellule, en appliquant la tuile par defaut. */
@@ -95,6 +97,12 @@ export function setEditableTileAt(state: EditableLevelState, x: number, y: numbe
     return;
   }
 
+  if (isEditableBorderCell(state, x, y)) {
+    state.tilesByKey.set(createGridKey(x, y), "border");
+    clearEditableEntityAt(state, x, y);
+    return;
+  }
+
   const key = createGridKey(x, y);
   if (tile === state.defaultTile) {
     state.tilesByKey.delete(key);
@@ -105,13 +113,19 @@ export function setEditableTileAt(state: EditableLevelState, x: number, y: numbe
 
 /** Retire la surcharge d'une cellule pour revenir a la tuile par defaut. */
 export function clearEditableTileAt(state: EditableLevelState, x: number, y: number): void {
+  if (isEditableBorderCell(state, x, y)) {
+    state.tilesByKey.set(createGridKey(x, y), "border");
+    clearEditableEntityAt(state, x, y);
+    return;
+  }
+
   state.tilesByKey.delete(createGridKey(x, y));
   clearEditableEntityAt(state, x, y);
 }
 
 /** Pose ou remplace une entite editable a une coordonnee donnee. */
 export function setEditableEntityAt(state: EditableLevelState, x: number, y: number, type: ModernEntityType): void {
-  if (!isInsideEditableLevel(state, x, y)) {
+  if (!isInsideEditableLevel(state, x, y) || isEditableBorderCell(state, x, y)) {
     return;
   }
 
@@ -127,14 +141,14 @@ export function clearEditableEntityAt(state: EditableLevelState, x: number, y: n
 
 /** Deplace le spawn joueur en coordonnees discretes. */
 export function setEditablePlayerSpawn(state: EditableLevelState, point: ModernGridPoint): void {
-  if (isInsideEditableLevel(state, point.x, point.y)) {
+  if (isInsideEditableLevel(state, point.x, point.y) && !isEditableBorderCell(state, point.x, point.y)) {
     state.playerSpawn = { ...point };
   }
 }
 
 /** Deplace la sortie en coordonnees discretes. */
 export function setEditableExit(state: EditableLevelState, point: ModernGridPoint): void {
-  if (isInsideEditableLevel(state, point.x, point.y)) {
+  if (isInsideEditableLevel(state, point.x, point.y) && !isEditableBorderCell(state, point.x, point.y)) {
     state.exit = { ...point };
   }
 }
@@ -152,6 +166,55 @@ export function getEditableExplicitTiles(state: EditableLevelState): ModernLevel
 /** Indique si une coordonnee appartient a la grille editable. */
 export function isInsideEditableLevel(state: EditableLevelState, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < state.width && y < state.height;
+}
+
+/** Indique si une cellule appartient au contour verrouille du niveau. */
+export function isEditableBorderCell(state: EditableLevelState, x: number, y: number): boolean {
+  return isInsideEditableLevel(state, x, y) && (x === 0 || y === 0 || x === state.width - 1 || y === state.height - 1);
+}
+
+/** Supprime les tuiles, entites et marqueurs qui sortent de la grille apres redimensionnement. */
+export function pruneEditableLevelToBounds(state: EditableLevelState): void {
+  for (const key of state.tilesByKey.keys()) {
+    const [x, y] = parseGridKey(key);
+    if (!isInsideEditableLevel(state, x, y)) {
+      state.tilesByKey.delete(key);
+    }
+  }
+
+  state.entities = state.entities.filter((entity) => isInsideEditableLevel(state, entity.x, entity.y));
+
+  if (!isInsideEditableLevel(state, state.playerSpawn.x, state.playerSpawn.y) || isEditableBorderCell(state, state.playerSpawn.x, state.playerSpawn.y)) {
+    state.playerSpawn = { x: 1, y: 1 };
+  }
+
+  if (!isInsideEditableLevel(state, state.exit.x, state.exit.y) || isEditableBorderCell(state, state.exit.x, state.exit.y)) {
+    state.exit = { x: Math.max(1, state.width - 2), y: Math.max(1, state.height - 2) };
+  }
+}
+
+/** Retire l'ancien contour verrouille avant de reconstruire la bordure apres redimensionnement. */
+export function moveEditableLevelBorder(state: EditableLevelState, previousWidth: number, previousHeight: number): void {
+  for (let y = 0; y < previousHeight; y += 1) {
+    for (let x = 0; x < previousWidth; x += 1) {
+      const wasPreviousBorder = x === 0 || y === 0 || x === previousWidth - 1 || y === previousHeight - 1;
+      if (wasPreviousBorder && !isEditableBorderCell(state, x, y)) {
+        state.tilesByKey.delete(createGridKey(x, y));
+      }
+    }
+  }
+}
+
+/** Reconstruit la bordure non supprimable et nettoie les entites qui l'occuperaient. */
+export function enforceEditableLevelBorder(state: EditableLevelState): void {
+  for (let y = 0; y < state.height; y += 1) {
+    for (let x = 0; x < state.width; x += 1) {
+      if (isEditableBorderCell(state, x, y)) {
+        state.tilesByKey.set(createGridKey(x, y), "border");
+        clearEditableEntityAt(state, x, y);
+      }
+    }
+  }
 }
 
 /** Cree une cle stable pour une cellule de grille. */

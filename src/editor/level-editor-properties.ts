@@ -6,7 +6,12 @@
  */
 
 import type { ModernLevelSourceKind, ModernTileType } from "../game/level-loader";
-import { type EditableLevelState } from "./level-editor-state";
+import {
+  enforceEditableLevelBorder,
+  moveEditableLevelBorder,
+  pruneEditableLevelToBounds,
+  type EditableLevelState
+} from "./level-editor-state";
 
 /** Largeur minimale acceptee pour un niveau edite. */
 export const EDITOR_MIN_LEVEL_WIDTH = 10;
@@ -41,8 +46,13 @@ export function setEditableLevelCreatedDate(state: EditableLevelState, createdDa
 
 /** Met a jour la taille du niveau avec garde-fous non destructeurs simples. */
 export function setEditableLevelSize(state: EditableLevelState, width: number, height: number): void {
+  const previousWidth = state.width;
+  const previousHeight = state.height;
   state.width = clamp(Math.floor(width), EDITOR_MIN_LEVEL_WIDTH, EDITOR_MAX_LEVEL_WIDTH);
   state.height = clamp(Math.floor(height), EDITOR_MIN_LEVEL_HEIGHT, EDITOR_MAX_LEVEL_HEIGHT);
+  moveEditableLevelBorder(state, previousWidth, previousHeight);
+  pruneEditableLevelToBounds(state);
+  enforceEditableLevelBorder(state);
 }
 
 /** Met a jour le temps limite. */

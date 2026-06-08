@@ -11,6 +11,7 @@ import {
   readNextAttractScriptIntent,
   type AttractScriptState
 } from "./attract/attract-script";
+import { getAttractScriptUnitDuration } from "./movement-timing";
 import { resolvePressedPlayerMove } from "./systems/player-system";
 
 /** Intention de mouvement joueur exprimee en delta de grille. */
@@ -41,12 +42,20 @@ export class AttractScriptInputSource implements PlayerInputSource {
   private readonly scriptState: AttractScriptState = createInitialAttractScriptState();
   /** Derniere intention lue par le tick attract courant. */
   private currentIntent: ReturnType<typeof readNextAttractScriptIntent> = { type: "idle", command: 0 };
+  /** Temps deja passe sur une intention d'attente attract. */
+  private idleIntentElapsed = 0;
+  /** Indique que l'attente courante doit encore retenir la lecture du script. */
+  private idleIntentHolding = false;
   /** Indique que le marqueur `$DD` a ete atteint. */
   private ended = false;
 
-  /** Avance le script d'un tick logique, comme l'appel regulier a `$CDF9`. */
-  advanceScriptTick(): void {
+  /** Avance le script d'une unite logique disponible, comme l'appel regulier a `$CDF9`. */
+  advanceScriptTick(dt: number): void {
     if (this.ended) {
+      return;
+    }
+
+    if (this.shouldHoldCurrentIdleIntent(dt)) {
       return;
     }
 
@@ -54,10 +63,29 @@ export class AttractScriptInputSource implements PlayerInputSource {
     if (intent.type === "end") {
       this.ended = true;
       this.currentIntent = intent;
+      this.idleIntentHolding = false;
       return;
     }
 
     this.currentIntent = intent;
+    this.idleIntentElapsed = 0;
+    this.idleIntentHolding = intent.type === "idle";
+  }
+
+  /** Retient les commandes d'attente `0` pendant leur vraie unite de script attract. */
+  private shouldHoldCurrentIdleIntent(dt: number): boolean {
+    if (this.currentIntent.type !== "idle" || !this.idleIntentHolding) {
+      return false;
+    }
+
+    this.idleIntentElapsed += dt;
+    if (this.idleIntentElapsed < getAttractScriptUnitDuration()) {
+      return true;
+    }
+
+    this.idleIntentElapsed -= getAttractScriptUnitDuration();
+    this.idleIntentHolding = false;
+    return false;
   }
 
   /** Convertit la commande courante du script en delta discret de grille. */

@@ -7,15 +7,18 @@
 
 import { FIXED_UPDATE_RATE } from "../engine/constants";
 
+/** Duree calibree d'un pas joueur en ticks TO8 modernes. */
+const PLAYER_GRID_MOVE_TICKS = 8.55;
+
 /** Nombre de ticks logiques TO8 par seconde dans le portage moderne. */
 export const TO8_RUNTIME_TICKS_PER_SECOND = FIXED_UPDATE_RATE;
 
-/** Convertit un nombre entier de ticks TO8 en secondes pour les cadences modernes. */
+/** Convertit un nombre de ticks TO8 en secondes pour les cadences modernes. */
 export function secondsFromTo8Ticks(ticks: number): number {
   return ticks / TO8_RUNTIME_TICKS_PER_SECOND;
 }
 
-/** Cadences gameplay exprimees en ticks TO8 entiers. */
+/** Cadences gameplay exprimees en ticks TO8. */
 export const TO8_RUNTIME_TIMING = {
   /**
    * Duree moderne d'un passage de boucle titre pour le compteur attract `$8DD8`.
@@ -27,8 +30,10 @@ export const TO8_RUNTIME_TIMING = {
   titleAttractLoopTicks: 13,
   /** Demi-pas du blink spawn `0x04` puis noir; `$BE68` boucle 6 fois avec delais CPU `$CD5B`. */
   playerSpawnBlinkStepTicks: 13,
-  /** Duree de reference du pas joueur; approximation moderne arrondie depuis 10,5 ticks. */
-  playerGridMoveTicks: 11,
+  /** Duree de reference du pas joueur; calibration visuelle moderne entre 8 et 9 ticks. */
+  playerGridMoveTicks: PLAYER_GRID_MOVE_TICKS,
+  /** Unite de repetition du script attract `$D878`, alignee par defaut sur le pas joueur. */
+  attractScriptUnitTicks: PLAYER_GRID_MOVE_TICKS,
   /** Delai avant animation idle, lie a `$CED9` mais encore cadence moderne. */
   playerIdleDelayTicks: 40,
   /** Intervalle de decision monstre; `CA04`/`BC84` sont appeles par boucle ASM, valeur moderne centralisee. */

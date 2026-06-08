@@ -10,6 +10,9 @@ import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "./runtime-timing";
 /** Duree source du pas joueur, derivee des ticks runtime centralises. */
 const PLAYER_MOVE_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerGridMoveTicks);
 
+/** Duree source d'une unite de script attract, derivee des compteurs `$CE33/$CE34`. */
+const ATTRACT_SCRIPT_UNIT_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.attractScriptUnitTicks);
+
 /** Duree source du scroll camera, alignee sur le pas joueur moderne. */
 const CAMERA_MOVE_DURATION = PLAYER_MOVE_DURATION;
 
@@ -25,6 +28,11 @@ const PUSHED_ROCK_MOVE_DURATION = PLAYER_MOVE_DURATION;
 /** Retourne la duree de reference d'un pas joueur. */
 export function getPlayerMoveDuration(): number {
   return PLAYER_MOVE_DURATION;
+}
+
+/** Retourne la duree de reference d'une repetition du script attract. */
+export function getAttractScriptUnitDuration(): number {
+  return ATTRACT_SCRIPT_UNIT_DURATION;
 }
 
 /** Retourne la duree de reference d'un scroll camera. */
