@@ -6,6 +6,7 @@
  */
 
 import type { LoadedRuntimeAssets } from "../assets/runtime-asset-loader";
+import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import type { ModernEntityType, ModernLevelJson, ModernTileType } from "../game/level-loader";
 import { RUNTIME_TILE } from "../game/runtime-tiles";
 
@@ -17,10 +18,12 @@ const DEFAULT_PREVIEW_MAX_WIDTH = 320;
 const DEFAULT_PREVIEW_MAX_HEIGHT = 180;
 /** Couleur de fond quand les assets ne sont pas encore disponibles. */
 const PREVIEW_BACKGROUND_COLOR = "#000000";
-/** Couleur de contour utilisee pour rendre la sortie identifiable en miniature. */
-const PREVIEW_EXIT_MARKER_COLOR = "#00ffff";
 /** Couleur de contour utilisee si l'atlas joueur est indisponible. */
 const PREVIEW_PLAYER_FALLBACK_COLOR = "#ff0000";
+/** Frames idle joueur extraites de la table ASM `$D036-$D069`. */
+const PLAYER_IDLE_TILE_IDS = extractFrameIdsFromMetadata("player", "idleCycle", [8, 8, 7, 8, 9]);
+/** Correspondance tile id joueur vers index de frame dans `player-atlas.png`. */
+const PLAYER_TILE_ID_TO_ATLAS_FRAME = createTileIdToAtlasFrameMap("player");
 
 /** Options de rendu pour une miniature de niveau. */
 export interface LevelShowcasePreviewRenderOptions {
@@ -32,6 +35,20 @@ export interface LevelShowcasePreviewRenderOptions {
   readonly minCellSize?: number;
   /** Autorise le rendu a la taille source 16px par cellule quand l'espace le permet. */
   readonly preferSourceTileSize?: boolean;
+  /** Indices de frames animes a utiliser pour les sprites vivants de la miniature. */
+  readonly animationFrameIndexes?: LevelShowcasePreviewAnimationFrameIndexes;
+}
+
+/** Indices d'animation sans simulation gameplay pour les apercus de vitrine. */
+export interface LevelShowcasePreviewAnimationFrameIndexes {
+  /** Index logique du cycle idle joueur. */
+  readonly player: number;
+  /** Index logique du cycle diamant. */
+  readonly diamond: number;
+  /** Index logique du cycle monstre. */
+  readonly monster: number;
+  /** Index logique du blink sortie. */
+  readonly exit: number;
 }
 
 /** Resultat geometrique d'un rendu de preview. */
@@ -102,38 +119,74 @@ export class LevelShowcasePreviewRenderer {
     context.fillStyle = PREVIEW_BACKGROUND_COLOR;
     context.fillRect(0, 0, width, height);
 
-    this.renderTiles(context, level, cellSize);
-    this.renderEntities(context, level, cellSize);
-    this.renderExitMarker(context, level, cellSize);
-    this.renderPlayerSpawn(context, level, cellSize);
+    const animationFrameIndexes = options.animationFrameIndexes ?? DEFAULT_ANIMATION_FRAME_INDEXES;
+    this.renderTiles(context, level, cellSize, animationFrameIndexes);
+    this.renderEntities(context, level, cellSize, animationFrameIndexes);
+    this.renderExitMarker(context, level, cellSize, animationFrameIndexes);
+    this.renderPlayerSpawn(context, level, cellSize, animationFrameIndexes);
 
     return { width, height, cellSize };
   }
 
   /** Rend la grille de tuiles complete en appliquant la tuile par defaut. */
-  private renderTiles(context: CanvasRenderingContext2D, level: ModernLevelJson, cellSize: number): void {
+  private renderTiles(
+    context: CanvasRenderingContext2D,
+    level: ModernLevelJson,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     for (let y = 0; y < level.height; y += 1) {
       for (let x = 0; x < level.width; x += 1) {
-        this.drawTile(context, level.defaultTile, x, y, cellSize);
+        this.drawTile(context, level.defaultTile, x, y, cellSize, animationFrameIndexes);
       }
     }
 
     for (const cell of level.tiles) {
-      this.drawTile(context, cell.type, cell.x, cell.y, cellSize);
+      this.drawTile(context, cell.type, cell.x, cell.y, cellSize, animationFrameIndexes);
     }
   }
 
   /** Rend les entites declaratives par-dessus la grille statique. */
-  private renderEntities(context: CanvasRenderingContext2D, level: ModernLevelJson, cellSize: number): void {
+  private renderEntities(
+    context: CanvasRenderingContext2D,
+    level: ModernLevelJson,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     for (const entity of level.entities) {
-      this.drawEntity(context, entity.type, entity.x, entity.y, cellSize);
+      this.drawEntity(context, entity.type, entity.x, entity.y, cellSize, animationFrameIndexes);
     }
   }
 
   /** Rend une tuile moderne avec atlas runtime ou couleur de secours. */
-  private drawTile(context: CanvasRenderingContext2D, tile: ModernTileType, gridX: number, gridY: number, cellSize: number): void {
+  private drawTile(
+    context: CanvasRenderingContext2D,
+    tile: ModernTileType,
+    gridX: number,
+    gridY: number,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     const destinationX = gridX * cellSize;
     const destinationY = gridY * cellSize;
+    if (tile === "diamond" && this.assets?.diamondAtlas) {
+      const frameIndex = animationFrameIndexes.diamond % 8;
+      this.drawAtlasFrame(context, this.assets.diamondAtlas, frameIndex, destinationX, destinationY, cellSize);
+      return;
+    }
+
+    if (tile === "monster" && this.assets?.monsterAtlas) {
+      const frameIndex = animationFrameIndexes.monster % 2;
+      this.drawAtlasFrame(context, this.assets.monsterAtlas, frameIndex, destinationX, destinationY, cellSize);
+      return;
+    }
+
+    if (tile === "specialCreature" && this.assets?.specialCreatureAtlas) {
+      const frameIndex = animationFrameIndexes.monster % 2;
+      this.drawAtlasFrame(context, this.assets.specialCreatureAtlas, frameIndex, destinationX, destinationY, cellSize);
+      return;
+    }
+
     const tileAtlas = this.assets?.tileAtlas;
     if (tileAtlas) {
       const tileId = PREVIEW_TILE_TO_RUNTIME_ID[tile];
@@ -145,23 +198,33 @@ export class LevelShowcasePreviewRenderer {
     context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 
-  /** Rend une entite animee avec sa premiere frame disponible. */
-  private drawEntity(context: CanvasRenderingContext2D, type: ModernEntityType, gridX: number, gridY: number, cellSize: number): void {
+  /** Rend une entite animee avec sa frame courante. */
+  private drawEntity(
+    context: CanvasRenderingContext2D,
+    type: ModernEntityType,
+    gridX: number,
+    gridY: number,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     const destinationX = gridX * cellSize;
     const destinationY = gridY * cellSize;
 
     if (type === "diamond" && this.assets?.diamondAtlas) {
-      this.drawAtlasFrame(context, this.assets.diamondAtlas, 0, destinationX, destinationY, cellSize);
+      const frameIndex = animationFrameIndexes.diamond % 8;
+      this.drawAtlasFrame(context, this.assets.diamondAtlas, frameIndex, destinationX, destinationY, cellSize);
       return;
     }
 
     if (type === "monster" && this.assets?.monsterAtlas) {
-      this.drawAtlasFrame(context, this.assets.monsterAtlas, 0, destinationX, destinationY, cellSize);
+      const frameIndex = animationFrameIndexes.monster % 2;
+      this.drawAtlasFrame(context, this.assets.monsterAtlas, frameIndex, destinationX, destinationY, cellSize);
       return;
     }
 
     if (type === "specialCreature" && this.assets?.specialCreatureAtlas) {
-      this.drawAtlasFrame(context, this.assets.specialCreatureAtlas, 0, destinationX, destinationY, cellSize);
+      const frameIndex = animationFrameIndexes.monster % 2;
+      this.drawAtlasFrame(context, this.assets.specialCreatureAtlas, frameIndex, destinationX, destinationY, cellSize);
       return;
     }
 
@@ -169,12 +232,19 @@ export class LevelShowcasePreviewRenderer {
     context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 
-  /** Rend le spawn joueur avec la premiere frame idle ou un marqueur net. */
-  private renderPlayerSpawn(context: CanvasRenderingContext2D, level: ModernLevelJson, cellSize: number): void {
+  /** Rend le spawn joueur avec le cycle idle ou un marqueur net. */
+  private renderPlayerSpawn(
+    context: CanvasRenderingContext2D,
+    level: ModernLevelJson,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     const destinationX = level.playerSpawn.x * cellSize;
     const destinationY = level.playerSpawn.y * cellSize;
     if (this.assets?.playerAtlas) {
-      this.drawAtlasFrame(context, this.assets.playerAtlas, 0, destinationX, destinationY, cellSize);
+      const tileId = pickAnimationFrame(PLAYER_IDLE_TILE_IDS, animationFrameIndexes.player);
+      const frameIndex = PLAYER_TILE_ID_TO_ATLAS_FRAME.get(tileId) ?? 0;
+      this.drawAtlasFrame(context, this.assets.playerAtlas, frameIndex, destinationX, destinationY, cellSize);
       return;
     }
 
@@ -184,12 +254,25 @@ export class LevelShowcasePreviewRenderer {
   }
 
   /** Ajoute un contour de sortie sans masquer le rendu de la tuile sous-jacente. */
-  private renderExitMarker(context: CanvasRenderingContext2D, level: ModernLevelJson, cellSize: number): void {
+  private renderExitMarker(
+    context: CanvasRenderingContext2D,
+    level: ModernLevelJson,
+    cellSize: number,
+    animationFrameIndexes: LevelShowcasePreviewAnimationFrameIndexes
+  ): void {
     const destinationX = level.exit.x * cellSize;
     const destinationY = level.exit.y * cellSize;
-    context.strokeStyle = PREVIEW_EXIT_MARKER_COLOR;
-    context.lineWidth = Math.max(1, Math.floor(cellSize / 8));
-    context.strokeRect(destinationX, destinationY, cellSize, cellSize);
+    const tileAtlas = this.assets?.tileAtlas;
+    if (tileAtlas) {
+      const tileId = animationFrameIndexes.exit % 2 === 0 ? RUNTIME_TILE.border : RUNTIME_TILE.empty;
+      this.drawAtlasFrame(context, tileAtlas, tileId, destinationX, destinationY, cellSize);
+      return;
+    }
+
+    context.fillStyle = animationFrameIndexes.exit % 2 === 0
+      ? PREVIEW_FALLBACK_COLORS.border
+      : PREVIEW_FALLBACK_COLORS.empty;
+    context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 
   /** Dessine une frame horizontale d'atlas de 16px vers une cellule destination entiere. */
@@ -215,6 +298,14 @@ export class LevelShowcasePreviewRenderer {
   }
 }
 
+/** Etat d'animation par defaut pour les previews statiques avant le premier tick. */
+const DEFAULT_ANIMATION_FRAME_INDEXES: LevelShowcasePreviewAnimationFrameIndexes = {
+  player: 0,
+  diamond: 0,
+  monster: 0,
+  exit: 0
+};
+
 /** Calcule une taille de cellule entiere qui conserve les proportions du niveau. */
 function resolvePreviewCellSize(level: ModernLevelJson, options: LevelShowcasePreviewRenderOptions): number {
   const maxWidth = Math.max(1, Math.floor(options.maxWidth ?? DEFAULT_PREVIEW_MAX_WIDTH));
@@ -224,4 +315,31 @@ function resolvePreviewCellSize(level: ModernLevelJson, options: LevelShowcasePr
     ? maxCellSize
     : Math.min(PREVIEW_SOURCE_TILE_SIZE, maxCellSize);
   return Math.max(options.minCellSize ?? 1, preferredCellSize);
+}
+
+/** Extrait une animation depuis les metadata de sprites, avec fallback local. */
+function extractFrameIdsFromMetadata(groupId: string, animationId: string, fallbackFrames: readonly number[]): number[] {
+  const animation = mineSpriteMetadata.groups
+    .find((group) => group.id === groupId)
+    ?.animations.find((item) => item.id === animationId);
+  if (Array.isArray(animation?.frameTileIds) && animation.frameTileIds.length > 0) {
+    return [...animation.frameTileIds];
+  }
+
+  return [...fallbackFrames];
+}
+
+/** Cree la correspondance tile id -> position dans l'atlas extrait. */
+function createTileIdToAtlasFrameMap(groupId: string): Map<number, number> {
+  const frames = mineSpriteMetadata.groups.find((group) => group.id === groupId)?.frames ?? [];
+  return new Map(frames.map((frame, index) => [frame.tileId, index]));
+}
+
+/** Retourne une frame d'animation en protegeant les listes vides. */
+function pickAnimationFrame(frames: readonly number[], frameIndex: number): number {
+  if (frames.length === 0) {
+    return 0;
+  }
+
+  return frames[frameIndex % frames.length];
 }

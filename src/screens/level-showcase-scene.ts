@@ -9,13 +9,22 @@ import { RuntimeAssets, type LoadedRuntimeAssets } from "../assets/runtime-asset
 import type { InputState } from "../engine/input";
 import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
+import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { getLevelShowcaseEntries, type LevelShowcaseEntry } from "../level-showcase/level-showcase-catalog";
 import {
   getLevelProgressSummary,
   loadLevelShowcaseProgress,
   type LevelShowcaseProgressState
 } from "../level-showcase/level-showcase-progress";
-import { LevelShowcasePreviewRenderer } from "../level-showcase/level-showcase-preview-renderer";
+import {
+  LevelShowcasePreviewRenderer,
+  type LevelShowcasePreviewAnimationFrameIndexes
+} from "../level-showcase/level-showcase-preview-renderer";
+
+/** Etat mutable interne des frames de previews. */
+type MutablePreviewAnimationFrameIndexes = {
+  -readonly [K in keyof LevelShowcasePreviewAnimationFrameIndexes]: number;
+};
 
 /** Classe appliquee au body tant que la vitrine est active. */
 const LEVEL_SHOWCASE_BODY_CLASS = "level-showcase-active";
@@ -27,6 +36,13 @@ const LEVEL_SHOWCASE_THUMB_HEIGHT = 180;
 const LEVEL_SHOWCASE_DETAIL_PREVIEW_WIDTH = 820;
 /** Hauteur maximale du grand apercu de fiche. */
 const LEVEL_SHOWCASE_DETAIL_PREVIEW_HEIGHT = 420;
+/** Cadences sobres des animations de miniatures, sans simulation gameplay. */
+const LEVEL_SHOWCASE_PREVIEW_ANIMATION_DURATIONS = {
+  player: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.playerAnimationFrameTicks),
+  diamond: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.diamondAnimationFrameTicks),
+  monster: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.monsterAnimationFrameTicks),
+  exit: secondsFromTo8Ticks(TO8_RUNTIME_TIMING.exitBlinkFrameTicks)
+} as const;
 
 /** Factory injectee pour lancer un niveau depuis la fiche. */
 export type LevelShowcasePlaySceneFactory = (levelNumber: number) => Scene;
@@ -49,6 +65,20 @@ export class LevelShowcaseScene implements Scene {
   private selectedLevelNumber = this.entries[0]?.levelNumber ?? 1;
   /** Entree ouverte dans la fiche detaillee. */
   private detailEntry: LevelShowcaseEntry | null = null;
+  /** Accumulateurs d'animation des previews dynamiques. */
+  private readonly previewAnimationElapsed = {
+    player: 0,
+    diamond: 0,
+    monster: 0,
+    exit: 0
+  };
+  /** Indices de frames des previews dynamiques. */
+  private readonly previewAnimationFrameIndexes: MutablePreviewAnimationFrameIndexes = {
+    player: 0,
+    diamond: 0,
+    monster: 0,
+    exit: 0
+  };
   /** Handler stable des raccourcis clavier de la vitrine. */
   private readonly keyDownHandler = (event: KeyboardEvent): void => {
     this.handleKeyDown(event);
@@ -80,9 +110,11 @@ export class LevelShowcaseScene implements Scene {
     this.detailEntry = null;
   }
 
-  /** La scene DOM ne depend pas du tick moteur. */
-  update(_dt: number, _input: InputState): void {
-    // La vitrine repose sur les evenements DOM; le tick reste volontairement neutre.
+  /** Avance uniquement les animations sobres des previews DOM. */
+  update(dt: number, _input: InputState): void {
+    if (this.advancePreviewAnimations(dt)) {
+      this.renderAllPreviews();
+    }
   }
 
   /** Nettoie le canvas cache afin de ne pas laisser une image gameplay derriere l'UI. */
@@ -208,9 +240,36 @@ export class LevelShowcaseScene implements Scene {
       this.previewRenderer.renderLevelPreview(canvas, entry.source, {
         maxWidth: canvas.classList.contains("level-showcase-detail-preview") ? LEVEL_SHOWCASE_DETAIL_PREVIEW_WIDTH : LEVEL_SHOWCASE_THUMB_WIDTH,
         maxHeight: canvas.classList.contains("level-showcase-detail-preview") ? LEVEL_SHOWCASE_DETAIL_PREVIEW_HEIGHT : LEVEL_SHOWCASE_THUMB_HEIGHT,
-        minCellSize: canvas.classList.contains("level-showcase-detail-preview") ? 4 : 2
+        minCellSize: canvas.classList.contains("level-showcase-detail-preview") ? 4 : 2,
+        animationFrameIndexes: this.previewAnimationFrameIndexes
       });
     }
+  }
+
+  /** Avance les clocks d'animation de miniatures et signale quand redessiner. */
+  private advancePreviewAnimations(dt: number): boolean {
+    let changed = false;
+    changed = this.advanceSinglePreviewAnimation("player", dt) || changed;
+    changed = this.advanceSinglePreviewAnimation("diamond", dt) || changed;
+    changed = this.advanceSinglePreviewAnimation("monster", dt) || changed;
+    changed = this.advanceSinglePreviewAnimation("exit", dt) || changed;
+    return changed;
+  }
+
+  /** Avance une famille de sprites de preview a cadence limitee. */
+  private advanceSinglePreviewAnimation(
+    key: keyof LevelShowcasePreviewAnimationFrameIndexes,
+    dt: number
+  ): boolean {
+    this.previewAnimationElapsed[key] += dt;
+    const duration = LEVEL_SHOWCASE_PREVIEW_ANIMATION_DURATIONS[key];
+    if (this.previewAnimationElapsed[key] < duration) {
+      return false;
+    }
+
+    this.previewAnimationElapsed[key] %= duration;
+    this.previewAnimationFrameIndexes[key] += 1;
+    return true;
   }
 
   /** Ouvre la fiche detaillee d'un niveau selectionne. */
