@@ -61,6 +61,18 @@ export function getDisplayZoomLabel(): string {
   return displayOptions.zoom === "fitHeight" ? "Hauteur" : `x${displayOptions.zoom}`;
 }
 
+/** Retourne l'echelle CSS effective entre resolution logique gameplay et canvas navigateur. */
+export function getDisplayCssScale(): number {
+  const cssSize = getCanvasCssSize();
+  const renderSize = getGameplayRenderSize();
+  return Math.max(1, Math.min(cssSize.width / renderSize.width, cssSize.height / renderSize.height));
+}
+
+/** Retourne l'echelle logique de l'overlay options pour garder une taille UX stable. */
+export function getOptionsPopinRenderScale(): number {
+  return getDisplayCssScale() <= 1 ? 2 : 1;
+}
+
 /** Bascule entre rendu TO8 strict et rendu plein espace navigateur. */
 export function toggleDisplayMode(): void {
   displayOptions.mode = displayOptions.mode === "original" ? "available" : "original";

@@ -59,6 +59,7 @@ import { RuntimeAssets } from "../assets/runtime-asset-loader";
 import {
   cycleDisplayZoom,
   getGameplayRenderSize,
+  getOptionsPopinRenderScale,
   toggleDisplayMode
 } from "../display-options";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
@@ -680,7 +681,8 @@ export class GameplayScene implements Scene {
     if (this.optionsOpen) {
       renderOptionsPopin(renderer, {
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Jeu en pause"
+        contextLabel: "Jeu en pause",
+        visualScale: getOptionsPopinRenderScale()
       });
     }
   }

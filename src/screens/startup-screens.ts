@@ -12,7 +12,7 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-assets";
 import { gameAudio } from "../audio/audio-engine";
-import { cycleDisplayZoom, toggleDisplayMode } from "../display-options";
+import { cycleDisplayZoom, getOptionsPopinRenderScale, toggleDisplayMode } from "../display-options";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import {
   OPTIONS_MENU_CATEGORIES,
@@ -240,7 +240,8 @@ export class StartupTitleScene implements Scene {
     if (this.optionsOpen) {
       renderOptionsPopin(renderer, {
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Ecran titre"
+        contextLabel: "Ecran titre",
+        visualScale: getOptionsPopinRenderScale()
       });
     }
   }

@@ -1,11 +1,9 @@
 /**
- * Role: Rend la pop-in d'options commune au titre et au gameplay.
- * Scope: Fournit uniquement l'UX de navigation par categories, sans options actives.
- * ISO: Le style reste volontairement proche TO8: aplats, cadres pixels et font Thomson.
+ * Role: Pilote la pop-in d'options commune au titre et au gameplay.
+ * Scope: Fournit l'UX HTML superposee au canvas, sans options actives persistantes.
+ * ISO: Le style reste proche TO8 via cadres pixels et police Thomson chargee.
  */
 
-import { THOMSON_8_BIT_FONT } from "../assets/generated/thomson-8-bit-font";
-import { TO8_PALETTE } from "../assets/palette";
 import { APP_VERSION } from "../app-version";
 import { getDisplayModeLabel, getDisplayZoomLabel } from "../display-options";
 import type { Renderer } from "../engine/renderer";
@@ -29,137 +27,166 @@ export interface OptionsPopinRenderOptions {
   readonly selectedCategoryIndex: number;
   /** Libelle contextuel affiche dans la zone de contenu. */
   readonly contextLabel: string;
+  /** Conserve la compatibilite avec l'ancien rendu canvas; ignore en HTML. */
+  readonly visualScale?: number;
 }
 
-const PANEL_WIDTH = 288;
-const PANEL_HEIGHT = 172;
-const TAB_WIDTH = 104;
-const TITLE_Y_PADDING = 10;
-const CONTENT_HEIGHT = 104;
-const TEXT_SCALE = 1;
-const TITLE_SCALE = 1;
-const FONT_WIDTH = THOMSON_8_BIT_FONT.width;
-const FONT_HEIGHT = THOMSON_8_BIT_FONT.height;
-const GLYPHS = THOMSON_8_BIT_FONT.glyphs as Record<string, readonly string[]>;
+/** References DOM internes pour mettre a jour la pop-in sans recreer l'arbre. */
+interface OptionsPopinDom {
+  /** Racine overlay plein ecran. */
+  readonly root: HTMLDivElement;
+  /** Titre de categorie dans la zone de contenu. */
+  readonly contentTitle: HTMLHeadingElement;
+  /** Contenu textuel de la categorie courante. */
+  readonly contentBody: HTMLDivElement;
+  /** Boutons visuels des categories. */
+  readonly categoryItems: readonly HTMLDivElement[];
+}
+
+let popinDom: OptionsPopinDom | undefined;
+let hideTimeout: number | undefined;
+let renderedSignature = "";
 
 /** Rend la pop-in d'options par-dessus la scene courante. */
 export function renderOptionsPopin(renderer: Renderer, options: OptionsPopinRenderOptions): void {
-  renderer.fillRect(0, 0, renderer.width, renderer.height, "rgba(0, 0, 0, 0.58)");
-
-  const panelX = Math.floor((renderer.width - PANEL_WIDTH) / 2);
-  const panelY = Math.floor((renderer.height - PANEL_HEIGHT) / 2);
-  renderer.fillRect(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, TO8_PALETTE.ink);
-  renderer.strokeRect(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, TO8_PALETTE.cyan);
-  renderer.strokeRect(panelX + 2, panelY + 2, PANEL_WIDTH - 4, PANEL_HEIGHT - 4, TO8_PALETTE.blue);
-
-  drawCenteredThomsonText(renderer, "Options", panelX, panelY + TITLE_Y_PADDING, PANEL_WIDTH, TO8_PALETTE.yellow, TITLE_SCALE);
-  renderer.fillRect(panelX + 8, panelY + 28, PANEL_WIDTH - 16, 1, TO8_PALETTE.blue);
-
-  const tabsX = panelX + 12;
-  const tabsY = panelY + 38;
-  const contentX = panelX + TAB_WIDTH + 22;
-  const contentY = tabsY;
-  const contentWidth = PANEL_WIDTH - TAB_WIDTH - 34;
-
-  renderCategoryTabs(renderer, tabsX, tabsY, options.selectedCategoryIndex);
-
-  renderer.strokeRect(contentX, contentY, contentWidth, CONTENT_HEIGHT, TO8_PALETTE.darkGray);
-  renderer.fillRect(contentX + 1, contentY + 1, contentWidth - 2, CONTENT_HEIGHT - 2, "#080810");
-
+  void renderer;
+  const dom = ensureOptionsPopinDom();
   const selectedCategory = OPTIONS_MENU_CATEGORIES[options.selectedCategoryIndex] ?? OPTIONS_MENU_CATEGORIES[0];
-  drawThomsonText(renderer, selectedCategory, contentX + 8, contentY + 10, TO8_PALETTE.white, TEXT_SCALE);
-  if (selectedCategory === "A propos") {
-    renderAboutContent(renderer, contentX + 8, contentY + 30);
-  } else if (selectedCategory === "Affichage") {
-    renderDisplayContent(renderer, contentX + 8, contentY + 30);
-  } else {
-    drawThomsonText(renderer, "Options a venir", contentX + 8, contentY + 34, TO8_PALETTE.gray, TEXT_SCALE);
-    drawThomsonText(renderer, options.contextLabel, contentX + 8, contentY + 58, TO8_PALETTE.cyan, TEXT_SCALE);
+  const signature = `${options.selectedCategoryIndex}:${selectedCategory}:${options.contextLabel}`;
+
+  dom.root.hidden = false;
+  dom.root.setAttribute("aria-hidden", "false");
+  if (signature !== renderedSignature) {
+    dom.contentTitle.textContent = selectedCategory;
+    renderCategoryItems(dom.categoryItems, options.selectedCategoryIndex);
+    renderCategoryContent(dom.contentBody, selectedCategory, options.contextLabel);
+    renderedSignature = signature;
   }
 
-  renderer.fillRect(panelX + 8, panelY + PANEL_HEIGHT - 24, PANEL_WIDTH - 16, 1, TO8_PALETTE.blue);
-  drawThomsonText(renderer, "Echap: retour", panelX + 14, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
-  drawThomsonText(renderer, "Haut/bas: categorie", panelX + 124, panelY + PANEL_HEIGHT - 15, TO8_PALETTE.lightGreen, TEXT_SCALE);
+  if (hideTimeout !== undefined) {
+    window.clearTimeout(hideTimeout);
+  }
+  hideTimeout = window.setTimeout(() => {
+    dom.root.hidden = true;
+    dom.root.setAttribute("aria-hidden", "true");
+  }, 80);
 }
 
-/** Rend les options d'affichage deja actives. */
-function renderDisplayContent(renderer: Renderer, x: number, y: number): void {
-  const lines = [
-    { text: "Mode", color: TO8_PALETTE.gray },
-    { text: getDisplayModeLabel(), color: TO8_PALETTE.cyan },
-    { text: "Zoom", color: TO8_PALETTE.gray },
-    { text: getDisplayZoomLabel(), color: TO8_PALETTE.lightGreen },
-    { text: "Entree: mode", color: TO8_PALETTE.white },
-    { text: "< >: zoom", color: TO8_PALETTE.white }
-  ] as const;
+/** Cree la structure HTML de la pop-in si necessaire. */
+function ensureOptionsPopinDom(): OptionsPopinDom {
+  if (popinDom) {
+    return popinDom;
+  }
 
-  lines.forEach((line, index) => {
-    drawThomsonText(renderer, line.text, x, y + index * 12, line.color, TEXT_SCALE);
+  const root = document.createElement("div");
+  root.className = "options-popin-overlay";
+  root.hidden = true;
+  root.setAttribute("aria-hidden", "true");
+
+  const panel = document.createElement("section");
+  panel.className = "options-popin";
+  panel.setAttribute("aria-label", "Options");
+
+  const title = document.createElement("h2");
+  title.className = "options-popin__title";
+  title.textContent = "Options";
+
+  const body = document.createElement("div");
+  body.className = "options-popin__body";
+
+  const categories = document.createElement("nav");
+  categories.className = "options-popin__categories";
+  categories.setAttribute("aria-label", "Categories");
+  const categoryItems = OPTIONS_MENU_CATEGORIES.map((category) => {
+    const item = document.createElement("div");
+    item.className = "options-popin__category";
+    item.textContent = category;
+    categories.append(item);
+    return item;
   });
+
+  const content = document.createElement("article");
+  content.className = "options-popin__content";
+
+  const contentTitle = document.createElement("h3");
+  contentTitle.className = "options-popin__content-title";
+
+  const contentBody = document.createElement("div");
+  contentBody.className = "options-popin__content-body";
+
+  const footer = document.createElement("footer");
+  footer.className = "options-popin__footer";
+  footer.textContent = "Echap: retour    Haut/bas: categorie";
+
+  content.append(contentTitle, contentBody);
+  body.append(categories, content);
+  panel.append(title, body, footer);
+  root.append(panel);
+  document.body.append(root);
+
+  popinDom = { root, contentTitle, contentBody, categoryItems };
+  return popinDom;
 }
 
-/** Rend les credits et informations de version. */
-function renderAboutContent(renderer: Renderer, x: number, y: number): void {
-  const lines = [
-    { text: "Jeu original 1986", color: TO8_PALETTE.gray },
-    { text: "Philippe Bruneel", color: TO8_PALETTE.white },
-    { text: "Christian Lemaire", color: TO8_PALETTE.white },
-    { text: "Modification 2026", color: TO8_PALETTE.gray },
-    { text: "github.com/Karlos-fr", color: TO8_PALETTE.cyan },
-    { text: `Version ${APP_VERSION}`, color: TO8_PALETTE.lightGreen }
-  ] as const;
-
-  lines.forEach((line, index) => {
-    drawThomsonText(renderer, line.text, x, y + index * 12, line.color, TEXT_SCALE);
-  });
-}
-
-/** Rend la liste des categories de gauche. */
-function renderCategoryTabs(renderer: Renderer, x: number, y: number, selectedIndex: number): void {
-  for (let index = 0; index < OPTIONS_MENU_CATEGORIES.length; index += 1) {
-    const tabY = y + index * 15;
+/** Met a jour l'etat visuel de la liste des categories. */
+function renderCategoryItems(categoryItems: readonly HTMLDivElement[], selectedIndex: number): void {
+  categoryItems.forEach((item, index) => {
     const selected = index === selectedIndex;
-    if (selected) {
-      renderer.fillRect(x, tabY - 2, TAB_WIDTH, 12, TO8_PALETTE.blue);
-      renderer.strokeRect(x, tabY - 2, TAB_WIDTH, 12, TO8_PALETTE.cyan);
-      drawThomsonText(renderer, ">", x + 4, tabY, TO8_PALETTE.yellow, TEXT_SCALE);
-    }
+    item.classList.toggle("options-popin__category--selected", selected);
+    item.textContent = selected ? `> ${OPTIONS_MENU_CATEGORIES[index]}` : OPTIONS_MENU_CATEGORIES[index];
+  });
+}
 
-    drawThomsonText(
-      renderer,
-      OPTIONS_MENU_CATEGORIES[index],
-      x + (selected ? 14 : 8),
-      tabY,
-      selected ? TO8_PALETTE.white : TO8_PALETTE.gray,
-      TEXT_SCALE
-    );
+/** Remplit la zone de contenu de la categorie active. */
+function renderCategoryContent(container: HTMLDivElement, category: string, contextLabel: string): void {
+  container.replaceChildren();
+
+  if (category === "A propos") {
+    appendLines(container, [
+      { text: "Jeu original 1986", colorClass: "options-popin__line--muted" },
+      { text: "Philippe Bruneel" },
+      { text: "Christian Lemaire" },
+      { text: "Modification 2026", colorClass: "options-popin__line--muted" },
+      { text: "github.com/Karlos-fr", colorClass: "options-popin__line--cyan", href: "https://github.com/Karlos-fr" },
+      { text: `Version ${APP_VERSION}`, colorClass: "options-popin__line--green" }
+    ]);
+    return;
   }
-}
 
-/** Centre un texte Thomson dans une largeur donnee. */
-function drawCenteredThomsonText(renderer: Renderer, text: string, x: number, y: number, width: number, color: string, scale: number): void {
-  const textWidth = measureThomsonText(text, scale);
-  drawThomsonText(renderer, text, x + Math.floor((width - textWidth) / 2), y, color, scale);
-}
-
-/** Dessine du texte avec la font Thomson 8-bit procedurale. */
-function drawThomsonText(renderer: Renderer, text: string, x: number, y: number, color: string, scale: number): void {
-  let cursorX = Math.floor(x);
-  for (const character of text) {
-    const glyph = GLYPHS[character] ?? GLYPHS["?"];
-    for (let row = 0; row < FONT_HEIGHT; row += 1) {
-      const bits = glyph?.[row] ?? "";
-      for (let column = 0; column < FONT_WIDTH; column += 1) {
-        if (bits[column] === "1") {
-          renderer.fillRect(cursorX + column * scale, y + row * scale, scale, scale, color);
-        }
-      }
-    }
-    cursorX += FONT_WIDTH * scale;
+  if (category === "Affichage") {
+    appendLines(container, [
+      { text: "Mode", colorClass: "options-popin__line--muted" },
+      { text: getDisplayModeLabel(), colorClass: "options-popin__line--cyan" },
+      { text: "Zoom", colorClass: "options-popin__line--muted" },
+      { text: getDisplayZoomLabel(), colorClass: "options-popin__line--green" },
+      { text: "Entree: mode" },
+      { text: "< >: zoom" }
+    ]);
+    return;
   }
+
+  appendLines(container, [
+    { text: "Options a venir", colorClass: "options-popin__line--muted" },
+    { text: contextLabel, colorClass: "options-popin__line--cyan" }
+  ]);
 }
 
-/** Mesure une chaine rendue avec la font Thomson. */
-function measureThomsonText(text: string, scale: number): number {
-  return text.length * FONT_WIDTH * scale;
+/** Ajoute des lignes de texte dans la zone de contenu. */
+function appendLines(container: HTMLDivElement, lines: ReadonlyArray<{ readonly text: string; readonly colorClass?: string; readonly href?: string }>): void {
+  lines.forEach((line) => {
+    const element = document.createElement("p");
+    element.className = line.colorClass ? `options-popin__line ${line.colorClass}` : "options-popin__line";
+    if (line.href) {
+      const link = document.createElement("a");
+      link.className = "options-popin__link";
+      link.href = line.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = line.text;
+      element.append(link);
+    } else {
+      element.textContent = line.text;
+    }
+    container.append(element);
+  });
 }
