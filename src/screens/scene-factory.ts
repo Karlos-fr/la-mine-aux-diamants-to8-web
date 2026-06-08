@@ -9,6 +9,7 @@ import type { Scene } from "../engine/scene";
 import { LevelEditorScene } from "../editor/level-editor-scene";
 import type { ModernLevelJson } from "../game/level-loader";
 import { GameplayScene } from "./gameplay-scene";
+import { LevelGalleryScene } from "./level-gallery-scene";
 
 /** Cree une scene gameplay pour le niveau demande avec injection de la factory de niveau suivant. */
 export function createGameplayScene(levelNumber = 1): Scene {
@@ -31,6 +32,11 @@ export function createAttractGameplayScene(createTitleScene: () => Scene): Scene
 /** Cree la scene editeur de niveaux moderne. */
 export function createLevelEditorScene(): Scene {
   return new LevelEditorScene();
+}
+
+/** Cree la vitrine moderne des niveaux avec lancement vers le gameplay. */
+export function createLevelGalleryScene(): Scene {
+  return new LevelGalleryScene(createGameplayScene);
 }
 
 /** Cree une scene gameplay temporaire depuis un JSON edite, sans modifier les niveaux officiels. */

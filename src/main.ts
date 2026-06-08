@@ -5,7 +5,7 @@ import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
-import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene } from "./screens/scene-factory";
+import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene, createLevelGalleryScene } from "./screens/scene-factory";
 import { StartupInfogramScene, StartupTitleScene } from "./screens/startup-screens";
 
 /**
@@ -120,6 +120,12 @@ if (mode === "gallery") {
   attractButton.textContent = "Debug attract";
   attractButton.title = "Lancer directement le mode attract scriptable original.";
 
+  /** Bouton debug ouvrant la vitrine moderne des niveaux. */
+  const galleryButton = document.createElement("button");
+  galleryButton.className = "debug-gallery-button";
+  galleryButton.type = "button";
+  galleryButton.textContent = "Niveaux";
+
   /** Bouton debug ouvrant l'editeur de niveaux moderne. */
   const editorButton = document.createElement("button");
   editorButton.className = "debug-editor-button";
@@ -162,7 +168,7 @@ if (mode === "gallery") {
   levelPickerButton.append(levelPickerDisplay, levelSelectArrow);
   levelSelectShell.append(levelPickerButton, levelMenu);
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, 1);
-  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, editorButton, ghostButton, debugToolbarPinButton);
+  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, galleryButton, editorButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -220,6 +226,10 @@ if (mode === "gallery") {
     closeLevelMenu();
     app.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
     canvas.focus();
+  });
+  galleryButton.addEventListener("click", () => {
+    closeLevelMenu();
+    app.setScene(createLevelGalleryScene());
   });
   editorButton.addEventListener("click", () => {
     closeLevelMenu();
