@@ -6,7 +6,8 @@ import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
 import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene, createLevelShowcaseScene } from "./screens/scene-factory";
-import { StartupInfogramScene, StartupTitleScene } from "./screens/startup-screens";
+import { StartupInfogramScene } from "./screens/startup-infogram-scene";
+import { StartupTitleScene } from "./screens/startup-screens";
 
 /**
  * Point d'entree navigateur.

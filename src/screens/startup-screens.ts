@@ -1,8 +1,8 @@
 /**
- * Role: Orchestre les deux ecrans startup ISO avant l'entree gameplay.
- * Scope: Charge les images, gere les timers/input et delegue le rendu a `startup-renderer`.
- * ISO: Les assets et positions viennent des extractions Infogrames/title.
- * Notes: Le second ecran titre est anime via les frames extraites.
+ * Role: Gere le second ecran startup ISO avant l'entree gameplay.
+ * Scope: Charge les images du titre, gere les timers/input et delegue le rendu a `startup-renderer`.
+ * ISO: Les assets et positions viennent des extractions title.
+ * Notes: Le premier ecran Infogrames vit dans `startup-infogram-scene.ts`.
  */
 
 import { mineTitleMetadata } from "../assets/generated/mine-title";
@@ -15,7 +15,7 @@ import { gameAudio } from "../audio/audio-engine";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { updateOptionsPopinInput } from "../options-popin-controller";
 import { renderOptionsPopin } from "../rendering/options-popin-renderer";
-import { renderStartupInfogram, renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
+import { renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
 
 /** Seuil ASM `$34`: nombre de passages de boucle titre avant lancement attract. */
@@ -24,59 +24,6 @@ const TITLE_ATTRACT_IDLE_TICKS = 0x34;
 const TITLE_ATTRACT_IDLE_TICK_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.titleAttractLoopTicks);
 /** Classe CSS qui conserve le ratio TO8 des ecrans startup quelle que soit l'option gameplay. */
 const STARTUP_FIXED_ASPECT_CLASS = "startup-screen-fixed-aspect";
-
-export class StartupInfogramScene implements Scene {
-  /** Contexte de scene fourni par le routeur pour naviguer vers l'ecran titre. */
-  private context: SceneContext | undefined;
-  /** Temps ecoule depuis l'entree dans l'ecran Infogrames. */
-  private elapsed = 0;
-  /** Image plein ecran chargee de l'ecran Infogrames/presente. */
-  private backgroundImage: HTMLImageElement | undefined;
-  /** Message d'erreur de chargement affiche si l'image manque. */
-  private backgroundError: string | null = null;
-
-  /** URL runtime centralisee de l'image Infogrames. */
-  private readonly backgroundImageUrl = RUNTIME_ASSET_URLS.startupInfogramesPresents;
-
-  /** Lance le chargement asynchrone de l'image Infogrames. */
-  constructor() {
-    void loadImage(this.backgroundImageUrl).then((image) => {
-      this.backgroundImage = image;
-    }).catch((error) => {
-      this.backgroundError = error instanceof Error ? error.message : String(error);
-    });
-  }
-
-  /** Recupere le contexte de navigation de la scene. */
-  enter(context: SceneContext): void {
-    this.context = context;
-    document.body.classList.add(STARTUP_FIXED_ASPECT_CLASS);
-    gameAudio.disarmTitleMusic();
-  }
-
-  /** Arrete la musique de titre quand le flux quitte l'ecran 2. */
-  exit(): void {
-    document.body.classList.remove(STARTUP_FIXED_ASPECT_CLASS);
-    gameAudio.stopTitleMusic();
-  }
-
-  /** Avance le timer et passe au titre apres delai ou action utilisateur. */
-  update(dt: number, input: InputState): void {
-    this.elapsed += dt;
-
-    const skip = this.backgroundImage !== undefined && (
-      this.elapsed > 2 || input.justPressed.confirm || input.justPressed.action || input.justPressed.cancel
-    );
-    if (skip) {
-      this.context?.setScene(new StartupTitleScene());
-    }
-  }
-
-  /** Rend l'ecran Infogrames ou son etat chargement/erreur. */
-  render(renderer: Renderer): void {
-    renderStartupInfogram(renderer, this.backgroundImage, this.backgroundError);
-  }
-}
 
 /** Scene du second ecran startup: titre principal anime et attente de la barre/action. */
 export class StartupTitleScene implements Scene {
