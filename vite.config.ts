@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import { execSync } from "node:child_process";
+import { cpSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 function readGitCommit(): string {
   try {
@@ -11,6 +13,7 @@ function readGitCommit(): string {
 
 export default defineConfig({
   base: "/la-mine-aux-diamants-to8-web/",
+  plugins: [copyDocsExtractionAssets()],
   define: {
     __APP_VERSION__: JSON.stringify(readGitCommit())
   },
@@ -24,3 +27,14 @@ export default defineConfig({
     host: "0.0.0.0"
   }
 });
+
+function copyDocsExtractionAssets() {
+  return {
+    name: "copy-docs-extraction-assets",
+    closeBundle(): void {
+      const source = resolve("docs/extraction");
+      if (!existsSync(source)) return;
+      cpSync(source, resolve("dist/docs/extraction"), { recursive: true });
+    }
+  };
+}

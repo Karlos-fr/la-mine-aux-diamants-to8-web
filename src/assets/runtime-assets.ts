@@ -7,7 +7,7 @@
 
 /** Construit une URL publique vers un asset conserve dans `docs/extraction`. */
 export function docsExtractionAssetUrl(relativePath: string): string {
-  return `/docs/extraction/${relativePath}`;
+  return `${import.meta.env.BASE_URL}docs/extraction/${relativePath}`;
 }
 
 /** Assets utilises par le runtime principal du jeu. */
