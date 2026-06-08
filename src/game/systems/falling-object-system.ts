@@ -25,6 +25,8 @@ export interface FallingObjectTargetContext {
   readonly transformerBlockTileId?: number;
   /** Transforme le tile id d'un objet traversant le bloc transformateur. */
   readonly transformFallingTile?: (tileId: number) => number;
+  /** Verifie la cellule d'arrivee stricte sous un bloc transformateur. */
+  readonly canExitTransformerBlockAt?: (gridX: number, gridY: number) => boolean;
 }
 
 /** Cible resolue pour un objet physique et nature logique du mouvement. */
@@ -37,6 +39,8 @@ export interface FallingObjectResolvedTarget {
   readonly moveKind: "fall" | "slide";
   /** Tile id final apres traversee d'un bloc transformateur. */
   readonly transformedTileId?: number;
+  /** Indique que l'objet traverse graphiquement le bloc transformateur `0x18`. */
+  readonly passesThroughTransformerBlock?: boolean;
 }
 
 /** Calcule la prochaine cellule cible d'un rocher/diamant, ou `null` si l'objet reste immobile. */
@@ -51,14 +55,16 @@ export function resolveFallingObjectTarget(
   if (
     context.transformerBlockTileId !== undefined &&
     context.transformFallingTile !== undefined &&
+    context.canExitTransformerBlockAt !== undefined &&
     context.getTile(context.gridX, belowY) === context.transformerBlockTileId &&
-    context.canMoveTo(context.gridX, context.gridY + 2)
+    context.canExitTransformerBlockAt(context.gridX, context.gridY + 2)
   ) {
     return {
       x: context.gridX,
       y: context.gridY + 2,
       moveKind: "fall",
-      transformedTileId: context.transformFallingTile(context.getTile(context.gridX, context.gridY))
+      transformedTileId: context.transformFallingTile(context.getTile(context.gridX, context.gridY)),
+      passesThroughTransformerBlock: true
     };
   }
 

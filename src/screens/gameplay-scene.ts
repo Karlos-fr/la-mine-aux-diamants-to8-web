@@ -1075,7 +1075,14 @@ export class GameplayScene implements Scene {
           continue;
         }
 
-        this.startFallingObject(x, y, target.x, target.y, tileId, target.moveKind, target.transformedTileId);
+        if (target.passesThroughTransformerBlock && target.transformedTileId !== undefined) {
+          this.teleportFallingObjectThroughTransformer(x, y, target.x, target.y, tileId, target.transformedTileId);
+          continue;
+        }
+
+        this.startFallingObject(x, y, target.x, target.y, tileId, target.moveKind, {
+          finalTileId: target.transformedTileId
+        });
       }
     }
   }
@@ -1089,6 +1096,7 @@ export class GameplayScene implements Scene {
     readonly y: number;
     readonly moveKind: "fall" | "slide";
     readonly transformedTileId?: number;
+    readonly passesThroughTransformerBlock?: boolean;
   } | null {
     return resolveFallingObjectTargetSystem({
       gridX,
@@ -1099,7 +1107,8 @@ export class GameplayScene implements Scene {
       isStaticFallingObjectTile: (tileId) => this.isFallingObjectStaticTile(tileId),
       isClearanceCellEmpty: (x, y) => this.isFallingObjectClearanceCellEmpty(x, y),
       transformerBlockTileId: RUNTIME_TILE.transformerBlock,
-      transformFallingTile: (tileId) => this.getTransformerResultTileId(tileId)
+      transformFallingTile: (tileId) => this.getTransformerResultTileId(tileId),
+      canExitTransformerBlockAt: (x, y) => this.canFallingObjectExitTransformerBlockAt(x, y)
     });
   }
 
@@ -1120,6 +1129,15 @@ export class GameplayScene implements Scene {
   private isFallingObjectClearanceCellEmpty(gridX: number, gridY: number): boolean {
     return (
       this.isFallingObjectEmptyRuntimeTile(this.runtimeGrid.getTile(gridX, gridY)) &&
+      !this.hasPhysicalObjectAtGrid(gridX, gridY) &&
+      !this.isPlayerLogicalAtGrid(gridX, gridY)
+    );
+  }
+
+  /** Reproduit le test ASM strict de sortie du bloc transformateur: cellule grille vide. */
+  private canFallingObjectExitTransformerBlockAt(gridX: number, gridY: number): boolean {
+    return (
+      this.runtimeGrid.getTile(gridX, gridY) === RUNTIME_EMPTY_TILE_ID &&
       !this.hasPhysicalObjectAtGrid(gridX, gridY) &&
       !this.isPlayerLogicalAtGrid(gridX, gridY)
     );
@@ -1166,9 +1184,15 @@ export class GameplayScene implements Scene {
     toY: number,
     tileId: number,
     moveKind: "fall" | "slide",
-    finalTileId = tileId,
-    duration = getFallingObjectMoveDuration()
+    options: {
+      /** Tile final quand la chute traverse un transformateur, sinon le tile source. */
+      readonly finalTileId?: number;
+      /** Duree de mouvement specialisee, principalement pour les tests futurs. */
+      readonly duration?: number;
+    } = {}
   ): void {
+    const finalTileId = options.finalTileId ?? tileId;
+    const duration = options.duration ?? getFallingObjectMoveDuration();
     const kind = finalTileId === DIAMOND_TILE_ID || finalTileId === FALLING_DIAMOND_TILE_ID ? "diamond" : "rock";
     const movingTileId = kind === "diamond" ? FALLING_DIAMOND_TILE_ID : FALLING_ROCK_TILE_ID;
     const sourceDiamondEntity = this.findEntityKindAtGrid("diamond", fromX, fromY);
@@ -1197,6 +1221,30 @@ export class GameplayScene implements Scene {
     this.runtimeMutations.clearFallingObjectSource(fromX, fromY);
     this.runtimeMutations.setFallingObjectMovingTile(toX, toY, movingTileId);
     this.state.fallingObjects.push(fallingObject);
+  }
+
+  /** Applique la mutation immediate observee dans `KIT.BIN:$CB3B` pour le bloc `0x18`. */
+  private teleportFallingObjectThroughTransformer(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    sourceTileId: number,
+    finalTileId: number
+  ): void {
+    const sourceDiamondEntity = this.findEntityKindAtGrid("diamond", fromX, fromY);
+    this.runtimeMutations.clearFallingObjectSource(fromX, fromY);
+    this.runtimeMutations.completeFallingObjectTile(toX, toY, finalTileId);
+
+    if (sourceDiamondEntity && finalTileId === ROCK_TILE_ID) {
+      sourceDiamondEntity.active = false;
+    }
+
+    if (sourceTileId === ROCK_TILE_ID && finalTileId === DIAMOND_TILE_ID) {
+      this.createRuntimeDiamondEntity(toX, toY);
+    }
+
+    this.continueFallingObjectFromGrid(toX, toY, finalTileId);
   }
 
   /** Demarre une poussee horizontale de rocher comme mouvement physique non mortel. */
@@ -1240,21 +1288,42 @@ export class GameplayScene implements Scene {
     }
 
     if (fallingObject.moveKind !== "push") {
-      const nextTarget = this.resolveFallingObjectTarget(fallingObject.toX, fallingObject.toY);
-      if (nextTarget) {
-        this.startFallingObject(
-          fallingObject.toX,
-          fallingObject.toY,
-          nextTarget.x,
-          nextTarget.y,
-          fallingObject.tileId,
-          nextTarget.moveKind,
-          nextTarget.transformedTileId
-        );
-      }
+      this.continueFallingObjectFromGrid(fallingObject.toX, fallingObject.toY, fallingObject.tileId);
     }
 
     return true;
+  }
+
+  /** Enchaine la physique depuis une cellule nouvellement posee, comme le scan ASM ascendant. */
+  private continueFallingObjectFromGrid(gridX: number, gridY: number, tileId: number): void {
+    const nextTarget = this.resolveFallingObjectTarget(gridX, gridY);
+    if (!nextTarget) {
+      return;
+    }
+
+    if (nextTarget.passesThroughTransformerBlock && nextTarget.transformedTileId !== undefined) {
+      this.teleportFallingObjectThroughTransformer(
+        gridX,
+        gridY,
+        nextTarget.x,
+        nextTarget.y,
+        tileId,
+        nextTarget.transformedTileId
+      );
+      return;
+    }
+
+    this.startFallingObject(
+      gridX,
+      gridY,
+      nextTarget.x,
+      nextTarget.y,
+      tileId,
+      nextTarget.moveKind,
+      {
+        finalTileId: nextTarget.transformedTileId
+      }
+    );
   }
 
   /** Cree une entite diamant runtime lorsqu'un rocher est transforme par le bloc `0x18`. */
