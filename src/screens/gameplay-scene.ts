@@ -567,8 +567,6 @@ export class GameplayScene implements Scene {
             elapsed: 0,
             duration: getPlayerMoveDuration()
           };
-        } else if (this.gameplayMode === "attract") {
-          this.attractInputSource?.advanceScriptTick();
         }
       } else {
         this.advancePlayerIdleDelay(dt);

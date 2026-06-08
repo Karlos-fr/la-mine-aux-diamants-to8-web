@@ -382,22 +382,33 @@ autre valeur -> pas de branche de mouvement directe, donc attente/animation joue
 
 Les commandes longues utilisent l'octet haut comme marqueur de duree et le quartet bas comme commande. Exemple: `$25 $2F` signifie commande `$05`, donc bas, pendant `$2F` passages de routine.
 
-## Debut du script `$D878` decode comme flux de commandes
+## Script `$D878` decode comme flux de commandes
 
-La zone `$D878` ressemble aussi a du code 6809 valide si on la desassemble lineairement. Mais dans le mode attract, la routine `$CE13` la lit explicitement comme une table d'octets. Le decodage ci-dessous applique donc strictement la logique observee dans `$CE13-$CE49`.
+La zone `$D878` doit etre lue dans l'image memoire chargee de `KIT.BIN`, pas comme un offset brut dans le fichier `.BIN`. Le fichier FD extrait contient des blocs avec en-tetes de chargement; lire directement le flux fichier autour d'un offset equivalent produit une fausse table qui ressemble a du code 6809.
+
+Dans le mode attract, la routine `$CE13` lit explicitement `$D878` comme une table d'octets. Le decodage ci-dessous applique donc strictement la logique observee dans `$CE13-$CE49` apres reconstruction des blocs memoire de `KIT.BIN`.
 
 ```txt
-$D878 : 1E 89 -> commande E, duree 137, attente/animation
-$D87A : 8D 34 -> commande D, duree 52, attente/animation
-$D87C : 25 2F -> commande 5, duree 47, bas
-$D87E : 1F 03 -> commande F, duree 3, attente/animation
-$D880 : 8D 2E -> commande D, duree 46, attente/animation
-$D882 : 25 29 -> commande 5, duree 41, bas
-$D884 : E7 C0 -> commande 7, duree 192, gauche
-$D886 : 30 1F -> commande 0, duree 31, attente/animation
+$D878 : 11 08 -> commande 1, duree 8, haut
+$D87A : 13 08 -> commande 3, duree 8, droite
+$D87C : 15 03 -> commande 5, duree 3, bas
+$D87E : 13 07 -> commande 3, duree 7, droite
+$D880 : 11 03 -> commande 1, duree 3, haut
+$D882 : 15 03 -> commande 5, duree 3, bas
+$D884 : 13 0C -> commande 3, duree 12, droite
+$D886 : 11 03 -> commande 1, duree 3, haut
+$D888 : 15 03 -> commande 5, duree 3, bas
+$D88A : 13 09 -> commande 3, duree 9, droite
+$D88C : 17 18 -> commande 7, duree 24, gauche
+$D88E : 01    -> commande 1, haut
+$D88F : 01    -> commande 1, haut
+$D890 : 05    -> commande 5, bas
+$D891 : 05    -> commande 5, bas
+...
+$D8D7 : DD    -> fin du script
 ```
 
-Les commandes `D`, `E`, `F`, `0`, `2`, `4`, `6`, `8`, `9`, `A`, `B`, `C` n'ont pas de branche de mouvement directe dans le dispatch observe. Leur effet pratique est donc une attente ou une animation sans deplacement direct, sauf interaction indirecte via les routines appelees autour de l'animation joueur.
+La table complete utilise surtout les commandes de mouvement directes `1`, `3`, `5`, `7`, plus quelques commandes `0` d'attente. Les commandes sans mouvement direct n'ont pas de branche de mouvement directe dans le dispatch observe. Leur effet pratique est donc une attente ou une animation sans deplacement direct, sauf interaction indirecte via les routines appelees autour de l'animation joueur.
 
 Conclusion pour ces commandes: elles ne representent pas des actions gameplay supplementaires prouvees. Pour une premiere implementation ISO raisonnable, elles doivent etre traitees comme des commandes d'attente/animation, pas comme des directions cachees.
 
