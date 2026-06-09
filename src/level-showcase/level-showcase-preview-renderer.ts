@@ -9,6 +9,7 @@ import type { LoadedRuntimeAssets } from "../assets/runtime-asset-loader";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import type { ModernEntityType, ModernLevelJson, ModernTileType } from "../game/level-loader";
 import { RUNTIME_TILE } from "../game/runtime-tiles";
+import { getWorldEntityDefinition, getWorldTileDefinition } from "../worlds/world-registry";
 
 /** Taille source commune des tuiles et sprites extraits. */
 const PREVIEW_SOURCE_TILE_SIZE = 16;
@@ -60,32 +61,6 @@ export interface LevelShowcasePreviewRenderResult {
   /** Taille entiere d'une cellule destination. */
   readonly cellSize: number;
 }
-
-/** Mappe les tuiles modernes vers les ids runtime extraits. */
-const PREVIEW_TILE_TO_RUNTIME_ID: Readonly<Record<ModernTileType, number>> = {
-  empty: RUNTIME_TILE.empty,
-  earth: RUNTIME_TILE.earth,
-  rock: RUNTIME_TILE.rock,
-  diamond: RUNTIME_TILE.diamond,
-  monster: RUNTIME_TILE.monster,
-  border: RUNTIME_TILE.border,
-  platform: RUNTIME_TILE.platform,
-  specialCreature: RUNTIME_TILE.specialCreature,
-  transformerBlock: RUNTIME_TILE.transformerBlock
-};
-
-/** Couleurs de secours quand les atlas runtime ne sont pas encore charges. */
-const PREVIEW_FALLBACK_COLORS: Readonly<Record<ModernTileType, string>> = {
-  empty: "#000000",
-  earth: "#00b000",
-  rock: "#c0c0c0",
-  diamond: "#00ffff",
-  monster: "#ffffff",
-  border: "#0001fe",
-  platform: "#80ff80",
-  specialCreature: "#ff00ff",
-  transformerBlock: "#ffff00"
-};
 
 /** Renderer reutilisable par la liste et la fiche de la vitrine. */
 export class LevelShowcasePreviewRenderer {
@@ -169,6 +144,20 @@ export class LevelShowcasePreviewRenderer {
   ): void {
     const destinationX = gridX * cellSize;
     const destinationY = gridY * cellSize;
+    const definition = getWorldTileDefinition(tile);
+    const staticImage = this.assets?.worldTileImages.get(tile);
+    if (definition?.assetUrl && staticImage) {
+      this.drawAtlasFrame(context, staticImage, 0, destinationX, destinationY, cellSize);
+      return;
+    }
+
+    const entityFrameImages = definition?.entityId ? this.assets?.worldEntityFrameImages.get(definition.entityId) : undefined;
+    if (definition?.frameUrls && entityFrameImages?.length) {
+      const frameIndex = animationFrameIndexes.monster % entityFrameImages.length;
+      this.drawAtlasFrame(context, entityFrameImages[frameIndex], 0, destinationX, destinationY, cellSize);
+      return;
+    }
+
     if (tile === "diamond" && this.assets?.diamondAtlas) {
       const frameIndex = animationFrameIndexes.diamond % 8;
       this.drawAtlasFrame(context, this.assets.diamondAtlas, frameIndex, destinationX, destinationY, cellSize);
@@ -188,13 +177,12 @@ export class LevelShowcasePreviewRenderer {
     }
 
     const tileAtlas = this.assets?.tileAtlas;
-    if (tileAtlas) {
-      const tileId = PREVIEW_TILE_TO_RUNTIME_ID[tile];
-      this.drawAtlasFrame(context, tileAtlas, tileId, destinationX, destinationY, cellSize);
+    if (tileAtlas && definition) {
+      this.drawAtlasFrame(context, tileAtlas, definition.runtimeTileId, destinationX, destinationY, cellSize);
       return;
     }
 
-    context.fillStyle = PREVIEW_FALLBACK_COLORS[tile];
+    context.fillStyle = definition?.fallbackColor ?? PREVIEW_BACKGROUND_COLOR;
     context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 
@@ -209,6 +197,13 @@ export class LevelShowcasePreviewRenderer {
   ): void {
     const destinationX = gridX * cellSize;
     const destinationY = gridY * cellSize;
+    const definition = getWorldEntityDefinition(type);
+    const frameImages = this.assets?.worldEntityFrameImages.get(type);
+    if (definition?.frameUrls && frameImages?.length) {
+      const frameIndex = animationFrameIndexes.monster % frameImages.length;
+      this.drawAtlasFrame(context, frameImages[frameIndex], 0, destinationX, destinationY, cellSize);
+      return;
+    }
 
     if (type === "diamond" && this.assets?.diamondAtlas) {
       const frameIndex = animationFrameIndexes.diamond % 8;
@@ -228,7 +223,7 @@ export class LevelShowcasePreviewRenderer {
       return;
     }
 
-    context.fillStyle = PREVIEW_FALLBACK_COLORS[type];
+    context.fillStyle = definition?.fallbackColor ?? PREVIEW_BACKGROUND_COLOR;
     context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 
@@ -270,8 +265,8 @@ export class LevelShowcasePreviewRenderer {
     }
 
     context.fillStyle = animationFrameIndexes.exit % 2 === 0
-      ? PREVIEW_FALLBACK_COLORS.border
-      : PREVIEW_FALLBACK_COLORS.empty;
+      ? getWorldTileDefinition("border")?.fallbackColor ?? PREVIEW_BACKGROUND_COLOR
+      : getWorldTileDefinition("empty")?.fallbackColor ?? PREVIEW_BACKGROUND_COLOR;
     context.fillRect(destinationX, destinationY, cellSize, cellSize);
   }
 

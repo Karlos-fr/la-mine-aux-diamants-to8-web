@@ -6,10 +6,12 @@
  */
 
 import type { PointerInputState } from "../engine/input";
-import type { ModernTileType } from "../game/level-loader";
+import type { ModernEntityType, ModernTileType } from "../game/level-loader";
+import { getWorldTileDefinition } from "../worlds/world-registry";
 import type { LevelEditorTool } from "./level-editor-palette";
 import {
   EDITOR_TILE_SIZE,
+  clearEditableEntityAt,
   clearEditableTileAt,
   isInsideEditableLevel,
   setEditableEntityAt,
@@ -120,8 +122,11 @@ export function applyEditorToolAtCell(
 
   if (tool === "pencil") {
     setEditableTileAt(state, cell.x, cell.y, tile);
-    if (isEditableEntityTile(tile)) {
-      setEditableEntityAt(state, cell.x, cell.y, tile);
+    const entityType = getEditableEntityType(tile);
+    if (entityType) {
+      setEditableEntityAt(state, cell.x, cell.y, entityType);
+    } else {
+      clearEditableEntityAt(state, cell.x, cell.y);
     }
   }
 }
@@ -140,16 +145,19 @@ export function applyEditorRectangle(
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
       setEditableTileAt(state, x, y, tile);
-      if (isEditableEntityTile(tile)) {
-        setEditableEntityAt(state, x, y, tile);
+      const entityType = getEditableEntityType(tile);
+      if (entityType) {
+        setEditableEntityAt(state, x, y, entityType);
+      } else {
+        clearEditableEntityAt(state, x, y);
       }
     }
   }
 }
 
-/** Indique si une tuile moderne doit aussi etre exportee comme entite. */
-function isEditableEntityTile(tile: ModernTileType): tile is "diamond" | "monster" | "specialCreature" {
-  return tile === "diamond" || tile === "monster" || tile === "specialCreature";
+/** Retourne l'entite a exporter quand une tuile moderne est aussi un sprite vivant. */
+function getEditableEntityType(tile: ModernTileType): ModernEntityType | null {
+  return getWorldTileDefinition(tile)?.entityId ?? null;
 }
 
 /** Deplace la vue de grille avec les axes clavier. */

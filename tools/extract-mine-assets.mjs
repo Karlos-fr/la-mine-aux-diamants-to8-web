@@ -20,6 +20,20 @@ const SHEET_GAP = 4;
 const CONFIRMED_ROCK_RGBA_SHA256 =
   "42d9069123a72a99809133f6d1b977da8c5421200e32b10a83a3ed0a5803d218";
 
+const TILE_IDENTIFICATIONS = {
+  0x00: { name: "rock", status: "confirmed" },
+  0x01: { name: "earth", status: "suspected" },
+  0x02: { name: "monster", status: "confirmed" },
+  0x03: { name: "diamond", status: "confirmed" },
+  0x04: { name: "exit_block", status: "confirmed" },
+  0x05: { name: "empty", status: "confirmed" },
+  0x06: { name: "platform", status: "suspected" },
+  0x17: { name: "special_creature", status: "confirmed" },
+  0x18: { name: "transformer_block", status: "confirmed" },
+  0x19: { name: "graphic_candidate_19", status: "unidentified" },
+  0x1a: { name: "unknown_1a", status: "unidentified" }
+};
+
 const TO8_INTENSITIES = [
   0, 100, 127, 147, 163, 179, 191, 203,
   215, 223, 231, 239, 243, 247, 251, 255
@@ -107,8 +121,9 @@ function main() {
     const address = ATLAS_START + tileId * TILE_SIZE_BYTES;
     const bytes = atlasMemory.subarray(address, address + TILE_SIZE_BYTES);
     const rgba = renderTileRgba(bytes);
-    const name = tileId === 0 ? "rock" : null;
-    const status = tileId === 0 ? "confirmed" : "unidentified";
+    const identification = TILE_IDENTIFICATIONS[tileId] ?? { name: null, status: "unidentified" };
+    const name = identification.name;
+    const status = identification.status;
     const fileName = `mine-tile-${hex(tileId, 2)}${name ? `-${name}` : ""}.png`;
 
     writeFileSync(join(outDir, fileName), encodePng(TILE_WIDTH, TILE_HEIGHT, rgba));

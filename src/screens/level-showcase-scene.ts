@@ -367,7 +367,15 @@ export class LevelShowcaseScene implements Scene {
     const specialCreatureAtlas = this.runtimeAssets.specialCreatureAtlas;
     const leftHudPanel = this.runtimeAssets.leftHudPanel;
     const rightHudPanel = this.runtimeAssets.rightHudPanel;
-    if (!tileAtlas || !playerAtlas || !diamondAtlas || !monsterAtlas || !specialCreatureAtlas || !leftHudPanel || !rightHudPanel) {
+    if (
+      !tileAtlas ||
+      !playerAtlas ||
+      !diamondAtlas ||
+      !monsterAtlas ||
+      !specialCreatureAtlas ||
+      !leftHudPanel ||
+      !rightHudPanel
+    ) {
       return null;
     }
 
@@ -378,7 +386,9 @@ export class LevelShowcaseScene implements Scene {
       monsterAtlas,
       specialCreatureAtlas,
       leftHudPanel,
-      rightHudPanel
+      rightHudPanel,
+      worldTileImages: this.runtimeAssets.worldTileImages,
+      worldEntityFrameImages: this.runtimeAssets.worldEntityFrameImages
     };
   }
 

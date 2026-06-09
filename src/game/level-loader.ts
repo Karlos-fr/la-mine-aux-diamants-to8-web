@@ -7,6 +7,15 @@
 
 import type { EntityState, LevelDefinition, TileDefinition } from "./types";
 import { RUNTIME_TILE } from "./runtime-tiles";
+import {
+  getWorldEntityDefinition,
+  getWorldEntityDefinitions,
+  getWorldTileDefinitions,
+  isWorldEntityId,
+  isWorldTileId,
+  type WorldEntityId,
+  type WorldTileId
+} from "../worlds/world-registry";
 import level01Json from "../assets/levels/level-01.json";
 import level02Json from "../assets/levels/level-02.json";
 import level03Json from "../assets/levels/level-03.json";
@@ -27,18 +36,9 @@ import level17Json from "../assets/levels/level-17.json";
 import level18Json from "../assets/levels/level-18.json";
 
 /** Types de tuiles autorises dans les JSON modernes. */
-export type ModernTileType =
-  | "empty"
-  | "earth"
-  | "rock"
-  | "diamond"
-  | "monster"
-  | "border"
-  | "platform"
-  | "specialCreature"
-  | "transformerBlock";
+export type ModernTileType = WorldTileId;
 /** Types d'entites declarables dans les JSON modernes. */
-export type ModernEntityType = "diamond" | "monster" | "specialCreature";
+export type ModernEntityType = WorldEntityId;
 /** Nature documentaire d'un niveau moderne. */
 export type ModernLevelSourceKind = "normal" | "debug" | "attract";
 
@@ -141,22 +141,16 @@ const RAW_LEVEL_SOURCES = [
 const LEVEL_SOURCES = RAW_LEVEL_SOURCES.map((source, index) => validateModernLevelJson(source, index + 1));
 
 /** Conversion des types modernes vers les tile ids runtime prouves. */
-const TILE_IDS_BY_TYPE: Readonly<Record<ModernTileType, number>> = {
-  empty: RUNTIME_TILE.empty,
-  earth: RUNTIME_TILE.earth,
-  rock: RUNTIME_TILE.rock,
-  diamond: RUNTIME_TILE.diamond,
-  monster: RUNTIME_TILE.monster,
-  border: RUNTIME_TILE.border,
-  platform: RUNTIME_TILE.platform,
-  specialCreature: RUNTIME_TILE.specialCreature,
-  transformerBlock: RUNTIME_TILE.transformerBlock
-};
+const TILE_IDS_BY_TYPE = Object.fromEntries(
+  getWorldTileDefinitions().map((tile) => [tile.id, tile.runtimeTileId])
+) as Readonly<Record<ModernTileType, number>>;
 
 /** Tile ids qui definissent un rocher dans les definitions de tuile. */
 const ROCK_TILE_IDS: readonly number[] = [RUNTIME_TILE.rock];
 /** Tile ids solides de type mur/terrain. */
-const WALL_TILE_IDS: readonly number[] = [RUNTIME_TILE.earth, RUNTIME_TILE.platform];
+const WALL_TILE_IDS: readonly number[] = getWorldTileDefinitions()
+  .filter((tile) => tile.behavior === "earth" || tile.behavior === "platform")
+  .map((tile) => tile.runtimeTileId);
 /** Tile ids collectible diamant. */
 const DIAMOND_TILE_IDS: readonly number[] = [RUNTIME_TILE.diamond];
 /** Tile ids representant une sortie/bloc protege dans le runtime courant. */
@@ -194,42 +188,8 @@ export function loadLevelDefinition(levelNumber: number): LevelDefinition {
 export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number): LevelDefinition {
   const tileSize = level.tileSize;
   const tiles = buildTilesFromModernLevel(level);
-  const monsterEntities: EntityState[] = findEntityPositions(level, "monster").map((position, index) => ({
-    id: `monster-${index}`,
-    kind: "monster",
-    gridX: position.x,
-    gridY: position.y,
-    x: position.x * tileSize,
-    y: position.y * tileSize,
-    width: tileSize,
-    height: tileSize,
-    spriteFrameId: "tile:2",
-    active: true
-  }));
-  const specialCreatureEntities: EntityState[] = findEntityPositions(level, "specialCreature").map((position, index) => ({
-    id: `special-creature-${index}`,
-    kind: "specialCreature",
-    gridX: position.x,
-    gridY: position.y,
-    x: position.x * tileSize,
-    y: position.y * tileSize,
-    width: tileSize,
-    height: tileSize,
-    spriteFrameId: "tile:17",
-    active: true
-  }));
-  const diamondEntities: EntityState[] = findEntityPositions(level, "diamond").map((diamond, index) => ({
-    id: `diamond-${index}`,
-    kind: "diamond",
-    gridX: diamond.x,
-    gridY: diamond.y,
-    x: diamond.x * tileSize,
-    y: diamond.y * tileSize,
-    width: tileSize,
-    height: tileSize,
-    spriteFrameId: "tile:3",
-    active: true
-  }));
+  const entities = getWorldEntityDefinitions()
+    .flatMap((definition) => createEntityStatesFromModernType(level, definition.id, tileSize));
 
   return {
     id: level.id,
@@ -252,9 +212,7 @@ export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number
         spriteFrameId: "player-idle",
         active: true
       },
-      ...monsterEntities,
-      ...specialCreatureEntities,
-      ...diamondEntities
+      ...entities
     ],
     playerStart: {
       x: level.playerSpawn.x,
@@ -389,6 +347,27 @@ function buildTilesFromModernLevel(level: ModernLevelJson): number[] {
   return tiles;
 }
 
+/** Cree les entites runtime associees a un type moderne via le registre de mondes. */
+function createEntityStatesFromModernType(level: ModernLevelJson, type: ModernEntityType, tileSize: number): EntityState[] {
+  const definition = getWorldEntityDefinition(type);
+  if (!definition) {
+    return [];
+  }
+
+  return findEntityPositions(level, type).map((position, index) => ({
+    id: `${type}-${index}`,
+    kind: definition.runtimeKind,
+    gridX: position.x,
+    gridY: position.y,
+    x: position.x * tileSize,
+    y: position.y * tileSize,
+    width: tileSize,
+    height: tileSize,
+    spriteFrameId: definition.spriteFrameId,
+    active: true
+  }));
+}
+
 /** Extrait les positions des entites d'un type donne depuis le JSON moderne. */
 function findEntityPositions(level: ModernLevelJson, type: ModernEntityType): ModernGridPoint[] {
   return level.entities
@@ -513,17 +492,7 @@ function expectOptionalGridPoint(
 
 /** Valide un type de tuile moderne sans accepter `exit` comme tuile placable. */
 function expectModernTileType(value: unknown, levelNumber: number, field: string): ModernTileType {
-  if (
-    value === "empty" ||
-    value === "earth" ||
-    value === "rock" ||
-    value === "diamond" ||
-    value === "monster" ||
-    value === "border" ||
-    value === "platform" ||
-    value === "specialCreature" ||
-    value === "transformerBlock"
-  ) {
+  if (isWorldTileId(value)) {
     return value;
   }
 
@@ -532,7 +501,7 @@ function expectModernTileType(value: unknown, levelNumber: number, field: string
 
 /** Valide un type d'entite moderne. */
 function expectModernEntityType(value: unknown, levelNumber: number, field: string): ModernEntityType {
-  if (value === "diamond" || value === "monster" || value === "specialCreature") {
+  if (isWorldEntityId(value)) {
     return value;
   }
 

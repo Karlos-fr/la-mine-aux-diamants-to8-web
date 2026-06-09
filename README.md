@@ -251,6 +251,12 @@ docs/plans/
 
 Ce repertoire contient notamment les analyses ASM, les plans d'implementation, les notes de timing, l'audit de la pop-in d'options et les documents lies a l'editeur.
 
+La procedure d'ajout d'une brique ou entite custom est decrite dans :
+
+```text
+docs/custom-world-bricks.md
+```
+
 ## Fidelite au TO8
 
 Quand un comportement est incertain, la priorite est :

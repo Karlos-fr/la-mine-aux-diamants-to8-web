@@ -202,8 +202,8 @@ export interface GameplayRenderContext {
   /** Retourne la frame animee du diamant. */
   readonly getDiamondTileFrame: () => TileFrame;
 
-  /** Retourne la frame animee du monstre. */
-  readonly getMonsterTileFrame: () => TileFrame;
+  /** Retourne la frame animee du monstre, standard ou custom selon l'entite. */
+  readonly getMonsterTileFrame: (entity?: EntityState) => TileFrame;
 
   /** Retourne la frame animee de la creature speciale. */
   readonly getSpecialCreatureTileFrame: () => TileFrame;
@@ -406,7 +406,7 @@ export class GameplayRenderer {
       const frame = entity.kind === "diamond"
         ? context.getDiamondTileFrame()
         : entity.kind === "monster"
-          ? context.getMonsterTileFrame()
+          ? context.getMonsterTileFrame(entity)
           : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
 
       renderer.drawTile(

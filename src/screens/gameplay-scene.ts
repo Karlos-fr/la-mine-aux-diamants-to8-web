@@ -64,6 +64,10 @@ import {
 import type { Size2D, TileFrame } from "../engine/render-types";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
 import { RuntimeAssets } from "../assets/runtime-asset-loader";
+import {
+  getWorldEntityDefinitionBySpriteFrameId,
+  getWorldTileDefinitionByRuntimeTileId
+} from "../worlds/world-registry";
 import { getGameplayRenderSize } from "../display-options";
 import { updateOptionsPopinInput } from "../options-popin-controller";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
@@ -632,7 +636,7 @@ export class GameplayScene implements Scene {
       getRuntimeTile: (gridX, gridY) => this.runtimeGrid.getTile(gridX, gridY),
       getTileFrame: (tileId) => this.getTileFrame(tileId),
       getDiamondTileFrame: () => this.getDiamondTileFrame(),
-      getMonsterTileFrame: () => this.getMonsterTileFrame(),
+      getMonsterTileFrame: (entity) => this.getMonsterTileFrame(entity),
       getSpecialCreatureTileFrame: () => this.getSpecialCreatureTileFrame(),
       getEntityTileFrameId: (kind) => this.getEntityTileFrameId(kind),
       findEntityAtGrid: (gridX, gridY) => this.findEntityAtGrid(gridX, gridY),
@@ -908,7 +912,7 @@ export class GameplayScene implements Scene {
 
   /** Associe un tile id runtime a l'effet declenche apres l'arrivee joueur. */
   private getPlayerArrivalEffect(tileId: number): RuntimeTileArrivalEffect {
-    return getPlayerArrivalEffectSystem(tileId, this.getPlayerCollisionTiles());
+    return getPlayerArrivalEffectSystem(this.normalizeCustomTileForCollision(tileId), this.getPlayerCollisionTiles());
   }
 
   /** Associe une tuile runtime a l'effet non mortel utilise par le mode debug ghost. */
@@ -917,7 +921,7 @@ export class GameplayScene implements Scene {
       return "collectDiamond";
     }
 
-    if (tileId === PLAYER_DIGGABLE_TILE_ID) {
+    if (this.normalizeCustomTileForCollision(tileId) === PLAYER_DIGGABLE_TILE_ID) {
       return "dig";
     }
 
@@ -949,7 +953,7 @@ export class GameplayScene implements Scene {
 
   /** Indique si le joueur peut entrer dans la tuile runtime. */
   private canPlayerEnterTile(tileId: number): boolean {
-    return canPlayerEnterTileSystem(tileId, this.getPlayerCollisionTiles());
+    return canPlayerEnterTileSystem(this.normalizeCustomTileForCollision(tileId), this.getPlayerCollisionTiles());
   }
 
   /** Retourne les tile ids runtime qui bloquent le mouvement joueur. */
@@ -966,6 +970,20 @@ export class GameplayScene implements Scene {
       platform: PLATFORM_TILE_ID,
       transformerBlock: RUNTIME_TILE.transformerBlock
     };
+  }
+
+  /** Ramene les visuels custom vers leurs comportements gameplay originaux. */
+  private normalizeCustomTileForCollision(tileId: number): number {
+    const customTileDefinition = getWorldTileDefinitionByRuntimeTileId(tileId);
+    if (customTileDefinition?.behavior === "earth") {
+      return PLAYER_DIGGABLE_TILE_ID;
+    }
+
+    if (customTileDefinition?.behavior === "platform") {
+      return PLATFORM_TILE_ID;
+    }
+
+    return tileId;
   }
 
   /** Applique creusement, collecte de diamant ou fin de niveau apres l'arrivee. */
@@ -2122,6 +2140,12 @@ export class GameplayScene implements Scene {
 
   /** Recupere la frame d'atlas cachee pour un tile id de niveau standard. */
   private getTileFrame(tileId: number): TileFrame {
+    const customTileDefinition = getWorldTileDefinitionByRuntimeTileId(tileId);
+    const customTileImage = customTileDefinition ? this.runtimeAssets.getWorldTileImage(customTileDefinition.id) : null;
+    if (customTileDefinition?.assetUrl && customTileImage) {
+      return this.tileFrameCache.getAtlasFrame(customTileImage, `custom-${customTileDefinition.id}`, 0);
+    }
+
     return this.tileFrameCache.getTileFrame(this.getTileAtlasImage(), tileId);
   }
 
@@ -2139,11 +2163,26 @@ export class GameplayScene implements Scene {
   }
 
   /** Recupere la frame d'atlas animee courante du monstre. */
-  private getMonsterTileFrame(): TileFrame {
+  private getMonsterTileFrame(entity?: EntityState): TileFrame {
     const monsterAnimation = this.animationState.get("monster");
     const frameIndex = monsterAnimation
       ? monsterAnimation.frameIndex % this.monsterAnimationFrames.length
       : 0;
+    const customEntityDefinition = entity ? getWorldEntityDefinitionBySpriteFrameId(entity.spriteFrameId) : undefined;
+    const customEntityFrames = customEntityDefinition
+      ? this.runtimeAssets.getWorldEntityFrameImages(customEntityDefinition.id)
+      : [];
+    if (customEntityFrames.length > 0) {
+      const customFrameIndex = monsterAnimation
+        ? monsterAnimation.frameIndex % customEntityFrames.length
+        : 0;
+      return this.tileFrameCache.getAtlasFrame(
+        customEntityFrames[customFrameIndex],
+        `${customEntityDefinition?.id}-${customFrameIndex}`,
+        0
+      );
+    }
+
     if (!this.runtimeAssets.monsterAtlas) {
       return this.getTileFrame(MONSTER_TILE_ID);
     }

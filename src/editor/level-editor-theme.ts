@@ -7,6 +7,7 @@
 
 import { TO8_PALETTE } from "../assets/palette";
 import type { ModernTileType } from "../game/level-loader";
+import { getWorldTileDefinition } from "../worlds/world-registry";
 
 /** Theme visuel principal de l'editeur. */
 export const LEVEL_EDITOR_THEME = {
@@ -32,12 +33,7 @@ export const LEVEL_EDITOR_THEME = {
 
 /** Retourne une couleur fallback pour une tuile moderne quand l'atlas n'est pas disponible. */
 export function editorTileFallbackColor(tile: ModernTileType | string): string {
-  if (tile === "earth") return TO8_PALETTE.green;
-  if (tile === "rock") return TO8_PALETTE.gray;
-  if (tile === "diamond") return TO8_PALETTE.cyan;
-  if (tile === "border") return TO8_PALETTE.blue;
-  if (tile === "platform") return TO8_PALETTE.lightGreen;
-  if (tile === "monster" || tile === "specialCreature") return TO8_PALETTE.red;
-  if (tile === "transformerBlock") return TO8_PALETTE.magenta;
+  const definition = getWorldTileDefinition(tile);
+  if (definition) return definition.fallbackColor;
   return TO8_PALETTE.black;
 }

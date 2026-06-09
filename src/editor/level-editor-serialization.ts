@@ -12,6 +12,7 @@ import type {
   ModernLevelSourceKind,
   ModernTileType
 } from "../game/level-loader";
+import { isWorldEntityId, isWorldTileId } from "../worlds/world-registry";
 import {
   EDITOR_TILE_SIZE,
   createEmptyEditableLevelState,
@@ -214,22 +215,12 @@ function assertModernTileType(value: unknown): ModernTileType {
 
 /** Indique si une valeur est un type de tuile moderne supporte. */
 function isModernTileType(value: unknown): value is ModernTileType {
-  return (
-    value === "empty" ||
-    value === "earth" ||
-    value === "rock" ||
-    value === "diamond" ||
-    value === "monster" ||
-    value === "border" ||
-    value === "platform" ||
-    value === "specialCreature" ||
-    value === "transformerBlock"
-  );
+  return isWorldTileId(value);
 }
 
 /** Indique si une valeur est un type d'entite moderne supporte. */
 function isModernEntityType(value: unknown): value is ModernEntityType {
-  return value === "diamond" || value === "monster" || value === "specialCreature";
+  return isWorldEntityId(value);
 }
 
 /** Indique si une valeur est une nature de niveau supportee par le loader. */

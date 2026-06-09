@@ -15,6 +15,7 @@ import type { Scene, SceneContext } from "../engine/scene";
 import { getModernLevelSource, type ModernTileType } from "../game/level-loader";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { GameplayScene } from "../screens/gameplay-scene";
+import { getWorldTileDefinition } from "../worlds/world-registry";
 import {
   DEFAULT_EDITOR_TILE,
   DEFAULT_EDITOR_TOOL,
@@ -172,6 +173,7 @@ export class LevelEditorScene implements Scene {
       if (this.runtimeAssets.specialCreatureAtlas) this.editorRenderer.setSpecialCreatureAtlasImage(this.runtimeAssets.specialCreatureAtlas);
       this.refreshPalettePreviews();
     });
+    void this.editorRenderer.loadCustomAssets().then(() => this.refreshPalettePreviews());
   }
 
   /** Detache les raccourcis et l'IHM DOM. */
@@ -798,11 +800,12 @@ export class LevelEditorScene implements Scene {
 
   /** Retourne la frame correspondant a la famille runtime de la tuile donnee. */
   private getTileAnimationFrameIndex(tile: ModernTileType): number {
-    if (tile === "diamond") {
+    const behavior = getWorldTileDefinition(tile)?.behavior;
+    if (behavior === "diamond") {
       return this.animationFrameIndex.diamond;
     }
 
-    if (tile === "monster" || tile === "specialCreature") {
+    if (behavior === "monster" || behavior === "specialCreature") {
       return this.animationFrameIndex.monster;
     }
 

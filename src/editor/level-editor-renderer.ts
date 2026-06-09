@@ -7,6 +7,8 @@
 
 import { RUNTIME_ASSET_URLS } from "../assets/runtime-assets";
 import { mineSpriteMetadata } from "../assets/generated/mine-sprites";
+import { loadWorldAssetImages } from "../worlds/world-asset-loader";
+import { getWorldTileDefinition } from "../worlds/world-registry";
 import type { Renderer } from "../engine/renderer";
 import { RUNTIME_TILE } from "../game/runtime-tiles";
 import type { ModernTileType } from "../game/level-loader";
@@ -53,6 +55,17 @@ export class LevelEditorRenderer {
   private monsterAtlasImage: HTMLImageElement | null = null;
   /** Atlas anime de la creature speciale optionnel. */
   private specialCreatureAtlasImage: HTMLImageElement | null = null;
+  /** Tuiles custom chargees par id moderne. */
+  private customTileImages: ReadonlyMap<string, HTMLImageElement> = new Map();
+  /** Frames animees custom chargees par id d'entite moderne. */
+  private customEntityFrameImages: ReadonlyMap<string, readonly HTMLImageElement[]> = new Map();
+
+  /** Charge les assets custom utilises par la palette moderne. */
+  async loadCustomAssets(): Promise<void> {
+    const worldAssetImages = await loadWorldAssetImages();
+    this.customTileImages = worldAssetImages.tileImages;
+    this.customEntityFrameImages = worldAssetImages.entityFrameImages;
+  }
 
   /** Branche l'atlas runtime charge par l'application. */
   setTilesAtlasImage(image: HTMLImageElement): void {
@@ -81,6 +94,12 @@ export class LevelEditorRenderer {
 
   /** Rend une tuile moderne avec l'atlas runtime si possible, sinon avec un fallback pixel. */
   renderTile(renderer: Renderer, tile: ModernTileType, x: number, y: number, animationFrameIndex = 0, size = EDITOR_TILE_SIZE): void {
+    const customFrame = this.getCustomTileFrame(tile, animationFrameIndex);
+    if (customFrame) {
+      renderer.drawTileScaled(customFrame, x, y, size, size);
+      return;
+    }
+
     if (tile === "diamond" && this.diamondAtlasImage) {
       const frameIndex = animationFrameIndex % 8;
       renderer.drawTileScaled(this.tileFrameCache.getAtlasFrame(this.diamondAtlasImage, `editor-diamond-${frameIndex}`, frameIndex), x, y, size, size);
@@ -144,6 +163,12 @@ export class LevelEditorRenderer {
     context.imageSmoothingEnabled = false;
     context.clearRect(0, 0, canvas.width, canvas.height);
 
+    const customFrame = this.getCustomTileFrame(tile, 0);
+    if (customFrame) {
+      this.drawPreviewFrame(context, customFrame, size);
+      return;
+    }
+
     if (tile === "diamond" && this.diamondAtlasImage) {
       this.drawPreviewFrame(context, this.tileFrameCache.getAtlasFrame(this.diamondAtlasImage, "preview-diamond-0", 0), size);
       return;
@@ -182,6 +207,27 @@ export class LevelEditorRenderer {
       size,
       size
     );
+  }
+
+  /** Retourne une frame custom si la tuile moderne en possede une. */
+  private getCustomTileFrame(tile: ModernTileType, animationFrameIndex: number): ReturnType<TileFrameCache["getTileFrame"]> | null {
+    const definition = getWorldTileDefinition(tile);
+    const entityFrames = definition?.entityId ? this.customEntityFrameImages.get(definition.entityId) : undefined;
+    if (entityFrames && entityFrames.length > 0) {
+      const frameIndex = animationFrameIndex % entityFrames.length;
+      return this.tileFrameCache.getAtlasFrame(
+        entityFrames[frameIndex],
+        `editor-${definition?.entityId}-${frameIndex}`,
+        0
+      );
+    }
+
+    const image = this.customTileImages.get(tile);
+    if (!image) {
+      return null;
+    }
+
+    return this.tileFrameCache.getAtlasFrame(image, `editor-${tile}`, 0);
   }
 }
 

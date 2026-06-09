@@ -6,6 +6,7 @@
  */
 
 import type { ModernTileType } from "../game/level-loader";
+import { getWorldTileDefinitions, type WorldTileDefinition } from "../worlds/world-registry";
 
 /** Outils disponibles dans l'editeur. */
 export type LevelEditorTool =
@@ -39,16 +40,9 @@ export interface LevelEditorPaletteItem {
 }
 
 /** Palette des tuiles editables du niveau. */
-export const LEVEL_EDITOR_TILE_PALETTE: readonly LevelEditorPaletteItem[] = [
-  createTileItem("tile-earth", "Terre creusable", "Terre creusable par le joueur.", "earth", "#28a840"),
-  createTileItem("tile-rock", "Rocher", "Rocher soumis a la gravite.", "rock", "#909090"),
-  createTileItem("tile-diamond", "Diamant", "Diamant collectable et anime.", "diamond", "#58c8f0"),
-  createTileItem("tile-border", "Bordure", "Bordure solide du niveau.", "border", "#2450d8"),
-  createTileItem("tile-platform", "Plateforme", "Plateforme solide verte.", "platform", "#78e060"),
-  createTileItem("tile-monster", "Monstre", "Monstre standard mobile.", "monster", "#d83838"),
-  createTileItem("tile-special", "Créature spéciale", "Créature mobile spéciale.", "specialCreature", "#c050c8"),
-  createTileItem("tile-transformer", "Bloc transformateur", "Transforme les rochers et diamants.", "transformerBlock", "#f0d050")
-];
+export const LEVEL_EDITOR_TILE_PALETTE: readonly LevelEditorPaletteItem[] = getWorldTileDefinitions()
+  .filter((definition) => definition.id !== "empty")
+  .map(createTileItemFromDefinition);
 
 /** Palette des outils d'edition. */
 export const LEVEL_EDITOR_TOOL_PALETTE: readonly LevelEditorPaletteItem[] = [
@@ -65,21 +59,15 @@ export const DEFAULT_EDITOR_TILE: ModernTileType = "earth";
 /** Outil selectionne par defaut. */
 export const DEFAULT_EDITOR_TOOL: LevelEditorTool = "pencil";
 
-/** Cree une entree de palette de tuile. */
-function createTileItem(
-  id: string,
-  label: string,
-  hint: string,
-  tileType: ModernTileType,
-  color: string
-): LevelEditorPaletteItem {
+/** Cree une entree de palette de tuile depuis le registre des mondes. */
+function createTileItemFromDefinition(definition: WorldTileDefinition): LevelEditorPaletteItem {
   return {
-    id,
-    kind: tileType === "monster" || tileType === "specialCreature" || tileType === "diamond" ? "entity" : "tile",
-    label,
-    hint,
-    tileType,
-    svg: createTileSvg(color)
+    id: `tile-${definition.id}`,
+    kind: definition.entityId ? "entity" : "tile",
+    label: definition.label,
+    hint: definition.hint,
+    tileType: definition.id,
+    svg: createTileSvg(definition.fallbackColor)
   };
 }
 

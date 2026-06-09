@@ -6,6 +6,7 @@
  */
 
 import { loadImage } from "../engine/image-loader";
+import { loadWorldAssetImages } from "../worlds/world-asset-loader";
 import { RUNTIME_ASSET_URLS } from "./runtime-assets";
 
 /** Images runtime chargees pour la scene gameplay. */
@@ -30,6 +31,12 @@ export interface LoadedRuntimeAssets {
 
   /** Panneau HUD droit. */
   readonly rightHudPanel: HTMLImageElement;
+
+  /** Images statiques custom indexees par id de tuile moderne. */
+  readonly worldTileImages: ReadonlyMap<string, HTMLImageElement>;
+
+  /** Frames custom indexees par id d'entite moderne. */
+  readonly worldEntityFrameImages: ReadonlyMap<string, readonly HTMLImageElement[]>;
 }
 
 /** Chargeur/facade des assets runtime gameplay. */
@@ -78,6 +85,26 @@ export class RuntimeAssets {
     return this.loadedAssets?.rightHudPanel ?? null;
   }
 
+  /** Images statiques custom indexees par id de tuile moderne. */
+  get worldTileImages(): ReadonlyMap<string, HTMLImageElement> {
+    return this.loadedAssets?.worldTileImages ?? EMPTY_WORLD_TILE_IMAGES;
+  }
+
+  /** Frames custom indexees par id d'entite moderne. */
+  get worldEntityFrameImages(): ReadonlyMap<string, readonly HTMLImageElement[]> {
+    return this.loadedAssets?.worldEntityFrameImages ?? EMPTY_WORLD_ENTITY_FRAME_IMAGES;
+  }
+
+  /** Retourne l'image statique associee a une tuile moderne custom. */
+  getWorldTileImage(tileId: string): HTMLImageElement | null {
+    return this.loadedAssets?.worldTileImages.get(tileId) ?? null;
+  }
+
+  /** Retourne les frames associees a une entite moderne custom. */
+  getWorldEntityFrameImages(entityId: string): readonly HTMLImageElement[] {
+    return this.loadedAssets?.worldEntityFrameImages.get(entityId) ?? [];
+  }
+
   /** Erreur lisible du dernier chargement, si presente. */
   get error(): string | null {
     return this.loadError;
@@ -110,7 +137,15 @@ export class RuntimeAssets {
   /** Charge tous les assets runtime declares dans le catalogue d'URLs. */
   private async loadAll(): Promise<void> {
     try {
-      const [tileAtlas, playerAtlas, diamondAtlas, monsterAtlas, specialCreatureAtlas, leftHudPanel, rightHudPanel] = await Promise.all([
+      const [
+        tileAtlas,
+        playerAtlas,
+        diamondAtlas,
+        monsterAtlas,
+        specialCreatureAtlas,
+        leftHudPanel,
+        rightHudPanel
+      ] = await Promise.all([
         loadImage(RUNTIME_ASSET_URLS.tilesAtlas),
         loadImage(RUNTIME_ASSET_URLS.playerAtlas),
         loadImage(RUNTIME_ASSET_URLS.diamondAtlas),
@@ -119,6 +154,7 @@ export class RuntimeAssets {
         loadImage(RUNTIME_ASSET_URLS.hudLeftPanel),
         loadImage(RUNTIME_ASSET_URLS.hudRightPanel)
       ]);
+      const worldAssetImages = await loadWorldAssetImages();
       this.loadedAssets = {
         tileAtlas,
         playerAtlas,
@@ -126,7 +162,9 @@ export class RuntimeAssets {
         monsterAtlas,
         specialCreatureAtlas,
         leftHudPanel,
-        rightHudPanel
+        rightHudPanel,
+        worldTileImages: worldAssetImages.tileImages,
+        worldEntityFrameImages: worldAssetImages.entityFrameImages
       };
       this.loadError = null;
     } catch (error) {
@@ -134,3 +172,9 @@ export class RuntimeAssets {
     }
   }
 }
+
+/** Map vide stable pour les assets de tuiles avant chargement. */
+const EMPTY_WORLD_TILE_IMAGES: ReadonlyMap<string, HTMLImageElement> = new Map();
+
+/** Map vide stable pour les assets d'entites avant chargement. */
+const EMPTY_WORLD_ENTITY_FRAME_IMAGES: ReadonlyMap<string, readonly HTMLImageElement[]> = new Map();

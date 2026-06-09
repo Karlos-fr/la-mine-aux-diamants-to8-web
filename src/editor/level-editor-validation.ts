@@ -6,6 +6,7 @@
  */
 
 import type { ModernTileType } from "../game/level-loader";
+import { getModernTileIds } from "../worlds/world-registry";
 import {
   getEditableExplicitTiles,
   getEditableTileAt,
@@ -26,17 +27,7 @@ export interface LevelEditorDiagnostic {
 }
 
 /** Tuiles modernes supportees par l'editeur MVP. */
-const SUPPORTED_TILES: readonly ModernTileType[] = [
-  "empty",
-  "earth",
-  "rock",
-  "diamond",
-  "border",
-  "platform",
-  "monster",
-  "specialCreature",
-  "transformerBlock"
-];
+const SUPPORTED_TILES: readonly ModernTileType[] = getModernTileIds();
 
 /** Valide un niveau editable et retourne les diagnostics. */
 export function validateEditableLevel(state: EditableLevelState): LevelEditorDiagnostic[] {
