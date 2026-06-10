@@ -188,6 +188,12 @@ const EXPLOSION_TILE_SEQUENCE = [
 ] as const;
 /** Duree moderne d'une frame d'explosion, derivee des ticks TO8. */
 const EXPLOSION_FRAME_DURATION = secondsFromTo8Ticks(TO8_RUNTIME_TIMING.explosionFrameTicks);
+/** Duree courte du tremblement visuel Diorama declenche par une explosion. */
+const DIORAMA_EXPLOSION_SHAKE_DURATION = 0.22;
+/** Amplitude maximale du tremblement Diorama, exprimee en unites du frustum orthographique. */
+const DIORAMA_EXPLOSION_SHAKE_AMPLITUDE = 0.18;
+/** Frequence du tremblement Diorama, volontairement breve et arcade. */
+const DIORAMA_EXPLOSION_SHAKE_FREQUENCY = 38;
 /** Tile id vide. */
 const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 /** Tile id plateforme solide. */
@@ -379,6 +385,12 @@ export class GameplayScene implements Scene {
   private readonly dioramaCamera = new DioramaCameraController();
   /** Systeme de particules modernes du mode Diorama. */
   private readonly dioramaParticles = new DioramaParticleSystem();
+  /** Temps restant de tremblement camera Diorama apres explosion. */
+  private dioramaExplosionShakeRemaining = 0;
+  /** Temps ecoule dans le tremblement camera Diorama courant. */
+  private dioramaExplosionShakeElapsed = 0;
+  /** Graine stable du tremblement Diorama courant. */
+  private dioramaExplosionShakeSeed = 0;
   /** Initialise l'etat runtime, la grille et les horloges d'animation du niveau. */
   constructor(
     levelNumber: number,
@@ -603,6 +615,7 @@ export class GameplayScene implements Scene {
     this.advanceExplosions(dt);
     this.queueDeathResetAfterExplosions();
     this.advanceObjectiveReachedFlash(dt);
+    this.advanceDioramaExplosionShake(dt);
     this.dioramaParticles.update(dt);
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
@@ -637,6 +650,7 @@ export class GameplayScene implements Scene {
       renderMode: getDisplayRenderMode(),
       dioramaCamera: this.dioramaCamera.getSettings(),
       dioramaRenderOptions: getDioramaRenderOptions(),
+      dioramaShakeOffset: this.getDioramaExplosionShakeOffset(),
       renderSurfaceSize: displayRenderLayout.renderSurfaceSize,
       boardOffsetX: this.getBoardOffsetX(),
       boardOffsetY: this.getBoardOffsetY(),
@@ -679,6 +693,38 @@ export class GameplayScene implements Scene {
         contextLabel: "Jeu en pause"
       });
     }
+  }
+
+  /** Avance le tremblement visuel Diorama sans toucher a la camera gameplay. */
+  private advanceDioramaExplosionShake(dt: number): void {
+    if (this.dioramaExplosionShakeRemaining <= 0) {
+      return;
+    }
+
+    this.dioramaExplosionShakeElapsed += dt;
+    this.dioramaExplosionShakeRemaining = Math.max(0, this.dioramaExplosionShakeRemaining - dt);
+  }
+
+  /** Declenche une impulsion camera courte pour les explosions du mode Diorama. */
+  private startDioramaExplosionShake(centerX: number, centerY: number): void {
+    this.dioramaExplosionShakeElapsed = 0;
+    this.dioramaExplosionShakeRemaining = DIORAMA_EXPLOSION_SHAKE_DURATION;
+    this.dioramaExplosionShakeSeed = centerX * 12.9898 + centerY * 78.233;
+  }
+
+  /** Retourne le decalage orthographique courant du shake Diorama. */
+  private getDioramaExplosionShakeOffset(): { readonly x: number; readonly y: number } {
+    if (this.dioramaExplosionShakeRemaining <= 0) {
+      return { x: 0, y: 0 };
+    }
+
+    const remainingRatio = this.dioramaExplosionShakeRemaining / DIORAMA_EXPLOSION_SHAKE_DURATION;
+    const amplitude = DIORAMA_EXPLOSION_SHAKE_AMPLITUDE * remainingRatio * remainingRatio;
+    const phase = this.dioramaExplosionShakeElapsed * DIORAMA_EXPLOSION_SHAKE_FREQUENCY + this.dioramaExplosionShakeSeed;
+    return {
+      x: Math.sin(phase) * amplitude,
+      y: Math.cos(phase * 1.37) * amplitude * 0.65
+    };
   }
 
   /** Retourne la resolution logique active du gameplay. */
@@ -1499,6 +1545,7 @@ export class GameplayScene implements Scene {
     };
     this.state.explosions.push(explosion);
     gameAudio.playExplosion();
+    this.startDioramaExplosionShake(centerX, centerY);
     this.applyExplosionFrame(explosion);
     this.deactivateEntitiesInExplosion(explosion);
     if (!debugOptions.ghostMode && explosion.cells.some((cell) => this.isPlayerLogicalAtGrid(cell.x, cell.y))) {

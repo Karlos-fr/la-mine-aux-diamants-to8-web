@@ -206,6 +206,14 @@ export interface GameplayRenderContext {
   /** Reglages experimentaux du rendu diorama, sans impact runtime. */
   readonly dioramaRenderOptions: DioramaRenderOptions;
 
+  /** Decalage camera court du mode Diorama lors des explosions, sans impact gameplay. */
+  readonly dioramaShakeOffset: {
+    /** Decalage horizontal dans le plan orthographique. */
+    readonly x: number;
+    /** Decalage vertical dans le plan orthographique. */
+    readonly y: number;
+  };
+
   /** Surface bitmap moderne reservee au Diorama TO8, distincte de la resolution logique. */
   readonly renderSurfaceSize: RenderSurfaceSize;
 

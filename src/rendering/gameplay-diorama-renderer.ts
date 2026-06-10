@@ -246,13 +246,13 @@ export class GameplayDioramaRenderer {
       bounds.minX,
       bounds.maxX,
       viewWidth
-    );
+    ) + context.dioramaShakeOffset.x;
     const centerY = clampFrustumCenter(
       (bounds.minY + bounds.maxY) / 2 + (pivot.y - (bounds.minY + bounds.maxY) / 2) * (1 - 1 / zoom),
       bounds.minY,
       bounds.maxY,
       viewHeight
-    );
+    ) + context.dioramaShakeOffset.y;
 
     this.camera.left = centerX - viewWidth / 2;
     this.camera.right = centerX + viewWidth / 2;
@@ -741,9 +741,9 @@ function getWorldPosition(
   };
 }
 
-/** Retourne le pivot du zoom molette: joueur visible, sinon centre de la scene. */
+/** Retourne le pivot du zoom molette: position joueur meme pendant la mort, sinon centre de la scene. */
 function getDioramaZoomPivotPosition(context: GameplayRenderContext): THREE.Vector3 {
-  if (context.state.player.active && isVisibleGridPosition(context, context.state.player.gridX, context.state.player.gridY)) {
+  if (isVisibleGridPosition(context, context.state.player.gridX, context.state.player.gridY)) {
     const playerPosition = getWorldPosition(context, context.state.player.gridX, context.state.player.gridY);
     return new THREE.Vector3(playerPosition.x, 0, playerPosition.z);
   }
