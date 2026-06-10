@@ -51,6 +51,10 @@ const CAMERA_DEPTH_MARGIN = 2;
 const CAMERA_HEIGHT = 9.6;
 /** Profondeur fixe de la camera; le drag pivote la scene au lieu de deplacer la camera. */
 const CAMERA_DEPTH = 6.5;
+/** Distance de reference de la camera, conservee comme minimum pour garder le rendu existant. */
+const CAMERA_BASE_DISTANCE = Math.hypot(CAMERA_HEIGHT, CAMERA_DEPTH);
+/** Espace de securite devant le plan near pour eviter les coupes en rotation forte. */
+const CAMERA_NEAR_GUARD = 1;
 /** Angle de reference utilise pour cadrer sans effet de zoom pendant le drag. */
 const CAMERA_FRAME_REFERENCE_PITCH_DEG = 58;
 
@@ -221,9 +225,6 @@ export class GameplayDioramaRenderer {
   /** Cadre le contenu 3D reel avec un frustum qui reste valide quelle que soit la rotation. */
   private configureCamera(context: GameplayRenderContext, width: number, height: number): void {
     const aspect = width / height;
-    this.camera.position.set(0, CAMERA_HEIGHT, CAMERA_DEPTH);
-    this.camera.lookAt(0, 0, 0);
-    this.camera.updateMatrixWorld(true);
     this.contentGroup.updateMatrixWorld(true);
 
     this.contentBounds.setFromObject(this.contentGroup);
@@ -232,6 +233,7 @@ export class GameplayDioramaRenderer {
       return;
     }
 
+    this.configureCameraPose(this.getCameraDistanceForContentBounds());
     const bounds = this.getCameraSpaceContentBounds();
     const fullWidth = Math.max(1, bounds.maxX - bounds.minX + CAMERA_MARGIN);
     const fullHeight = Math.max(1, bounds.maxY - bounds.minY + CAMERA_MARGIN);
@@ -263,6 +265,7 @@ export class GameplayDioramaRenderer {
 
   /** Cadre de secours utilise si le groupe Diorama ne contient encore aucune primitive. */
   private configureFallbackCamera(context: GameplayRenderContext, aspect: number): void {
+    this.configureCameraPose(CAMERA_BASE_DISTANCE);
     const compensatedRows = context.viewport.rows * getGroundDepthScale(CAMERA_FRAME_REFERENCE_PITCH_DEG);
     const viewHeight = Math.max(compensatedRows + CAMERA_MARGIN, (context.viewport.columns + CAMERA_MARGIN) / aspect);
     const viewWidth = viewHeight * aspect;
@@ -273,6 +276,42 @@ export class GameplayDioramaRenderer {
     this.camera.near = 0.1;
     this.camera.far = 100;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Place la camera sur son axe de reference sans changer le grossissement orthographique. */
+  private configureCameraPose(distance: number): void {
+    const scale = distance / CAMERA_BASE_DISTANCE;
+    this.camera.position.set(0, CAMERA_HEIGHT * scale, CAMERA_DEPTH * scale);
+    this.camera.lookAt(0, 0, 0);
+    this.camera.updateMatrixWorld(true);
+  }
+
+  /** Retourne une distance camera suffisante pour garder toute la scene devant le plan near. */
+  private getCameraDistanceForContentBounds(): number {
+    const min = this.contentBounds.min;
+    const max = this.contentBounds.max;
+    const corners = this.contentBoundsCorners;
+    corners[0].set(min.x, min.y, min.z);
+    corners[1].set(max.x, min.y, min.z);
+    corners[2].set(min.x, max.y, min.z);
+    corners[3].set(max.x, max.y, min.z);
+    corners[4].set(min.x, min.y, max.z);
+    corners[5].set(max.x, min.y, max.z);
+    corners[6].set(min.x, max.y, max.z);
+    corners[7].set(max.x, max.y, max.z);
+
+    const cameraBackX = 0;
+    const cameraBackY = CAMERA_HEIGHT / CAMERA_BASE_DISTANCE;
+    const cameraBackZ = CAMERA_DEPTH / CAMERA_BASE_DISTANCE;
+    let nearestContentProjection = Number.NEGATIVE_INFINITY;
+    for (const corner of corners) {
+      nearestContentProjection = Math.max(
+        nearestContentProjection,
+        corner.x * cameraBackX + corner.y * cameraBackY + corner.z * cameraBackZ
+      );
+    }
+
+    return Math.max(CAMERA_BASE_DISTANCE, nearestContentProjection + CAMERA_DEPTH_MARGIN + CAMERA_NEAR_GUARD);
   }
 
   /** Retourne les limites du contenu dans le repere camera courant. */
