@@ -5,13 +5,18 @@
  * Notes: Les options sont persistees localement et doivent rester non bloquantes si le stockage echoue.
  */
 
-import type { Size2D } from "./engine/render-types";
+import type { CssDisplaySize, LogicalRenderSize, RenderSurfaceSize, Size2D } from "./engine/render-types";
 
 /** Facteur de grossissement CSS hors etirage navigateur. */
 export type DisplayZoom = 1 | 2 | 3;
 
 /** Densites disponibles pour augmenter le nombre de cellules visibles. */
 export type DisplayDensity = 1 | 2 | 3;
+
+/** Modes de rendu purement visuels; ils ne modifient jamais la simulation ni les timings. */
+export type DisplayRenderMode =
+  | "to8"
+  | "dioramaTo8";
 
 /** Configuration d'affichage runtime modifiable depuis la pop-in d'options. */
 export interface DisplayOptions {
@@ -23,6 +28,24 @@ export interface DisplayOptions {
 
   /** Multiplie le nombre de cellules visibles, sans changer la forme des tuiles. */
   density: DisplayDensity;
+
+  /** Style de rendu visuel du niveau, sans effet gameplay, collision, camera logique ou timing. */
+  renderMode: DisplayRenderMode;
+}
+
+/** Layout complet d'affichage, separe de la simulation gameplay. */
+export interface DisplayRenderLayout {
+  /** Taille logique consommee par les scenes et le renderer 2D historique. */
+  readonly logicalSize: LogicalRenderSize;
+
+  /** Surface bitmap moderne pour le Diorama TO8, separee de la resolution logique ISO. */
+  readonly renderSurfaceSize: RenderSurfaceSize;
+
+  /** Taille CSS effectivement appliquee au canvas principal. */
+  readonly cssSize: CssDisplaySize;
+
+  /** Taille CSS maximale au ratio TO8 320x200, utilisee par les ecrans historiques. */
+  readonly fixedAspectCssSize: CssDisplaySize;
 }
 
 /** Largeur logique TO8 originale en pixels. */
@@ -80,6 +103,24 @@ export function getDisplayDensityLabel(): string {
   return `x${displayOptions.density}`;
 }
 
+/** Retourne le mode de rendu visuel courant. */
+export function getDisplayRenderMode(): DisplayRenderMode {
+  return displayOptions.renderMode;
+}
+
+/** Retourne le libelle court du mode de rendu visuel courant. */
+export function getDisplayRenderModeLabel(): string {
+  return DISPLAY_RENDER_MODE_LABELS[displayOptions.renderMode];
+}
+
+/** Fait defiler les modes de rendu visuel, sans toucher a la resolution logique. */
+export function cycleDisplayRenderMode(direction: -1 | 1): void {
+  const index = DISPLAY_RENDER_MODES.indexOf(displayOptions.renderMode);
+  const safeIndex = index >= 0 ? index : 0;
+  displayOptions.renderMode = DISPLAY_RENDER_MODES[(safeIndex + direction + DISPLAY_RENDER_MODES.length) % DISPLAY_RENDER_MODES.length];
+  saveDisplayOptions();
+}
+
 /** Active ou desactive l'etirage du canvas dans l'espace navigateur. */
 export function toggleDisplayStretchToViewport(): void {
   displayOptions.stretchToViewport = !displayOptions.stretchToViewport;
@@ -107,36 +148,48 @@ export function cycleDisplayDensity(direction: -1 | 1): void {
   applyDisplayCanvasLayout();
 }
 
+/** Calcule le layout complet d'affichage sans muter le DOM. */
+export function getDisplayRenderLayout(): DisplayRenderLayout {
+  const logicalSize = getDensityRenderSize(displayOptions.density);
+  const cssSize = getCanvasCssSize(logicalSize);
+  const layout = {
+    logicalSize,
+    renderSurfaceSize: getRenderSurfaceSize(cssSize),
+    cssSize,
+    fixedAspectCssSize: getViewportFixedAspectCanvasCssSize()
+  };
+  assertDisplayRenderLayout(layout);
+  return layout;
+}
+
 /** Calcule la resolution logique de la scene gameplay selon les options d'affichage. */
-export function getGameplayRenderSize(): Size2D {
-  return getDensityRenderSize(displayOptions.density);
+export function getGameplayRenderSize(): LogicalRenderSize {
+  return getDisplayRenderLayout().logicalSize;
 }
 
 /** Applique la taille CSS pixel-perfect du canvas via les variables partagees par la feuille de style. */
 export function applyDisplayCanvasLayout(): void {
-  const size = getCanvasCssSize();
-  const fixedAspectSize = getViewportFixedAspectCanvasCssSize();
-  document.body.style.setProperty("--game-canvas-css-width", `${size.width}px`);
-  document.body.style.setProperty("--game-canvas-css-height", `${size.height}px`);
-  document.body.style.setProperty("--game-canvas-fixed-aspect-css-width", `${fixedAspectSize.width}px`);
-  document.body.style.setProperty("--game-canvas-fixed-aspect-css-height", `${fixedAspectSize.height}px`);
+  const layout = getDisplayRenderLayout();
+  document.body.style.setProperty("--game-canvas-css-width", `${layout.cssSize.width}px`);
+  document.body.style.setProperty("--game-canvas-css-height", `${layout.cssSize.height}px`);
+  document.body.style.setProperty("--game-canvas-fixed-aspect-css-width", `${layout.fixedAspectCssSize.width}px`);
+  document.body.style.setProperty("--game-canvas-fixed-aspect-css-height", `${layout.fixedAspectCssSize.height}px`);
 }
 
 /** Calcule la taille CSS effective du canvas, distincte de la resolution logique gameplay. */
-function getCanvasCssSize(): Size2D {
-  const renderSize = getGameplayRenderSize();
+function getCanvasCssSize(logicalSize: LogicalRenderSize): CssDisplaySize {
   if (displayOptions.stretchToViewport) {
-    return getViewportContainedCanvasCssSize(renderSize);
+    return getViewportContainedCanvasCssSize(logicalSize);
   }
 
   return {
-    width: renderSize.width * displayOptions.zoom,
-    height: renderSize.height * displayOptions.zoom
+    width: logicalSize.width * displayOptions.zoom,
+    height: logicalSize.height * displayOptions.zoom
   };
 }
 
 /** Calcule la resolution logique du gameplay selon la densite d'affichage. */
-function getDensityRenderSize(density: DisplayDensity): Size2D {
+function getDensityRenderSize(density: DisplayDensity): LogicalRenderSize {
   const columns = ORIGINAL_VIEWPORT_COLUMNS * density;
   const rows = ORIGINAL_VIEWPORT_ROWS * density;
   return {
@@ -146,7 +199,7 @@ function getDensityRenderSize(density: DisplayDensity): Size2D {
 }
 
 /** Calcule la plus grande taille CSS sans deformation pour une resolution logique donnee. */
-function getViewportContainedCanvasCssSize(renderSize: Size2D): Size2D {
+function getViewportContainedCanvasCssSize(renderSize: Size2D): CssDisplaySize {
   const viewportSize = getViewportCssSize();
   const scale = Math.min(viewportSize.width / renderSize.width, viewportSize.height / renderSize.height);
   return {
@@ -155,8 +208,17 @@ function getViewportContainedCanvasCssSize(renderSize: Size2D): Size2D {
   };
 }
 
+/** Calcule la surface moderne disponible pour le Diorama TO8 sans changer la resolution logique. */
+function getRenderSurfaceSize(cssSize: CssDisplaySize): RenderSurfaceSize {
+  const pixelRatio = getSafeDevicePixelRatio();
+  return {
+    width: Math.max(1, Math.floor(cssSize.width * pixelRatio)),
+    height: Math.max(1, Math.floor(cssSize.height * pixelRatio))
+  };
+}
+
 /** Calcule la plus grande taille viewport possible en conservant le ratio TO8 320x200. */
-function getViewportFixedAspectCanvasCssSize(): Size2D {
+function getViewportFixedAspectCanvasCssSize(): CssDisplaySize {
   const viewportSize = getViewportCssSize();
   const widthFromHeight = Math.floor(viewportSize.height * (LOGICAL_WIDTH / LOGICAL_HEIGHT));
   if (widthFromHeight <= viewportSize.width) {
@@ -173,11 +235,29 @@ function getViewportFixedAspectCanvasCssSize(): Size2D {
 }
 
 /** Retourne la taille navigateur minimale que le jeu accepte pour ses calculs CSS. */
-function getViewportCssSize(): Size2D {
+function getViewportCssSize(): CssDisplaySize {
   return {
     width: Math.max(MIN_CSS_WIDTH, window.innerWidth),
     height: Math.max(MIN_CSS_HEIGHT, window.innerHeight)
   };
+}
+
+/** Retourne un device pixel ratio borne pour eviter les surfaces modernes absurdes. */
+function getSafeDevicePixelRatio(): number {
+  return Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+}
+
+/** Verifie les invariants minimaux du layout avant son utilisation par les renderers. */
+function assertDisplayRenderLayout(layout: DisplayRenderLayout): void {
+  const sizes = [
+    layout.logicalSize,
+    layout.renderSurfaceSize,
+    layout.cssSize,
+    layout.fixedAspectCssSize
+  ];
+  if (sizes.some((size) => size.width < 1 || size.height < 1)) {
+    throw new Error("Layout d'affichage invalide: taille nulle ou negative.");
+  }
 }
 
 /** Recharge les options persistantes en ignorant les valeurs obsoletes ou corrompues. */
@@ -193,7 +273,8 @@ function loadDisplayOptions(): DisplayOptions {
       return {
         zoom: isDisplayZoom(legacyValue.zoom) ? legacyValue.zoom : 2,
         stretchToViewport: legacyValue.mode === "available",
-        density: legacyValue.mode === "available" && isDisplayDensity(legacyValue.zoom) ? legacyValue.zoom : 1
+        density: legacyValue.mode === "available" && isDisplayDensity(legacyValue.zoom) ? legacyValue.zoom : 1,
+        renderMode: "to8"
       };
     }
     if (
@@ -204,7 +285,8 @@ function loadDisplayOptions(): DisplayOptions {
       return {
         zoom: value.zoom,
         stretchToViewport: value.stretchToViewport,
-        density: value.density
+        density: value.density,
+        renderMode: normalizeDisplayRenderMode(value.renderMode)
       };
     }
   } catch {
@@ -232,11 +314,41 @@ function isDisplayDensity(value: unknown): value is DisplayDensity {
   return value === 1 || value === 2 || value === 3;
 }
 
+/** Valide un mode de rendu issu du stockage local avant reutilisation. */
+function isDisplayRenderMode(value: unknown): value is DisplayRenderMode {
+  return (
+    value === "to8" ||
+    value === "dioramaTo8"
+  );
+}
+
+/** Migre les anciennes valeurs de mode de rendu vers les modes encore exposes. */
+function normalizeDisplayRenderMode(value: unknown): DisplayRenderMode {
+  if (value === "dioramaTo8HighResolution") {
+    return "dioramaTo8";
+  }
+
+  return isDisplayRenderMode(value) ? value : "to8";
+}
+
 /** Retourne la configuration d'affichage par defaut. */
 function getDefaultDisplayOptions(): DisplayOptions {
   return {
     zoom: 2,
     stretchToViewport: false,
-    density: 1
+    density: 1,
+    renderMode: "to8"
   };
 }
+
+/** Libelles affichables des modes de rendu purement visuels. */
+const DISPLAY_RENDER_MODE_LABELS: Record<DisplayRenderMode, string> = {
+  to8: "TO8 original",
+  dioramaTo8: "Diorama TO8"
+};
+
+/** Ordre de cycle des modes de rendu visuel. */
+const DISPLAY_RENDER_MODES: readonly DisplayRenderMode[] = [
+  "to8",
+  "dioramaTo8"
+];

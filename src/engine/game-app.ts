@@ -1,5 +1,6 @@
 import { Canvas2DRenderer } from "./renderer";
 import type { Scene } from "./scene";
+import type { SceneChangeHandler } from "./scene";
 import { SceneRouter } from "./scene";
 import { FixedGameLoop } from "./game-loop";
 import { KeyboardInput } from "./input";
@@ -18,6 +19,9 @@ export interface GameAppOptions {
 
   /** Fabrique de la premiere scene a afficher. */
   initialScene: () => Scene;
+
+  /** Callback optionnel appele quand la scene active change. */
+  onSceneChange?: SceneChangeHandler;
 }
 
 /** Facade minimale de controle du cycle de vie de l'application. */
@@ -36,7 +40,7 @@ export interface GameApp {
 export function createGameApp(options: GameAppOptions): GameApp {
   const renderer = new Canvas2DRenderer(options.canvas);
   const input = new KeyboardInput(window, options.canvas);
-  const scenes = new SceneRouter(options.initialScene());
+  const scenes = new SceneRouter(options.initialScene(), options.onSceneChange);
 
   const loop = new FixedGameLoop({
     update(dt) {

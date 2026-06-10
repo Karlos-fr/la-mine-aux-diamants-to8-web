@@ -6,10 +6,13 @@
  */
 
 import { TO8_PALETTE } from "../assets/palette";
+import type { DisplayRenderMode } from "../display-options";
+import type { DioramaRenderOptions } from "../diorama-render-options";
 import type { Renderer } from "../engine/renderer";
-import type { TileFrame } from "../engine/render-types";
+import type { RenderSurfaceSize, TileFrame } from "../engine/render-types";
 import type { EntityState, GameState } from "../game/types";
 import { getRenderedFallingObjectGridPosition, isEntityGridPositionVisible } from "./entity-renderer";
+import { GameplayDioramaRenderer } from "./gameplay-diorama-renderer";
 import { drawHudSmallCounter, drawHudTextFields } from "./hud-renderer";
 import { getGridCellScreenPosition } from "./level-renderer";
 
@@ -63,6 +66,10 @@ const HUD_LABEL_VALUE_GAP = 1;
 const HUD_GALLERY_DIAMOND_WIDTH = 24;
 /** Hauteur du diamant anime du panneau galerie. */
 const HUD_GALLERY_DIAMOND_HEIGHT = 16;
+/** Fond du label de reglage camera diorama. */
+const DIORAMA_LABEL_BACKGROUND = "rgba(0, 0, 0, 0.72)";
+/** Couleur du label de reglage camera diorama. */
+const DIORAMA_LABEL_COLOR = "#00ffff";
 
 /** Conversion des intensites 4 bits TO8 vers RGB 8 bits. */
 const TO8_INTENSITIES = [
@@ -145,6 +152,18 @@ export interface GameplayRenderTileIds {
   /** Tuile rocher statique. */
   readonly rock: number;
 
+  /** Tuile terre creusable. */
+  readonly earth: number;
+
+  /** Tuile bordure solide. */
+  readonly border: number;
+
+  /** Tuile plateforme solide. */
+  readonly platform: number;
+
+  /** Tuile bloc transformateur. */
+  readonly transformerBlock: number;
+
   /** Tuile rocher en chute. */
   readonly fallingRock: number;
 
@@ -177,6 +196,18 @@ export interface GameplayRenderContext {
 
   /** Taille de tuile en pixels. */
   readonly tileSize: number;
+
+  /** Mode de rendu visuel actif, sans impact sur l'etat gameplay ISO. */
+  readonly renderMode: DisplayRenderMode;
+
+  /** Reglages camera du mode diorama, sans impact runtime. */
+  readonly dioramaCamera: GameplayDioramaCameraSettings;
+
+  /** Reglages experimentaux du rendu diorama, sans impact runtime. */
+  readonly dioramaRenderOptions: DioramaRenderOptions;
+
+  /** Surface bitmap moderne reservee au Diorama TO8, distincte de la resolution logique. */
+  readonly renderSurfaceSize: RenderSurfaceSize;
 
   /** Decalage horizontal de la zone de jeu. */
   readonly boardOffsetX: number;
@@ -231,20 +262,81 @@ export interface GameplayRenderContext {
 
   /** Phase courante du flash objectif atteint, ou rien si l'effet est inactif. */
   readonly objectiveReachedFlashPhase: number | null;
+
+  /** Particules visuelles modernes reservees au mode Diorama. */
+  readonly dioramaParticles: readonly DioramaPixelParticle[];
+}
+
+/** Particule carree rendue uniquement dans la scene Diorama. */
+export interface DioramaPixelParticle {
+  /** Position horizontale en cellules niveau. */
+  readonly gridX: number;
+  /** Position profondeur en cellules niveau. */
+  readonly gridY: number;
+  /** Hauteur monde au-dessus du sol Diorama. */
+  readonly height: number;
+  /** Couleur RGB Three.js. */
+  readonly color: number;
+  /** Taille monde du carre pixelise. */
+  readonly size: number;
+  /** Progression 0..1 de sa duree de vie. */
+  readonly progress: number;
+}
+
+/** Reglages visuels de camera pour le mode diorama. */
+export interface GameplayDioramaCameraSettings {
+  /** Rotation de scene autour de l'axe X, en degres. */
+  readonly rotationXDeg: number;
+  /** Rotation de scene autour de l'axe Y, en degres. */
+  readonly rotationYDeg: number;
+  /** Rotation de scene autour de l'axe Z, en degres. */
+  readonly rotationZDeg: number;
+  /** Facteur de zoom visuel applique au groupe Diorama. */
+  readonly zoom: number;
 }
 
 /** Renderer gameplay unique, sans mutation runtime. */
 export class GameplayRenderer {
+  /** Renderer WebGL offscreen reserve au mode diorama. */
+  private readonly dioramaRenderer = new GameplayDioramaRenderer();
+
   /** Rend la frame gameplay complete dans l'ordre ISO courant. */
   render(renderer: Renderer, context: GameplayRenderContext): void {
+    const usesDiorama = isDioramaRenderMode(context.renderMode) && context.tileAtlasLoaded;
+    this.prepareRenderSurfaceForFrame(renderer, context, usesDiorama);
+
     renderer.clear(TO8_PALETTE.black);
     if (!context.tileAtlasLoaded && context.assetError) {
       this.drawAssetError(renderer, context.assetError);
       return;
     }
 
-    this.drawPlayfield(renderer, context);
-    this.drawEntitiesAndObjects(renderer, context);
+    this.drawGameplayLayer(renderer, context, usesDiorama);
+    this.drawLogicalOverlayLayer(renderer, context);
+  }
+
+  /** Ajuste uniquement la surface bitmap moderne quand le rendu Diorama en a besoin. */
+  private prepareRenderSurfaceForFrame(renderer: Renderer, context: GameplayRenderContext, usesDiorama: boolean): void {
+    if (!usesDiorama) {
+      return;
+    }
+
+    renderer.setRenderSurfaceSize(context.renderSurfaceSize.width, context.renderSurfaceSize.height);
+  }
+
+  /** Rend le contenu du jeu, soit en TO8 original, soit via le renderer Diorama. */
+  private drawGameplayLayer(renderer: Renderer, context: GameplayRenderContext, usesDiorama: boolean): void {
+    if (usesDiorama) {
+      this.dioramaRenderer.render(renderer, context, getPlayfieldHeight(renderer), getDioramaPlayfieldSurfaceSize(renderer, context));
+      this.drawDioramaCameraLabel(renderer, context);
+    } else {
+      this.drawPlayfield(renderer, context);
+      this.drawEntitiesAndObjects(renderer, context);
+    }
+  }
+
+  /** Rend les overlays gameplay en coordonnees TO8, au-dessus de la couche Diorama. */
+  private drawLogicalOverlayLayer(renderer: Renderer, context: GameplayRenderContext): void {
     this.drawHud(renderer, context);
     this.drawObjectiveReachedFlash(renderer, context);
   }
@@ -253,6 +345,19 @@ export class GameplayRenderer {
   private drawAssetError(renderer: Renderer, message: string): void {
     renderer.drawPixelText("ERREUR ASSETS", 76, 82, TO8_PALETTE.yellow, 2);
     renderer.drawPixelText(message.toUpperCase(), 24, 108, TO8_PALETTE.white, 1);
+  }
+
+  /** Affiche les angles camera modifiables a la souris dans le mode Diorama TO8. */
+  private drawDioramaCameraLabel(renderer: Renderer, context: GameplayRenderContext): void {
+    const rotationX = normalizeAngleDegrees(context.dioramaCamera.rotationXDeg).toFixed(0);
+    const rotationY = normalizeAngleDegrees(context.dioramaCamera.rotationYDeg).toFixed(0);
+    const rotationZ = normalizeAngleDegrees(context.dioramaCamera.rotationZDeg).toFixed(0);
+    const zoom = context.dioramaCamera.zoom.toFixed(2);
+    const label = `Drag: scene X ${rotationX} Y ${rotationY} Z ${rotationZ} zoom ${zoom}`;
+    const x = 6;
+    const y = 6;
+    renderer.fillRect(x - 3, y - 3, renderer.measurePixelText(label, 1) + 6, 13, DIORAMA_LABEL_BACKGROUND);
+    renderer.drawPixelText(label, x, y, DIORAMA_LABEL_COLOR, 1);
   }
 
   /** Rend la grille visible du niveau courant. */
@@ -270,14 +375,7 @@ export class GameplayRenderer {
       for (let x = 0; x < context.viewport.columns + 2; x += 1) {
         const levelX = baseLevelX + x;
         const levelY = baseLevelY + y;
-        const screenPosition = getGridCellScreenPosition(
-          levelX,
-          levelY,
-          context.viewport,
-          context.tileSize,
-          context.boardOffsetX,
-          context.boardOffsetY
-        );
+        const screenPosition = getGameplayCellScreenPosition(context, levelX, levelY);
 
         if (!isInsideRenderedLevel(context, levelX, levelY)) {
           continue;
@@ -355,10 +453,13 @@ export class GameplayRenderer {
       const frame = fallingObject.kind === "diamond"
         ? context.getDiamondTileFrame()
         : context.getTileFrame(context.tileIds.rock);
+      const screenPosition = getGameplayCellScreenPosition(context, gridX, gridY);
+      const screenX = screenPosition.x;
+      const screenY = screenPosition.y;
       renderer.drawTile(
         frame,
-        Math.round(context.boardOffsetX + (gridX - context.viewport.x) * context.tileSize),
-        Math.round(context.boardOffsetY + (gridY - context.viewport.y) * context.tileSize)
+        screenX,
+        screenY
       );
     }
   }
@@ -408,11 +509,14 @@ export class GameplayRenderer {
         : entity.kind === "monster"
           ? context.getMonsterTileFrame(entity)
           : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+      const screenPosition = getGameplayCellScreenPosition(context, entityGridX, entityGridY);
+      const screenX = screenPosition.x;
+      const screenY = screenPosition.y;
 
       renderer.drawTile(
         frame,
-        Math.round(context.boardOffsetX + (entityGridX - context.viewport.x) * context.tileSize),
-        Math.round(context.boardOffsetY + (entityGridY - context.viewport.y) * context.tileSize)
+        screenX,
+        screenY
       );
     }
   }
@@ -424,8 +528,9 @@ export class GameplayRenderer {
     entityGridX: number,
     entityGridY: number
   ): void {
-    const screenX = Math.round(context.boardOffsetX + (entityGridX - context.viewport.x) * context.tileSize);
-    const screenY = Math.round(context.boardOffsetY + (entityGridY - context.viewport.y) * context.tileSize);
+    const screenPosition = getGameplayCellScreenPosition(context, entityGridX, entityGridY);
+    const screenX = screenPosition.x;
+    const screenY = screenPosition.y;
     renderer.drawTile(context.getSpecialCreatureTileFrame(), screenX, screenY);
   }
 
@@ -555,14 +660,49 @@ export class GameplayRenderer {
   }
 }
 
+/** Normalise un angle en degres pour un affichage 0..359. */
+function normalizeAngleDegrees(degrees: number): number {
+  return ((degrees % 360) + 360) % 360;
+}
+
 /** Calcule la zone de jeu disponible au-dessus du HUD. */
 function getPlayfieldHeight(renderer: Renderer): number {
   return Math.max(0, renderer.height - HUD_HEIGHT);
 }
 
+/** Calcule la surface moderne reservee au playfield Diorama au-dessus du HUD logique. */
+function getDioramaPlayfieldSurfaceSize(renderer: Renderer, context: GameplayRenderContext): RenderSurfaceSize {
+  const playfieldRatio = getPlayfieldHeight(renderer) / Math.max(1, renderer.height);
+  return {
+    width: context.renderSurfaceSize.width,
+    height: Math.max(1, Math.floor(context.renderSurfaceSize.height * playfieldRatio))
+  };
+}
+
+/** Indique si le mode de rendu courant utilise le renderer Diorama. */
+function isDioramaRenderMode(renderMode: DisplayRenderMode): boolean {
+  return renderMode === "dioramaTo8";
+}
+
 /** Centre verticalement le bloc libelle/valeur dans le bandeau HUD. */
 function getHudTextTopOffset(): number {
   return Math.floor((HUD_HEIGHT - HUD_LABEL_FONT_HEIGHT - HUD_LABEL_VALUE_GAP - HUD_VALUE_FONT_HEIGHT) / 2);
+}
+
+/** Convertit une coordonnee grille en position ecran selon le mode de rendu visuel. */
+function getGameplayCellScreenPosition(
+  context: GameplayRenderContext,
+  gridX: number,
+  gridY: number
+): { readonly x: number; readonly y: number } {
+  return getGridCellScreenPosition(
+    gridX,
+    gridY,
+    context.viewport,
+    context.tileSize,
+    context.boardOffsetX,
+    context.boardOffsetY
+  );
 }
 
 /** Evite de rendre la bordure logique runtime dans l'espace visuel hors niveau. */

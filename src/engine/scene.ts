@@ -33,6 +33,9 @@ export interface Scene {
   render(renderer: Renderer): void;
 }
 
+/** Callback appele quand le routeur installe une nouvelle scene active. */
+export type SceneChangeHandler = (scene: Scene) => void;
+
 /** Routeur responsable de la scene active et des transitions differees. */
 export class SceneRouter implements SceneContext {
   /** Scene actuellement mise a jour et rendue. */
@@ -42,9 +45,10 @@ export class SceneRouter implements SceneContext {
   private pendingScene: Scene | undefined;
 
   /** Installe la premiere scene et appelle son hook d'entree. */
-  constructor(initialScene: Scene) {
+  constructor(initialScene: Scene, private readonly onSceneChange?: SceneChangeHandler) {
     this.activeScene = initialScene;
     this.activeScene.enter?.(this);
+    this.onSceneChange?.(this.activeScene);
   }
 
   /** Programme une transition de scene pour la fin de l'update courante. */
@@ -79,5 +83,6 @@ export class SceneRouter implements SceneContext {
     this.activeScene = this.pendingScene;
     this.pendingScene = undefined;
     this.activeScene.enter?.(this);
+    this.onSceneChange?.(this.activeScene);
   }
 }

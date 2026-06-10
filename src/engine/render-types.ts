@@ -23,6 +23,15 @@ export interface Size2D {
   readonly height: number;
 }
 
+/** Taille logique dans laquelle les scenes expriment leurs coordonnees. */
+export interface LogicalRenderSize extends Size2D {}
+
+/** Taille de la surface bitmap cible pour un rendu moderne haute resolution. */
+export interface RenderSurfaceSize extends Size2D {}
+
+/** Taille CSS finale du canvas dans la page navigateur. */
+export interface CssDisplaySize extends Size2D {}
+
 /** Rectangle source ou destination compose d'une position et d'une taille. */
 export interface Rect2D extends Point2D, Size2D {}
 
@@ -81,4 +90,10 @@ export interface DrawTextOptions {
 export interface DrawImageOptions {
   /** Rectangle source optionnel a extraire de l'image. */
   readonly sourceRect?: Rect2D;
+
+  /** Taille destination optionnelle, utile pour reduire une image haute resolution. */
+  readonly destinationSize?: Size2D;
+
+  /** Active ponctuellement le lissage Canvas pendant ce dessin. */
+  readonly smoothing?: boolean;
 }

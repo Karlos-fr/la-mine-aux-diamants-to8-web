@@ -68,8 +68,11 @@ import {
   getWorldEntityDefinitionBySpriteFrameId,
   getWorldTileDefinitionByRuntimeTileId
 } from "../worlds/world-registry";
-import { getGameplayRenderSize } from "../display-options";
+import { getDisplayRenderLayout, getDisplayRenderMode, getGameplayRenderSize } from "../display-options";
+import { getDioramaRenderOptions } from "../diorama-render-options";
 import { updateOptionsPopinInput } from "../options-popin-controller";
+import { DioramaCameraController } from "../rendering/diorama-camera-controller";
+import { DioramaParticleSystem } from "../rendering/diorama-particles";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
 import { renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { TileFrameCache } from "../rendering/tile-frame-cache";
@@ -372,6 +375,10 @@ export class GameplayScene implements Scene {
   private optionsOpen = false;
   /** Categorie d'options selectionnee. */
   private selectedOptionsCategoryIndex = 0;
+  /** Controleur visuel de la camera Diorama TO8. */
+  private readonly dioramaCamera = new DioramaCameraController();
+  /** Systeme de particules modernes du mode Diorama. */
+  private readonly dioramaParticles = new DioramaParticleSystem();
   /** Initialise l'etat runtime, la grille et les horloges d'animation du niveau. */
   constructor(
     levelNumber: number,
@@ -469,7 +476,14 @@ export class GameplayScene implements Scene {
       return;
     }
 
+    this.updateDioramaCameraInput(input);
     this.runtime.update(dt, input);
+  }
+
+  /** Ajuste la camera Diorama TO8 au clic gauche sans modifier la simulation. */
+  private updateDioramaCameraInput(input: InputState): void {
+    const playfieldHeight = getGameplayRenderSize().height - GAMEPLAY_HUD_HEIGHT;
+    this.dioramaCamera.update(input, getDisplayRenderMode() === "dioramaTo8" && !this.optionsOpen, playfieldHeight);
   }
 
   /** Gere l'ouverture et la navigation de la pop-in d'options. */
@@ -589,6 +603,7 @@ export class GameplayScene implements Scene {
     this.advanceExplosions(dt);
     this.queueDeathResetAfterExplosions();
     this.advanceObjectiveReachedFlash(dt);
+    this.dioramaParticles.update(dt);
     this.advanceAnimation("player", this.playerAnimationFrames, this.animationDurations.player, dt);
     this.advanceAnimation("diamond", this.diamondAnimationFrames, this.animationDurations.diamond, dt);
     this.advanceAnimation("monster", this.monsterAnimationFrames, this.animationDurations.monster, dt);
@@ -604,6 +619,7 @@ export class GameplayScene implements Scene {
   /** Rend la scene gameplay dans l'ordre ISO: grille, objets/entites, HUD. */
   render(renderer: Renderer): void {
     this.updateViewportSize();
+    const displayRenderLayout = getDisplayRenderLayout();
 
     this.gameplayRenderer.render(renderer, {
       state: this.state,
@@ -618,6 +634,10 @@ export class GameplayScene implements Scene {
         rows: this.viewport.rows
       },
       tileSize: this.tileSize,
+      renderMode: getDisplayRenderMode(),
+      dioramaCamera: this.dioramaCamera.getSettings(),
+      dioramaRenderOptions: getDioramaRenderOptions(),
+      renderSurfaceSize: displayRenderLayout.renderSurfaceSize,
       boardOffsetX: this.getBoardOffsetX(),
       boardOffsetY: this.getBoardOffsetY(),
       tileIds: {
@@ -627,6 +647,10 @@ export class GameplayScene implements Scene {
         specialCreature: RUNTIME_TILE.specialCreature,
         monsterTrail: MONSTER_RUNTIME_TRAIL_TILE_ID,
         rock: ROCK_TILE_ID,
+        earth: PLAYER_DIGGABLE_TILE_ID,
+        border: RUNTIME_GRID_FILL_TILE_ID,
+        platform: PLATFORM_TILE_ID,
+        transformerBlock: RUNTIME_TILE.transformerBlock,
         fallingRock: FALLING_ROCK_TILE_ID,
         fallingDiamond: FALLING_DIAMOND_TILE_ID,
         empty: RUNTIME_EMPTY_TILE_ID
@@ -645,7 +669,8 @@ export class GameplayScene implements Scene {
       getPlayerSpawnBlinkTileId: (gridX, gridY) => this.getPlayerSpawnBlinkTileId(gridX, gridY),
       getExitBlinkTileId: (gridX, gridY) => this.getExitBlinkTileId(gridX, gridY),
       isPlayerSpawning: () => this.isPlayerSpawning(),
-      objectiveReachedFlashPhase: this.getObjectiveReachedFlashPhase()
+      objectiveReachedFlashPhase: this.getObjectiveReachedFlashPhase(),
+      dioramaParticles: this.dioramaParticles.getParticles()
     });
 
     if (this.optionsOpen) {
@@ -1030,6 +1055,12 @@ export class GameplayScene implements Scene {
   /** Retire une tuile creusable runtime de la grille du niveau. */
   private digRuntimeTile(gridX: number, gridY: number): void {
     this.runtimeMutations.digPlayerTile(gridX, gridY);
+    this.dioramaParticles.spawnEarthDig(
+      gridX,
+      gridY,
+      (this.playerMove?.fromX ?? gridX) - gridX,
+      (this.playerMove?.fromY ?? gridY) - gridY
+    );
   }
 
   /** Retire une tuile diamant runtime et emet les donnees de score/progression. */
@@ -1560,6 +1591,7 @@ export class GameplayScene implements Scene {
         this.incrementScore(event.score);
         this.state.hud.diamonds = Math.max(0, this.state.hud.diamonds - 1);
         gameAudio.playDiamondCollected();
+        this.dioramaParticles.spawnDiamondCollection(event.gridX, event.gridY);
         this.updateLevelExitStateAfterDiamondCollection();
         continue;
       }

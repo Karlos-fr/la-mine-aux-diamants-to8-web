@@ -24,8 +24,17 @@ export interface Renderer {
   /** Hauteur logique de rendu. */
   readonly height: number;
 
+  /** Largeur reelle de la surface bitmap cible. */
+  readonly surfaceWidth: number;
+
+  /** Hauteur reelle de la surface bitmap cible. */
+  readonly surfaceHeight: number;
+
   /** Change la resolution logique du canvas. */
   setLogicalSize(width: number, height: number): void;
+
+  /** Change la surface bitmap sans changer les coordonnees logiques des scenes. */
+  setRenderSurfaceSize(width: number, height: number): void;
 
   /** Restaure la resolution logique TO8 standard. */
   resetLogicalSize(): void;
@@ -66,13 +75,29 @@ export interface Renderer {
 
 /** Implementation Canvas 2D du renderer logique. */
 export class Canvas2DRenderer implements Renderer {
+  /** Largeur logique courante consommee par les scenes. */
+  private logicalWidth = LOGICAL_WIDTH;
+
+  /** Hauteur logique courante consommee par les scenes. */
+  private logicalHeight = LOGICAL_HEIGHT;
+
   /** Largeur logique courante. */
   get width(): number {
-    return this.canvas.width;
+    return this.logicalWidth;
   }
 
   /** Hauteur logique courante. */
   get height(): number {
+    return this.logicalHeight;
+  }
+
+  /** Largeur reelle de la surface bitmap cible. */
+  get surfaceWidth(): number {
+    return this.canvas.width;
+  }
+
+  /** Hauteur reelle de la surface bitmap cible. */
+  get surfaceHeight(): number {
     return this.canvas.height;
   }
 
@@ -84,6 +109,7 @@ export class Canvas2DRenderer implements Renderer {
     this.canvas.width = LOGICAL_WIDTH;
     this.canvas.height = LOGICAL_HEIGHT;
     this.canvas.style.imageRendering = "pixelated";
+    this.updateLogicalCanvasDataset();
 
     const context = this.canvas.getContext("2d", { alpha: false });
     if (!context) {
@@ -98,13 +124,23 @@ export class Canvas2DRenderer implements Renderer {
   setLogicalSize(width: number, height: number): void {
     const nextWidth = Math.max(1, Math.floor(width));
     const nextHeight = Math.max(1, Math.floor(height));
+    this.logicalWidth = nextWidth;
+    this.logicalHeight = nextHeight;
+    this.updateLogicalCanvasDataset();
+    this.setRenderSurfaceSize(nextWidth, nextHeight);
+  }
+
+  /** Change uniquement la surface bitmap et projette les coordonnees logiques dessus. */
+  setRenderSurfaceSize(width: number, height: number): void {
+    const nextWidth = Math.max(1, Math.floor(width));
+    const nextHeight = Math.max(1, Math.floor(height));
     if (this.canvas.width !== nextWidth) {
       this.canvas.width = nextWidth;
     }
     if (this.canvas.height !== nextHeight) {
       this.canvas.height = nextHeight;
     }
-    this.context.imageSmoothingEnabled = false;
+    this.configureLogicalProjection();
   }
 
   /** Revient a la resolution logique historique du runtime. */
@@ -114,7 +150,7 @@ export class Canvas2DRenderer implements Renderer {
 
   /** Reactive le rendu sans lissage au debut de chaque frame. */
   beginFrame(): void {
-    this.context.imageSmoothingEnabled = false;
+    this.configureLogicalProjection();
   }
 
   /** Remplit toute la surface logique avec la couleur choisie. */
@@ -192,8 +228,24 @@ export class Canvas2DRenderer implements Renderer {
 
   /** Dessine une image complete ou une sous-region sans lissage. */
   drawImage(image: CanvasImageSource, x: number, y: number, options?: DrawImageOptions): void {
+    const previousSmoothing = this.context.imageSmoothingEnabled;
+    if (options?.smoothing !== undefined) {
+      this.context.imageSmoothingEnabled = options.smoothing;
+    }
+
     if (!options?.sourceRect) {
-      this.context.drawImage(image, Math.floor(x), Math.floor(y));
+      if (options?.destinationSize) {
+        this.context.drawImage(
+          image,
+          Math.floor(x),
+          Math.floor(y),
+          Math.floor(options.destinationSize.width),
+          Math.floor(options.destinationSize.height)
+        );
+      } else {
+        this.context.drawImage(image, Math.floor(x), Math.floor(y));
+      }
+      this.context.imageSmoothingEnabled = previousSmoothing;
       return;
     }
 
@@ -206,9 +258,10 @@ export class Canvas2DRenderer implements Renderer {
       sourceRect.height,
       Math.floor(x),
       Math.floor(y),
-      sourceRect.width,
-      sourceRect.height
+      Math.floor(options.destinationSize?.width ?? sourceRect.width),
+      Math.floor(options.destinationSize?.height ?? sourceRect.height)
     );
+    this.context.imageSmoothingEnabled = previousSmoothing;
   }
 
   /** Dessine une chaine avec la police bitmap embarquee. */
@@ -256,5 +309,24 @@ export class Canvas2DRenderer implements Renderer {
       frame.sourceRect.width,
       frame.sourceRect.height
     );
+  }
+
+  /** Projette les coordonnees logiques dans la surface bitmap courante. */
+  private configureLogicalProjection(): void {
+    this.context.setTransform(
+      this.surfaceWidth / this.logicalWidth,
+      0,
+      0,
+      this.surfaceHeight / this.logicalHeight,
+      0,
+      0
+    );
+    this.context.imageSmoothingEnabled = false;
+  }
+
+  /** Expose la taille logique aux adaptateurs d'input qui lisent le canvas DOM. */
+  private updateLogicalCanvasDataset(): void {
+    this.canvas.dataset.logicalWidth = String(this.logicalWidth);
+    this.canvas.dataset.logicalHeight = String(this.logicalHeight);
   }
 }

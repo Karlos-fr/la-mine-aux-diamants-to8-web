@@ -8,6 +8,7 @@ import { APP_VERSION } from "../app-version";
 import {
   getDisplayDensityLabel,
   getDisplayModeLabel,
+  getDisplayRenderModeLabel,
   getDisplayStretchLabel,
   getDisplayZoomLabel
 } from "../display-options";
@@ -67,6 +68,7 @@ export function renderOptionsPopin(options: OptionsPopinRenderOptions): void {
     getDisplayZoomLabel(),
     getDisplayStretchLabel(),
     getDisplayDensityLabel(),
+    getDisplayRenderModeLabel(),
     getSmoothMovementLabel()
   ].join(":");
 
@@ -200,9 +202,12 @@ function renderDisplayContent(container: HTMLDivElement): void {
     { text: getDisplayStretchLabel(), colorClass: "options-popin__line--cyan" },
     { text: "Densite", colorClass: "options-popin__line--muted" },
     { text: getDisplayDensityLabel(), colorClass: "options-popin__line--green" },
+    { text: "Rendu", colorClass: "options-popin__line--muted" },
+    { text: getDisplayRenderModeLabel(), colorClass: "options-popin__line--cyan" },
     { text: "< >: zoom" },
     { text: "Entree: etirage" },
-    { text: "Ctrl: densite" }
+    { text: "Ctrl: densite" },
+    { text: "Maj: rendu" }
   ]);
 }
 

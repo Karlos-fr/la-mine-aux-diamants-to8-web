@@ -13,6 +13,7 @@ export type InputAction =
   | "right"
   | "confirm"
   | "action"
+  | "modifier"
   | "cancel";
 
 /** Etat de pointeur expose aux scenes qui utilisent la souris. */
@@ -77,6 +78,7 @@ const ACTIONS: readonly InputAction[] = [
   "right",
   "confirm",
   "action",
+  "modifier",
   "cancel"
 ];
 
@@ -89,6 +91,8 @@ const KEYBOARD_MAP: Readonly<Record<string, readonly InputAction[]>> = {
   Space: ["confirm", "action"],
   ControlLeft: ["action"],
   ControlRight: ["action"],
+  ShiftLeft: ["modifier"],
+  ShiftRight: ["modifier"],
   Enter: ["confirm"],
   Escape: ["cancel"]
 };
@@ -301,8 +305,8 @@ export class KeyboardInput {
     }
 
     const bounds = this.pointerTarget.getBoundingClientRect();
-    const logicalWidth = this.pointerTarget instanceof HTMLCanvasElement ? this.pointerTarget.width : this.pointerTarget.clientWidth;
-    const logicalHeight = this.pointerTarget instanceof HTMLCanvasElement ? this.pointerTarget.height : this.pointerTarget.clientHeight;
+    const logicalWidth = getPointerTargetLogicalWidth(this.pointerTarget);
+    const logicalHeight = getPointerTargetLogicalHeight(this.pointerTarget);
     this.pointerX = bounds.width === 0 ? 0 : ((event.clientX - bounds.left) / bounds.width) * logicalWidth;
     this.pointerY = bounds.height === 0 ? 0 : ((event.clientY - bounds.top) / bounds.height) * logicalHeight;
     this.pointerInside =
@@ -322,4 +326,22 @@ export class KeyboardInput {
     }
     return record;
   }
+}
+
+/** Retourne la largeur logique d'une cible de pointeur, separee de sa surface bitmap. */
+function getPointerTargetLogicalWidth(target: HTMLElement): number {
+  if (!(target instanceof HTMLCanvasElement)) {
+    return target.clientWidth;
+  }
+
+  return Number(target.dataset.logicalWidth) || target.width;
+}
+
+/** Retourne la hauteur logique d'une cible de pointeur, separee de sa surface bitmap. */
+function getPointerTargetLogicalHeight(target: HTMLElement): number {
+  if (!(target instanceof HTMLCanvasElement)) {
+    return target.clientHeight;
+  }
+
+  return Number(target.dataset.logicalHeight) || target.height;
 }

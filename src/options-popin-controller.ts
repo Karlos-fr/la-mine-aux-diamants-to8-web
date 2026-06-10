@@ -7,6 +7,7 @@
 
 import {
   cycleDisplayDensity,
+  cycleDisplayRenderMode,
   cycleDisplayZoom,
   toggleDisplayStretchToViewport
 } from "./display-options";
@@ -106,6 +107,10 @@ function updateDisplayOptionsFromInput(input: InputState, selectedCategoryIndex:
   }
   if (input.justPressed.action && !input.justPressed.confirm) {
     cycleDisplayDensity(1);
+    changed = true;
+  }
+  if (input.justPressed.modifier) {
+    cycleDisplayRenderMode(1);
     changed = true;
   }
   return changed;
