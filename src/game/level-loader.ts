@@ -32,7 +32,6 @@ import level13Json from "../assets/levels/level-13.json";
 import level14Json from "../assets/levels/level-14.json";
 import level15Json from "../assets/levels/level-15.json";
 import level16Json from "../assets/levels/level-16.json";
-import level17Json from "../assets/levels/level-17.json";
 import level18Json from "../assets/levels/level-18.json";
 
 /** Types de tuiles autorises dans les JSON modernes. */
@@ -133,7 +132,6 @@ const RAW_LEVEL_SOURCES = [
   level14Json,
   level15Json,
   level16Json,
-  level17Json,
   level18Json
 ] as readonly unknown[];
 
