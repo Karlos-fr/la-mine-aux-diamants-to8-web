@@ -19,6 +19,7 @@
     "test:title": "node tools/verify-mine-title.mjs",
     "test:asset-policy": "node tools/verify-asset-integration-policy.mjs",
     "test:provenance": "node tools/verify-mine-provenance.mjs",
+    "test:level-generator": "node tools/verify-level-generator.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },

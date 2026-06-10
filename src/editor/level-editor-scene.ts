@@ -14,6 +14,13 @@ import type { Renderer } from "../engine/renderer";
 import type { Scene, SceneContext } from "../engine/scene";
 import { getModernLevelSource, type ModernTileType } from "../game/level-loader";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
+import {
+  DEFAULT_LEVEL_GENERATION_OPTIONS,
+  type LevelGenerationDensity,
+  type LevelGenerationDifficulty
+} from "../level-generator/level-generation-options";
+import { generateBaseLevel } from "../level-generator/level-generator";
+import type { LevelGenerationProfileId } from "../level-generator/level-profile";
 import { GameplayScene } from "../screens/gameplay-scene";
 import { getWorldTileDefinition } from "../worlds/world-registry";
 import {
@@ -42,7 +49,12 @@ import {
   getEditableTileAt,
   type EditableLevelState
 } from "./level-editor-state";
-import { exportEditableLevelToJson, parseEditableLevelJson, stringifyEditableLevel } from "./level-editor-serialization";
+import {
+  exportEditableLevelToJson,
+  importEditableLevelFromJson,
+  parseEditableLevelJson,
+  stringifyEditableLevel
+} from "./level-editor-serialization";
 import {
   applyEditorRectangle,
   applyEditorToolAtCell,
@@ -89,6 +101,8 @@ const EDITOR_RECTANGLE_DRAFT_FILL_COLOR = "rgba(88, 200, 240, 0.18)";
 const EDITOR_RECTANGLE_DRAFT_BORDER_COLOR = "#00ffff";
 /** Contour secondaire donnant un aspect TO8/pixel net a la selection. */
 const EDITOR_RECTANGLE_DRAFT_INNER_BORDER_COLOR = "#0001fe";
+/** Prefixe court des seeds aleatoires creees depuis l'editeur. */
+const EDITOR_RANDOM_SEED_PREFIX = "editor";
 
 /** Scene editeur moderne, branchee sur le routeur de scenes existant. */
 export class LevelEditorScene implements Scene {
@@ -142,6 +156,8 @@ export class LevelEditorScene implements Scene {
   };
   /** Indique si la grille fine est affichee par-dessus le rendu runtime. */
   private gridOverlayVisible = true;
+  /** Warnings issus de la derniere generation procedurale chargee dans l'editeur. */
+  private generationWarnings: readonly string[] = [];
   /** Position de depart du drag souris pour deplacer la carte. */
   private panDragStart: { x: number; y: number; offsetX: number; offsetY: number } | null = null;
   /** Handler stable des raccourcis editeur. */
@@ -372,6 +388,7 @@ export class LevelEditorScene implements Scene {
           <canvas class="level-editor-toolbar-title" data-editor-toolbar-title width="496" height="16" aria-label="La Mine aux Diamants - Editeur"></canvas>
         </div>
         <button type="button" data-editor-action="new">Nouveau</button>
+        <button type="button" data-editor-action="generate">Generer</button>
         <button type="button" data-editor-action="import">Importer</button>
         <button type="button" data-editor-action="export">Exporter</button>
         <span class="level-editor-toolbar-separator"></span>
@@ -430,6 +447,47 @@ export class LevelEditorScene implements Scene {
           </section>
         </aside>
       </main>
+      <section class="level-editor-generator-panel" data-editor-generator-panel hidden aria-label="Generateur de niveau">
+        <form class="level-editor-generator-card" data-editor-generator-form>
+          <div class="level-editor-generator-header">
+            <h2>Generer</h2>
+            <button type="button" data-editor-generator-close aria-label="Fermer">X</button>
+          </div>
+          <label class="level-editor-field">Seed<input data-editor-generator-field="seed" type="text" /></label>
+          <button type="button" data-editor-generator-random>Seed aleatoire</button>
+          <div class="level-editor-field-grid">
+            <label class="level-editor-field">Largeur<input data-editor-generator-field="width" type="number" min="12" max="96" /></label>
+            <label class="level-editor-field">Hauteur<input data-editor-generator-field="height" type="number" min="10" max="64" /></label>
+          </div>
+          <label class="level-editor-field">Difficulte
+            <select data-editor-generator-field="difficulty">
+              <option value="easy">Facile</option>
+              <option value="normal">Normale</option>
+              <option value="hard">Difficile</option>
+              <option value="expert">Expert</option>
+            </select>
+          </label>
+          <label class="level-editor-field">Densite
+            <select data-editor-generator-field="density">
+              <option value="light">Legere</option>
+              <option value="normal">Normale</option>
+              <option value="dense">Dense</option>
+            </select>
+          </label>
+          <label class="level-editor-field">Profil
+            <select data-editor-generator-field="profile">
+              <option value="original">Original</option>
+              <option value="dense">Dense</option>
+              <option value="large">Large</option>
+              <option value="expert">Expert</option>
+            </select>
+          </label>
+          <div class="level-editor-generator-actions">
+            <button type="button" data-editor-generator-cancel>Annuler</button>
+            <button type="submit" class="level-editor-toolbar-primary">Generer</button>
+          </div>
+        </form>
+      </section>
       <footer class="level-editor-statusbar" aria-label="Statut editeur">
         <span data-editor-status-position>X : - Y : -</span>
         <span data-editor-status-tool>Outil : Crayon</span>
@@ -455,6 +513,7 @@ export class LevelEditorScene implements Scene {
     });
     root.querySelector<HTMLElement>("[data-editor-action='export']")?.addEventListener("click", () => this.exportCurrentLevel());
     root.querySelector<HTMLElement>("[data-editor-action='import']")?.addEventListener("click", () => this.importFromLocalFile());
+    root.querySelector<HTMLElement>("[data-editor-action='generate']")?.addEventListener("click", () => this.openGeneratorPanel());
     root.querySelector<HTMLElement>("[data-editor-action='test']")?.addEventListener("click", () => this.startRuntimeTest());
     root.querySelector<HTMLElement>("[data-editor-action='new']")?.addEventListener("click", () => this.discardLocalDraft());
     root.querySelector<HTMLElement>("[data-editor-action='undo']")?.addEventListener("click", () => this.undo());
@@ -469,6 +528,15 @@ export class LevelEditorScene implements Scene {
     });
     root.querySelector<HTMLInputElement>("[data-editor-grid-toggle]")?.addEventListener("change", (event) => {
       this.gridOverlayVisible = event.currentTarget instanceof HTMLInputElement ? event.currentTarget.checked : this.gridOverlayVisible;
+    });
+    root.querySelector<HTMLElement>("[data-editor-generator-close]")?.addEventListener("click", () => this.closeGeneratorPanel());
+    root.querySelector<HTMLElement>("[data-editor-generator-cancel]")?.addEventListener("click", () => this.closeGeneratorPanel());
+    root.querySelector<HTMLElement>("[data-editor-generator-random]")?.addEventListener("click", () => {
+      this.setGeneratorFieldValue("seed", this.createRandomGenerationSeed());
+    });
+    root.querySelector<HTMLFormElement>("[data-editor-generator-form]")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.generateLevelFromPanel();
     });
   }
 
@@ -601,10 +669,16 @@ export class LevelEditorScene implements Scene {
     if (statusTool) statusTool.textContent = `Outil : ${this.getSelectedToolLabel()}`;
     const statusLevel = root.querySelector<HTMLElement>("[data-editor-status-level]");
     if (statusLevel) statusLevel.textContent = `${this.editorState.label} - ${this.editorState.width}x${this.editorState.height}`;
-    const diagnostics = validateEditableLevel(this.editorState).slice(0, 4);
+    const diagnostics = validateEditableLevel(this.editorState).slice(0, Math.max(0, 4 - this.generationWarnings.length));
     const diagnosticsRoot = root.querySelector<HTMLElement>("[data-editor-diagnostics]");
     if (diagnosticsRoot) {
       diagnosticsRoot.replaceChildren(
+        ...this.generationWarnings.slice(0, 4).map((warning) => {
+          const item = document.createElement("p");
+          item.className = "level-editor-diagnostic level-editor-diagnostic-warning";
+          item.textContent = warning;
+          return item;
+        }),
         ...diagnostics.map((diagnostic) => {
           const item = document.createElement("p");
           item.className = `level-editor-diagnostic level-editor-diagnostic-${diagnostic.severity}`;
@@ -937,6 +1011,7 @@ export class LevelEditorScene implements Scene {
   /** Abandonne le brouillon local et revient a un niveau vide. */
   private discardLocalDraft(): void {
     this.editorState = createEmptyEditableLevelState();
+    this.generationWarnings = [];
     this.undoStack.length = 0;
     this.redoStack.length = 0;
     this.dirty = false;
@@ -987,6 +1062,86 @@ export class LevelEditorScene implements Scene {
     this.replaceStateFromJsonWithDiff(JSON.stringify(source, null, 2));
   }
 
+  /** Ouvre le panneau de generation en reprenant les dimensions du niveau courant. */
+  private openGeneratorPanel(): void {
+    this.setGeneratorFieldValue("seed", this.editorState.id || String(DEFAULT_LEVEL_GENERATION_OPTIONS.seed));
+    this.setGeneratorFieldValue("width", String(this.editorState.width));
+    this.setGeneratorFieldValue("height", String(this.editorState.height));
+    this.setGeneratorFieldValue("difficulty", DEFAULT_LEVEL_GENERATION_OPTIONS.difficulty);
+    this.setGeneratorFieldValue("density", DEFAULT_LEVEL_GENERATION_OPTIONS.density);
+    this.setGeneratorFieldValue("profile", DEFAULT_LEVEL_GENERATION_OPTIONS.profile);
+    const panel = this.editorUiRoot?.querySelector<HTMLElement>("[data-editor-generator-panel]");
+    if (panel) {
+      panel.hidden = false;
+      panel.querySelector<HTMLInputElement>("[data-editor-generator-field='seed']")?.focus();
+    }
+  }
+
+  /** Ferme le panneau de generation sans modifier le niveau courant. */
+  private closeGeneratorPanel(): void {
+    const panel = this.editorUiRoot?.querySelector<HTMLElement>("[data-editor-generator-panel]");
+    if (panel) {
+      panel.hidden = true;
+    }
+  }
+
+  /** Genere un niveau depuis le panneau et le charge comme brouillon editable. */
+  private generateLevelFromPanel(): void {
+    const result = generateBaseLevel({
+      seed: this.getGeneratorFieldValue("seed") || DEFAULT_LEVEL_GENERATION_OPTIONS.seed,
+      width: Number(this.getGeneratorFieldValue("width")),
+      height: Number(this.getGeneratorFieldValue("height")),
+      difficulty: this.getGeneratorDifficulty(),
+      density: this.getGeneratorDensity(),
+      profile: this.getGeneratorProfile()
+    });
+    this.recordHistory();
+    this.editorState = importEditableLevelFromJson(result.level);
+    this.generationWarnings = result.warnings;
+    this.viewport.offsetX = 0;
+    this.viewport.offsetY = 0;
+    this.rectangleDraft = null;
+    this.markDirtyAndSaveDraft();
+    this.closeGeneratorPanel();
+    this.refreshModernEditorUi();
+  }
+
+  /** Retourne une seed courte pour l'utilisateur sans impacter la reproductibilite ensuite. */
+  private createRandomGenerationSeed(): string {
+    return `${EDITOR_RANDOM_SEED_PREFIX}-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(16)}`;
+  }
+
+  /** Affecte une valeur dans le panneau de generation. */
+  private setGeneratorFieldValue(field: string, value: string): void {
+    const input = this.editorUiRoot?.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-editor-generator-field='${field}']`);
+    if (input) {
+      input.value = value;
+    }
+  }
+
+  /** Lit une valeur brute du panneau de generation. */
+  private getGeneratorFieldValue(field: string): string {
+    return this.editorUiRoot?.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-editor-generator-field='${field}']`)?.value ?? "";
+  }
+
+  /** Lit et valide la difficulte choisie dans le panneau de generation. */
+  private getGeneratorDifficulty(): LevelGenerationDifficulty {
+    const value = this.getGeneratorFieldValue("difficulty");
+    return value === "easy" || value === "hard" || value === "expert" ? value : "normal";
+  }
+
+  /** Lit et valide la densite choisie dans le panneau de generation. */
+  private getGeneratorDensity(): LevelGenerationDensity {
+    const value = this.getGeneratorFieldValue("density");
+    return value === "light" || value === "dense" ? value : "normal";
+  }
+
+  /** Lit et valide le profil choisi dans le panneau de generation. */
+  private getGeneratorProfile(): LevelGenerationProfileId {
+    const value = this.getGeneratorFieldValue("profile");
+    return value === "dense" || value === "large" || value === "expert" ? value : "original";
+  }
+
   /** Remplace l'etat courant depuis JSON apres affichage d'un diff textuel simple. */
   private replaceStateFromJsonWithDiff(json: string): void {
     try {
@@ -997,6 +1152,7 @@ export class LevelEditorScene implements Scene {
       }
       this.recordHistory();
       this.editorState = nextState;
+      this.generationWarnings = [];
       this.markDirtyAndSaveDraft();
       this.refreshModernEditorUi();
     } catch (error) {

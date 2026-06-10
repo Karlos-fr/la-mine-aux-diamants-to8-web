@@ -1180,7 +1180,8 @@ body.level-editor-active #game-screen {
   text-transform: none;
 }
 
-.level-editor-field input {
+.level-editor-field input,
+.level-editor-field select {
   min-width: 0;
   width: 100%;
   border: 1px solid var(--editor-border);
@@ -1193,9 +1194,78 @@ body.level-editor-active #game-screen {
   outline: none;
 }
 
-.level-editor-field input:focus {
+.level-editor-field input:focus,
+.level-editor-field select:focus {
   border-color: var(--editor-accent);
   box-shadow: none;
+}
+
+.level-editor-generator-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--editor-toolbar-height) + 12px) 12px calc(var(--editor-status-height) + 12px);
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.level-editor-generator-panel[hidden] {
+  display: none;
+}
+
+.level-editor-generator-card {
+  width: min(360px, calc(100vw - 32px));
+  border: 2px solid var(--editor-accent);
+  border-radius: 4px;
+  padding: 14px;
+  color: var(--editor-text);
+  background: var(--editor-panel);
+  box-shadow: 0 0 0 2px #0001fe, 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.level-editor-generator-header,
+.level-editor-generator-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.level-editor-generator-header {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--editor-border);
+  padding-bottom: 10px;
+}
+
+.level-editor-generator-header h2 {
+  margin: 0;
+  color: var(--editor-accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.level-editor-generator-card button {
+  min-height: 28px;
+  border: 1px solid var(--editor-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: var(--editor-text);
+  background: var(--editor-panel-2);
+  font: inherit;
+  font-size: 12px;
+}
+
+.level-editor-generator-card button:hover {
+  border-color: var(--editor-accent);
+  background: #2e2e4a;
+}
+
+.level-editor-generator-actions {
+  margin-top: 12px;
+  border-top: 1px solid var(--editor-border);
+  padding-top: 12px;
 }
 
 .level-editor-field-grid {
