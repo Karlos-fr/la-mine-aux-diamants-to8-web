@@ -114,29 +114,42 @@ export interface ModernLevelJson {
   };
 }
 
+/** Source JSON brute associee a son numero public, pour supporter les trous de numerotation. */
+interface RawLevelSourceEntry {
+  /** Numero public du niveau. */
+  readonly levelNumber: number;
+  /** Source JSON importee par Vite avant validation runtime legere. */
+  readonly source: unknown;
+}
+
 /** Sources JSON brutes importees par Vite avant validation runtime legere. */
-const RAW_LEVEL_SOURCES = [
-  level01Json,
-  level02Json,
-  level03Json,
-  level04Json,
-  level05Json,
-  level06Json,
-  level07Json,
-  level08Json,
-  level09Json,
-  level10Json,
-  level11Json,
-  level12Json,
-  level13Json,
-  level14Json,
-  level15Json,
-  level16Json,
-  level18Json
-] as readonly unknown[];
+const RAW_LEVEL_SOURCE_ENTRIES: readonly RawLevelSourceEntry[] = [
+  { levelNumber: 1, source: level01Json },
+  { levelNumber: 2, source: level02Json },
+  { levelNumber: 3, source: level03Json },
+  { levelNumber: 4, source: level04Json },
+  { levelNumber: 5, source: level05Json },
+  { levelNumber: 6, source: level06Json },
+  { levelNumber: 7, source: level07Json },
+  { levelNumber: 8, source: level08Json },
+  { levelNumber: 9, source: level09Json },
+  { levelNumber: 10, source: level10Json },
+  { levelNumber: 11, source: level11Json },
+  { levelNumber: 12, source: level12Json },
+  { levelNumber: 13, source: level13Json },
+  { levelNumber: 14, source: level14Json },
+  { levelNumber: 15, source: level15Json },
+  { levelNumber: 16, source: level16Json },
+  { levelNumber: 18, source: level18Json }
+];
 
 /** Niveaux modernes valides au chargement du module. */
-const LEVEL_SOURCES = RAW_LEVEL_SOURCES.map((source, index) => validateModernLevelJson(source, index + 1));
+const LEVEL_SOURCE_ENTRIES = RAW_LEVEL_SOURCE_ENTRIES.map((entry) => ({
+  levelNumber: entry.levelNumber,
+  source: validateModernLevelJson(entry.source, entry.levelNumber)
+}));
+/** Index de niveaux modernes par numero public. */
+const LEVEL_SOURCES_BY_NUMBER = new Map(LEVEL_SOURCE_ENTRIES.map((entry) => [entry.levelNumber, entry.source]));
 
 /** Conversion des types modernes vers les tile ids runtime prouves. */
 const TILE_IDS_BY_TYPE = Object.fromEntries(
@@ -163,13 +176,13 @@ const TRANSFORMER_BLOCK_TILE_IDS: readonly number[] = [RUNTIME_TILE.transformerB
 const EMPTY_TILE_IDS: readonly number[] = [RUNTIME_TILE.empty];
 
 /** Nombre de niveaux modernes disponibles. */
-export const LEVEL_COUNT = LEVEL_SOURCES.length;
+export const LEVEL_COUNT = Math.max(...LEVEL_SOURCE_ENTRIES.map((entry) => entry.levelNumber));
 /** Nombre de galeries appartenant a la progression normale originale. */
 export const NORMAL_LEVEL_COUNT = 16;
 
 /** Retourne le JSON moderne valide d'un niveau, ou `undefined` si absent. */
 export function getModernLevelSource(levelNumber: number): ModernLevelJson | undefined {
-  return LEVEL_SOURCES[levelNumber - 1];
+  return LEVEL_SOURCES_BY_NUMBER.get(levelNumber);
 }
 
 /** Charge et convertit un niveau moderne en definition runtime jouable. */
@@ -231,7 +244,7 @@ export function buildLevelDefinition(level: ModernLevelJson, levelNumber: number
       gallery: parseOptionalHexByte(level.source?.originalGalleryValue) ?? levelNumber,
       requiredDiamonds: level.requiredDiamonds,
       scoreStep: level.scoreStep,
-      nextLevelId: levelNumber < NORMAL_LEVEL_COUNT ? LEVEL_SOURCES[levelNumber].id : undefined
+      nextLevelId: getModernLevelSource(levelNumber + 1)?.id
     }
   };
 }
