@@ -392,7 +392,7 @@ export class GameplayDioramaRenderer {
             this.addTexturedBlock(context, levelX, levelY, SOLID_HEIGHT * 0.7, MATERIAL_COLORS.platform, tileId);
             break;
           case "transformerBlock":
-            this.addTexturedBlock(context, levelX, levelY, SOLID_HEIGHT, MATERIAL_COLORS.transformerBlock, tileId);
+            this.addTexturedBlock(context, levelX, levelY, SOLID_HEIGHT, MATERIAL_COLORS.transformerBlock, tileId, "allFaces");
             break;
           case "rock":
             this.addRock(context, levelX, levelY, context.getTileFrame(tileId));
@@ -501,13 +501,16 @@ export class GameplayDioramaRenderer {
     }
 
     if (entity.kind === "monster") {
-      this.addMonsterCube(context, entity);
+      this.addEntityCube(context, entity, context.getMonsterTileFrame(entity));
       return;
     }
 
-    const frame = entity.kind === "specialCreature"
-        ? context.getSpecialCreatureTileFrame()
-        : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+    if (entity.kind === "specialCreature") {
+      this.addEntityCube(context, entity, context.getSpecialCreatureTileFrame());
+      return;
+    }
+
+    const frame = context.getTileFrame(context.getEntityTileFrameId(entity.kind));
     const mesh = new THREE.Sprite(this.getEntityBillboardMaterial(context, frame));
     const position = getWorldPosition(context, entity.gridX, entity.gridY);
     mesh.scale.set(context.dioramaRenderOptions.billboardScale, context.dioramaRenderOptions.billboardScale, 1);
@@ -516,9 +519,9 @@ export class GameplayDioramaRenderer {
     this.contentGroup.add(mesh);
   }
 
-  /** Ajoute un monstre comme cube 3D texture avec sa frame TO8 animee. */
-  private addMonsterCube(context: GameplayRenderContext, entity: EntityState): void {
-    const mesh = new THREE.Mesh(this.boxGeometry, this.getFullyTexturedCubeMaterials(context, context.getMonsterTileFrame(entity)));
+  /** Ajoute une entite mobile comme cube 3D texture avec sa frame TO8 animee. */
+  private addEntityCube(context: GameplayRenderContext, entity: EntityState, frame: TileFrame): void {
+    const mesh = new THREE.Mesh(this.boxGeometry, this.getFullyTexturedCubeMaterials(context, frame));
     const position = getWorldPosition(context, entity.gridX, entity.gridY);
     mesh.scale.set(0.76, MONSTER_CUBE_HEIGHT, 0.76);
     mesh.position.set(position.x, MONSTER_CUBE_HEIGHT / 2, position.z);
