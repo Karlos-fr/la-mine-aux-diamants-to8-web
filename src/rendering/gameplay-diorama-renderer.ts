@@ -9,6 +9,7 @@ import * as THREE from "three";
 import type { Renderer } from "../engine/renderer";
 import type { RenderSurfaceSize, TileFrame } from "../engine/render-types";
 import { getMovementRenderProgress } from "../game/movement-visuals";
+import { RUNTIME_TILE } from "../game/runtime-tiles";
 import type { EntityState, FallingObjectRuntimeState } from "../game/types";
 import { createDiamondGeometry } from "./diorama-geometries";
 import { createFrameTexture, createRepeatedFrameTexture, getFrameCacheKey } from "./diorama-textures";
@@ -38,6 +39,10 @@ const ROCK_TEXTURE_REPEAT_X = 3;
 const ROCK_TEXTURE_REPEAT_Y = 2;
 /** Couleur utilisee pour remplacer le noir de detourage externe sur les textures de sphere. */
 const ROCK_EDGE_FILL_COLOR = 0x8c8c8c;
+/** Taille monde des voxels issus des sprites d'explosion TO8. */
+const EXPLOSION_VOXEL_SIZE = 0.055;
+/** Hauteur de base des voxels d'explosion au-dessus du sol. */
+const EXPLOSION_BASE_HEIGHT = 0.18;
 /** Marge orthographique autour de la grille visible. */
 const CAMERA_MARGIN = 1.2;
 /** Hauteur fixe de la camera pour que le drag X/Z ne cree pas d'effet zoom vertical. */
@@ -62,6 +67,16 @@ const MATERIAL_COLORS = {
 
 /** Strategie de texturage des blocs extrudes. */
 type BlockTextureMode = "topOnly" | "allFaces";
+
+/** Pixel visible extrait d'une frame d'explosion. */
+interface ExplosionVoxelPixel {
+  /** Position horizontale normalisee autour du centre de la tuile. */
+  readonly x: number;
+  /** Position profondeur normalisee autour du centre de la tuile. */
+  readonly z: number;
+  /** Couleur RGB Three.js. */
+  readonly color: number;
+}
 
 /** Renderer WebGL offscreen utilise uniquement par le mode `Diorama TO8`. */
 export class GameplayDioramaRenderer {
@@ -101,6 +116,8 @@ export class GameplayDioramaRenderer {
   private readonly rockMaterials = new Map<string, THREE.MeshBasicMaterial>();
   /** Materiaux de billboards d'entites caches par frame atlas. */
   private readonly entityBillboardMaterials = new Map<string, THREE.SpriteMaterial>();
+  /** Pixels visibles des frames d'explosion caches par frame atlas. */
+  private readonly explosionVoxelPixels = new Map<string, readonly ExplosionVoxelPixel[]>();
   /** Dernier facteur d'upscale ayant servi a creer les materiaux textures. */
   private lastTextureUpscale = 0;
   /** Lumiere ambiante conservee entre les frames. */
@@ -234,6 +251,11 @@ export class GameplayDioramaRenderer {
         }
 
         const tileId = spawnBlinkTileId ?? context.getExitBlinkTileId(levelX, levelY) ?? context.getRuntimeTile(levelX, levelY);
+        if (isExplosionTileId(tileId)) {
+          this.addExplosionVoxels(context, levelX, levelY, tileId);
+          continue;
+        }
+
         const style = resolvePseudo3DRenderStyle("dioramaTo8", tileId, context.tileIds);
         switch (style.behavior) {
           case "earth":
@@ -395,6 +417,33 @@ export class GameplayDioramaRenderer {
     }
   }
 
+  /** Ajoute l'explosion TO8 sous forme de petits voxels issus de la tile courante. */
+  private addExplosionVoxels(context: GameplayRenderContext, gridX: number, gridY: number, tileId: number): void {
+    const frame = context.getTileFrame(tileId);
+    const pixels = this.getExplosionVoxelPixels(frame);
+    const position = getWorldPosition(context, gridX, gridY);
+    const phase = getExplosionTilePhase(tileId);
+    const depthScale = getCellDepthScale();
+    const expansion = phase * 0.09;
+
+    for (const pixel of pixels) {
+      const directionLength = Math.hypot(pixel.x, pixel.z);
+      const directionX = directionLength > 0 ? pixel.x / directionLength : 0;
+      const directionZ = directionLength > 0 ? pixel.z / directionLength : 0;
+      const jitter = deterministicUnit(gridX, gridY, pixel.x, pixel.z);
+      const mesh = new THREE.Mesh(this.boxGeometry, this.getParticleMaterial(pixel.color));
+      mesh.scale.set(EXPLOSION_VOXEL_SIZE, EXPLOSION_VOXEL_SIZE, EXPLOSION_VOXEL_SIZE);
+      mesh.position.set(
+        position.x + pixel.x + directionX * expansion,
+        EXPLOSION_BASE_HEIGHT + phase * 0.08 + jitter * 0.22,
+        position.z + (pixel.z + directionZ * expansion) * depthScale
+      );
+      mesh.rotation.set(jitter * Math.PI, phase * 0.7, jitter * Math.PI * 0.5);
+      mesh.renderOrder = 18;
+      this.contentGroup.add(mesh);
+    }
+  }
+
   /** Retourne les faces d'un bloc selon sa strategie de texturage Diorama. */
   private getBlockMaterials(context: GameplayRenderContext, tileId: number, sideColor: number, textureMode: BlockTextureMode): THREE.Material[] {
     const sideMaterial = this.getMaterial(sideColor);
@@ -547,6 +596,19 @@ export class GameplayDioramaRenderer {
     this.entityBillboardMaterials.set(key, material);
     return material;
   }
+
+  /** Extrait une fois les pixels non noirs d'une frame d'explosion TO8. */
+  private getExplosionVoxelPixels(frame: TileFrame): readonly ExplosionVoxelPixel[] {
+    const key = getFrameCacheKey(frame, 1, false);
+    const cached = this.explosionVoxelPixels.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const pixels = extractExplosionVoxelPixels(frame);
+    this.explosionVoxelPixels.set(key, pixels);
+    return pixels;
+  }
 }
 
 /** Convertit une position grille en coordonnees monde centrees sur le viewport. */
@@ -612,6 +674,75 @@ function degreesToRadians(degrees: number): number {
 /** Retourne le facteur d'upscale texture entier courant. */
 function getTextureUpscale(context: GameplayRenderContext): number {
   return Math.max(1, Math.floor(context.dioramaRenderOptions.textureUpscale));
+}
+
+/** Indique si une tuile runtime correspond a une frame d'explosion TO8. */
+function isExplosionTileId(tileId: number): boolean {
+  return tileId === RUNTIME_TILE.explosion1 || tileId === RUNTIME_TILE.explosion2 || tileId === RUNTIME_TILE.explosion3;
+}
+
+/** Retourne la phase visuelle courte de la tile d'explosion courante. */
+function getExplosionTilePhase(tileId: number): number {
+  if (tileId === RUNTIME_TILE.explosion2) {
+    return 1;
+  }
+  if (tileId === RUNTIME_TILE.explosion3) {
+    return 2;
+  }
+  return 0;
+}
+
+/** Extrait les pixels colores d'une frame atlas pour les materialiser en voxels. */
+function extractExplosionVoxelPixels(frame: TileFrame): readonly ExplosionVoxelPixel[] {
+  const canvas = document.createElement("canvas");
+  canvas.width = frame.sourceRect.width;
+  canvas.height = frame.sourceRect.height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Impossible de lire une frame d'explosion Diorama.");
+  }
+
+  context.imageSmoothingEnabled = false;
+  context.drawImage(
+    frame.source,
+    frame.sourceRect.x,
+    frame.sourceRect.y,
+    frame.sourceRect.width,
+    frame.sourceRect.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  const image = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels: ExplosionVoxelPixel[] = [];
+  for (let y = 0; y < canvas.height; y += 1) {
+    for (let x = 0; x < canvas.width; x += 1) {
+      const offset = (y * canvas.width + x) * 4;
+      const alpha = image.data[offset + 3];
+      const red = image.data[offset];
+      const green = image.data[offset + 1];
+      const blue = image.data[offset + 2];
+      if (alpha === 0 || (red === 0 && green === 0 && blue === 0)) {
+        continue;
+      }
+
+      pixels.push({
+        x: (x + 0.5) / canvas.width - 0.5,
+        z: (y + 0.5) / canvas.height - 0.5,
+        color: red << 16 | green << 8 | blue
+      });
+    }
+  }
+
+  return pixels;
+}
+
+/** Retourne une valeur stable 0..1 pour varier legerement les voxels sans bruit temporel. */
+function deterministicUnit(gridX: number, gridY: number, localX: number, localZ: number): number {
+  const seed = Math.sin((gridX * 12.9898 + gridY * 78.233 + localX * 37.719 + localZ * 19.173) * 43758.5453);
+  return seed - Math.floor(seed);
 }
 
 /** Evite de dessiner la version statique d'un objet physique deja rendu en mouvement. */
