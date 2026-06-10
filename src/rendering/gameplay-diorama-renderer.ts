@@ -45,6 +45,8 @@ const EXPLOSION_VOXEL_SIZE = 0.055;
 const EXPLOSION_BASE_HEIGHT = 0.18;
 /** Marge orthographique autour de la grille visible. */
 const CAMERA_MARGIN = 1.2;
+/** Marge de profondeur pour eviter les coupes near/far quand la scene pivote. */
+const CAMERA_DEPTH_MARGIN = 2;
 /** Hauteur fixe de la camera pour que le drag X/Z ne cree pas d'effet zoom vertical. */
 const CAMERA_HEIGHT = 9.6;
 /** Profondeur fixe de la camera; le drag pivote la scene au lieu de deplacer la camera. */
@@ -102,6 +104,10 @@ export class GameplayDioramaRenderer {
   private readonly diamondGeometry = createDiamondGeometry(DIAMOND_RADIUS, DIAMOND_HALF_HEIGHT);
   /** Geometrie partagee pour ancrer les sprites au sol. */
   private readonly shadowGeometry = new THREE.CircleGeometry(0.36, 12);
+  /** Boite de calcul reutilisee pour cadrer la scene Diorama. */
+  private readonly contentBounds = new THREE.Box3();
+  /** Points de calcul reutilises pour eviter les allocations du cadrage. */
+  private readonly contentBoundsCorners = Array.from({ length: 8 }, () => new THREE.Vector3());
   /** Materiaux caches par couleur pour eviter de les recreer a chaque frame. */
   private readonly materials = new Map<number, THREE.MeshLambertMaterial>();
   /** Materiaux d'ombre caches par couleur et opacite. */
@@ -146,11 +152,11 @@ export class GameplayDioramaRenderer {
     this.clearScene();
     this.addLights(context);
     this.addContentGroup(context);
-    this.configureCamera(context, width, height);
     this.addGridTiles(context);
     this.addFallingObjects(context);
     this.addEntities(context);
     this.addParticles(context);
+    this.configureCamera(context, width, height);
     this.webglRenderer.render(this.scene, this.camera);
     renderer.drawImage(this.canvas, 0, 0, {
       destinationSize: {
@@ -206,17 +212,57 @@ export class GameplayDioramaRenderer {
       degreesToRadians(context.dioramaCamera.rotationYDeg),
       degreesToRadians(context.dioramaCamera.rotationZDeg)
     );
-    const zoomPivot = getDioramaZoomPivotPosition(context).applyEuler(rotation);
-
     this.contentGroup.rotation.set(rotation.x, rotation.y, rotation.z);
-    this.contentGroup.scale.setScalar(context.dioramaCamera.zoom);
-    this.contentGroup.position.copy(zoomPivot.multiplyScalar(1 - context.dioramaCamera.zoom));
+    this.contentGroup.scale.setScalar(1);
+    this.contentGroup.position.set(0, 0, 0);
     this.scene.add(this.contentGroup);
   }
 
-  /** Cadre toute la grille visible dans une camera orthographique inclinee. */
+  /** Cadre le contenu 3D reel avec un frustum qui reste valide quelle que soit la rotation. */
   private configureCamera(context: GameplayRenderContext, width: number, height: number): void {
     const aspect = width / height;
+    this.camera.position.set(0, CAMERA_HEIGHT, CAMERA_DEPTH);
+    this.camera.lookAt(0, 0, 0);
+    this.camera.updateMatrixWorld(true);
+    this.contentGroup.updateMatrixWorld(true);
+
+    this.contentBounds.setFromObject(this.contentGroup);
+    if (this.contentBounds.isEmpty()) {
+      this.configureFallbackCamera(context, aspect);
+      return;
+    }
+
+    const bounds = this.getCameraSpaceContentBounds();
+    const fullWidth = Math.max(1, bounds.maxX - bounds.minX + CAMERA_MARGIN);
+    const fullHeight = Math.max(1, bounds.maxY - bounds.minY + CAMERA_MARGIN);
+    const zoom = Math.max(0.1, context.dioramaCamera.zoom);
+    const viewHeight = Math.max(fullHeight / zoom, fullWidth / zoom / aspect);
+    const viewWidth = viewHeight * aspect;
+    const pivot = this.projectWorldPointToCameraPlane(getDioramaZoomPivotPosition(context).applyMatrix4(this.contentGroup.matrixWorld));
+    const centerX = clampFrustumCenter(
+      (bounds.minX + bounds.maxX) / 2 + (pivot.x - (bounds.minX + bounds.maxX) / 2) * (1 - 1 / zoom),
+      bounds.minX,
+      bounds.maxX,
+      viewWidth
+    );
+    const centerY = clampFrustumCenter(
+      (bounds.minY + bounds.maxY) / 2 + (pivot.y - (bounds.minY + bounds.maxY) / 2) * (1 - 1 / zoom),
+      bounds.minY,
+      bounds.maxY,
+      viewHeight
+    );
+
+    this.camera.left = centerX - viewWidth / 2;
+    this.camera.right = centerX + viewWidth / 2;
+    this.camera.top = centerY + viewHeight / 2;
+    this.camera.bottom = centerY - viewHeight / 2;
+    this.camera.near = Math.max(0.01, -bounds.maxZ - CAMERA_DEPTH_MARGIN);
+    this.camera.far = Math.max(this.camera.near + 1, -bounds.minZ + CAMERA_DEPTH_MARGIN);
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** Cadre de secours utilise si le groupe Diorama ne contient encore aucune primitive. */
+  private configureFallbackCamera(context: GameplayRenderContext, aspect: number): void {
     const compensatedRows = context.viewport.rows * getGroundDepthScale(CAMERA_FRAME_REFERENCE_PITCH_DEG);
     const viewHeight = Math.max(compensatedRows + CAMERA_MARGIN, (context.viewport.columns + CAMERA_MARGIN) / aspect);
     const viewWidth = viewHeight * aspect;
@@ -224,9 +270,48 @@ export class GameplayDioramaRenderer {
     this.camera.right = viewWidth / 2;
     this.camera.top = viewHeight / 2;
     this.camera.bottom = -viewHeight / 2;
-    this.camera.position.set(0, CAMERA_HEIGHT, CAMERA_DEPTH);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.near = 0.1;
+    this.camera.far = 100;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Retourne les limites du contenu dans le repere camera courant. */
+  private getCameraSpaceContentBounds(): { readonly minX: number; readonly maxX: number; readonly minY: number; readonly maxY: number; readonly minZ: number; readonly maxZ: number } {
+    const min = this.contentBounds.min;
+    const max = this.contentBounds.max;
+    const corners = this.contentBoundsCorners;
+    corners[0].set(min.x, min.y, min.z);
+    corners[1].set(max.x, min.y, min.z);
+    corners[2].set(min.x, max.y, min.z);
+    corners[3].set(max.x, max.y, min.z);
+    corners[4].set(min.x, min.y, max.z);
+    corners[5].set(max.x, min.y, max.z);
+    corners[6].set(min.x, max.y, max.z);
+    corners[7].set(max.x, max.y, max.z);
+
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    let minZ = Number.POSITIVE_INFINITY;
+    let maxZ = Number.NEGATIVE_INFINITY;
+    for (const corner of corners) {
+      corner.applyMatrix4(this.camera.matrixWorldInverse);
+      minX = Math.min(minX, corner.x);
+      maxX = Math.max(maxX, corner.x);
+      minY = Math.min(minY, corner.y);
+      maxY = Math.max(maxY, corner.y);
+      minZ = Math.min(minZ, corner.z);
+      maxZ = Math.max(maxZ, corner.z);
+    }
+
+    return { minX, maxX, minY, maxY, minZ, maxZ };
+  }
+
+  /** Projette un point monde dans le plan camera pour centrer le zoom visuel. */
+  private projectWorldPointToCameraPlane(point: THREE.Vector3): { readonly x: number; readonly y: number } {
+    const projected = point.clone().applyMatrix4(this.camera.matrixWorldInverse);
+    return { x: projected.x, y: projected.y };
   }
 
   /** Convertit les tuiles visibles en volumes simples. */
@@ -674,6 +759,15 @@ function degreesToRadians(degrees: number): number {
 /** Retourne le facteur d'upscale texture entier courant. */
 function getTextureUpscale(context: GameplayRenderContext): number {
   return Math.max(1, Math.floor(context.dioramaRenderOptions.textureUpscale));
+}
+
+/** Contraint le centre d'un frustum sans inverser la plage si la vue est plus grande que le contenu. */
+function clampFrustumCenter(center: number, min: number, max: number, size: number): number {
+  if (size >= max - min) {
+    return (min + max) / 2;
+  }
+
+  return Math.max(min + size / 2, Math.min(max - size / 2, center));
 }
 
 /** Indique si une tuile runtime correspond a une frame d'explosion TO8. */
