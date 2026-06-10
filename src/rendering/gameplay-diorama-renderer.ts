@@ -416,7 +416,10 @@ export class GameplayDioramaRenderer {
     textureMode: BlockTextureMode = "topOnly",
     horizontalScale = 1
   ): void {
-    const mesh = new THREE.Mesh(this.boxGeometry, this.getBlockMaterials(context, tileId, sideColor, textureMode));
+    const materials = textureMode === "allFaces"
+      ? this.getFullyTexturedCubeMaterials(context, context.getTileFrame(tileId))
+      : this.getBlockMaterials(context, tileId, sideColor);
+    const mesh = new THREE.Mesh(this.boxGeometry, materials);
     const position = getWorldPosition(context, gridX, gridY);
     mesh.scale.set(horizontalScale, height, horizontalScale * getCellDepthScale());
     mesh.position.set(position.x, height / 2, position.z);
@@ -530,19 +533,9 @@ export class GameplayDioramaRenderer {
   }
 
   /** Retourne les faces d'un bloc selon sa strategie de texturage Diorama. */
-  private getBlockMaterials(context: GameplayRenderContext, tileId: number, sideColor: number, textureMode: BlockTextureMode): THREE.Material[] {
+  private getBlockMaterials(context: GameplayRenderContext, tileId: number, sideColor: number): THREE.Material[] {
     const sideMaterial = this.getMaterial(sideColor);
     const topMaterial = this.getTileMaterial(context, context.getTileFrame(tileId));
-    if (textureMode === "allFaces") {
-      return [
-        topMaterial,
-        topMaterial,
-        topMaterial,
-        topMaterial,
-        topMaterial,
-        topMaterial
-      ];
-    }
 
     return [
       sideMaterial,
