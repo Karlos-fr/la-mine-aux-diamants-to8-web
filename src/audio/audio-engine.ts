@@ -6,18 +6,19 @@
  */
 
 import {
-  EXPLOSION_PULSE_DURATIONS,
-  EXPLOSION_PULSE_FREQUENCIES,
+  KIT_BD9F_EXPLOSION_DELAY_TABLE,
+  KIT_BD9F_EXPLOSION_FRAME_PASSES,
+  KIT_BD9F_EXPLOSION_INITIAL_PULSE_COUNT,
+  KIT_BD9F_EXPLOSION_TONE_CODES,
+  KIT_C255_SCORE_TICK_SEGMENTS,
   ORIGINAL_MASTER_GAIN,
-  SCORE_TICK_HIGH_DURATION,
-  SCORE_TICK_HIGH_FREQUENCY,
-  SCORE_TICK_LOW_DURATION,
-  SCORE_TICK_LOW_FREQUENCY,
   THEODORE_AUDIO_SAMPLE_RATE,
   THEODORE_MAX_SOUND_LEVEL,
+  TO8_SOUND_CPU_CYCLES_PER_SECOND,
   TITLE_MUSIC_DAC_TABLE,
   TITLE_MUSIC_FREQUENCY_RATIO,
-  TITLE_MUSIC_NOTE_DURATION
+  TITLE_MUSIC_NOTE_DURATION,
+  type KitC255SoundSegment
 } from "./original-sound-profiles";
 
 /** Modes sonores proposes par le portage moderne. */
@@ -41,7 +42,7 @@ export interface GameAudio {
   playDiamondCollected(): void;
   /** Joue un tick de conversion temps vers score en fin de niveau. */
   playScoreTick(): void;
-  /** Joue le bruitage d'explosion original. */
+  /** Joue le bruitage d'explosion si le mode courant en fournit un. */
   playExplosion(): void;
 }
 
@@ -304,26 +305,14 @@ class OriginalAudioStrategy implements AudioStrategy {
     this.playDiamondCollected(engine);
   }
 
-  /** Joue l'approximation synthetique de secours du tick score. */
+  /** Joue la routine 1 bit `KIT.BIN:$C255`, prouvee pour score/diamant. */
   private playSynthScoreTick(engine: WebAudioAdapter): void {
-    engine.playThomsonLevels(createMutedCarrierLevels([
-      { frequency: SCORE_TICK_HIGH_FREQUENCY, duration: SCORE_TICK_HIGH_DURATION },
-      { frequency: SCORE_TICK_LOW_FREQUENCY, duration: SCORE_TICK_LOW_DURATION }
-    ]));
+    engine.playThomsonLevels(createKitC255ScoreTickLevels(KIT_C255_SCORE_TICK_SEGMENTS));
   }
 
-  /** Joue les trois salves associees a l'explosion `0x14`, `0x15`, `0x16`. */
+  /** Joue la salve 1 bit appelee entre les frames d'explosion par `KIT.BIN:$BD9F`. */
   playExplosion(engine: WebAudioAdapter): void {
-    this.playSynthExplosion(engine);
-  }
-
-  /** Joue l'approximation synthetique de secours de l'explosion. */
-  private playSynthExplosion(engine: WebAudioAdapter): void {
-    const segments = EXPLOSION_PULSE_DURATIONS.map((duration, index) => ({
-      frequency: EXPLOSION_PULSE_FREQUENCIES[index],
-      duration
-    }));
-    engine.playThomsonLevels(createMutedCarrierLevels(segments));
+    engine.playThomsonLevels(createKitBd9fExplosionLevels());
   }
 }
 
@@ -447,28 +436,69 @@ function thomsonLevelToFloat(level: number): number {
   return (clampedLevel / THEODORE_MAX_SOUND_LEVEL) * 2 - 1;
 }
 
-/** Segment de porteuse mute/unmute reproduisant les bascules `E7C1` du jeu. */
-interface MutedCarrierSegment {
-  /** Frequence de bascule mute/unmute en hertz. */
-  readonly frequency: number;
-  /** Duree du segment en secondes. */
-  readonly duration: number;
-}
-
-/** Cree des niveaux 6 bits en alternant les extremites DAC pour obtenir une porteuse TO8 perceptive. */
-function createMutedCarrierLevels(segments: readonly MutedCarrierSegment[]): number[] {
+/** Cree les niveaux 1 bit de la routine `KIT.BIN:$C255` a partir de ses boucles ASM. */
+function createKitC255ScoreTickLevels(segments: readonly KitC255SoundSegment[]): number[] {
   const levels: number[] = [];
-  const soundLevel = THEODORE_MAX_SOUND_LEVEL;
+  let currentLevel = THEODORE_MAX_SOUND_LEVEL;
+  let fractionalSamples = 0;
+
   for (const segment of segments) {
-    const sampleCount = Math.max(1, Math.round(segment.duration * THEODORE_AUDIO_SAMPLE_RATE));
-    const halfPeriodSamples = Math.max(1, Math.round(THEODORE_AUDIO_SAMPLE_RATE / (segment.frequency * 2)));
-    for (let index = 0; index < sampleCount; index += 1) {
-      const muted = Math.floor(index / halfPeriodSamples) % 2 === 1;
-      levels.push(muted ? 0 : soundLevel);
+    const cyclesPerToggle = estimateKitC255CyclesPerToggle(segment.delayLoopCount);
+    const samplesPerToggle = cyclesPerToggle * THEODORE_AUDIO_SAMPLE_RATE / TO8_SOUND_CPU_CYCLES_PER_SECOND;
+
+    for (let toggleIndex = 0; toggleIndex < segment.toggleCount; toggleIndex += 1) {
+      const exactSamples = samplesPerToggle + fractionalSamples;
+      const sampleCount = Math.max(1, Math.floor(exactSamples));
+      fractionalSamples = exactSamples - sampleCount;
+      for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+        levels.push(currentLevel);
+      }
+      currentLevel = currentLevel === 0 ? THEODORE_MAX_SOUND_LEVEL : 0;
     }
   }
 
   return levels;
+}
+
+/** Estime les cycles entre deux `STA $E7C1` consecutifs dans la boucle `$C28F-$C2A0`. */
+function estimateKitC255CyclesPerToggle(delayLoopCount: number): number {
+  return 31 + delayLoopCount * 5;
+}
+
+/** Cree les niveaux 1 bit de la pause sonore `KIT.BIN:$BD9F/$BDC9` utilisee par l'explosion. */
+function createKitBd9fExplosionLevels(): number[] {
+  const levels: number[] = [];
+  let currentLevel = THEODORE_MAX_SOUND_LEVEL;
+  let fractionalSamples = 0;
+
+  for (let pass = 0; pass < KIT_BD9F_EXPLOSION_FRAME_PASSES; pass += 1) {
+    const pulseCount = KIT_BD9F_EXPLOSION_INITIAL_PULSE_COUNT + pass;
+    for (const toneCode of KIT_BD9F_EXPLOSION_TONE_CODES) {
+      const delayLoopCount = KIT_BD9F_EXPLOSION_DELAY_TABLE[toneCode & 0x0f] ?? 0x50;
+      const samplesPerHalfPulse = (
+        estimateKitBd9fExplosionCyclesPerHalfPulse(delayLoopCount)
+        * THEODORE_AUDIO_SAMPLE_RATE
+        / TO8_SOUND_CPU_CYCLES_PER_SECOND
+      );
+
+      for (let pulseIndex = 0; pulseIndex < pulseCount * 2; pulseIndex += 1) {
+        const exactSamples = samplesPerHalfPulse + fractionalSamples;
+        const sampleCount = Math.max(1, Math.floor(exactSamples));
+        fractionalSamples = exactSamples - sampleCount;
+        for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+          levels.push(currentLevel);
+        }
+        currentLevel = currentLevel === 0 ? THEODORE_MAX_SOUND_LEVEL : 0;
+      }
+    }
+  }
+
+  return levels;
+}
+
+/** Estime la duree du couple `BDC9 -> BE3A` entre deux changements du bit `0x08` de `$E7C1`. */
+function estimateKitBd9fExplosionCyclesPerHalfPulse(delayLoopCount: number): number {
+  return 45 + delayLoopCount * 21;
 }
 
 /** Extension WebKit historique exposee par Safari pour WebAudio. */

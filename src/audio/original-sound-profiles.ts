@@ -1,6 +1,6 @@
 /**
  * Role: Decrit les profils sonores derives des routines ASM originales.
- * Scope: Centralise tables DAC, frequences et enveloppes avant rendu WebAudio.
+ * Scope: Centralise tables DAC, boucles ASM et enveloppes avant rendu WebAudio.
  * ISO: Les constantes citent les routines TO8 identifiees dans `SOUND_ASM_ANALYSIS.md`.
  * Notes: Le rendu reste une approximation WebAudio moderne, sans emulation cycle-pres du 6809.
  */
@@ -35,20 +35,34 @@ export const THEODORE_AUDIO_SAMPLE_RATE = 22050;
 /** Niveau sonore maximal 6 bits du DAC Thomson dans Theodore. */
 export const THEODORE_MAX_SOUND_LEVEL = 0x3f;
 
-/** Frequence dominante du bruitage diamant mesuree sur la capture, inspiree de `KIT.BIN:$C255`. */
-export const SCORE_TICK_HIGH_FREQUENCY = 1850;
+/** Cadence CPU retenue pour convertir les boucles 6809 de `KIT.BIN:$C255` en durees WebAudio. */
+export const TO8_SOUND_CPU_CYCLES_PER_SECOND = 1_000_000;
 
-/** Frequence secondaire du bruitage diamant, plus grave pour reproduire la retombee finale. */
-export const SCORE_TICK_LOW_FREQUENCY = 155;
+/** Segment de la routine bruitage `KIT.BIN:$C255`, tables `$C2A6/$C2AC`. */
+export interface KitC255SoundSegment {
+  /** Nombre de bascules du bit `0x08` de `$E7C1`, valeur `X` dans la routine ASM. */
+  readonly toggleCount: number;
+  /** Compteur de boucle d'attente `B`, restaure a chaque bascule par `PSHS/PULS $04`. */
+  readonly delayLoopCount: number;
+}
 
-/** Duree du segment haut du bruitage score/diamant. */
-export const SCORE_TICK_HIGH_DURATION = 0.078;
+/** Tables ASM exactes du bruitage score/diamant `KIT.BIN:$C255`. */
+export const KIT_C255_SCORE_TICK_SEGMENTS: readonly KitC255SoundSegment[] = [
+  { toggleCount: 0x0050, delayLoopCount: 0x30 },
+  { toggleCount: 0x0060, delayLoopCount: 0x60 }
+] as const;
 
-/** Duree du segment bas du bruitage score/diamant pour atteindre environ 100 ms actifs. */
-export const SCORE_TICK_LOW_DURATION = 0.027;
+/** Codes parcourus par `KIT.BIN:$BD9F` entre les frames `0x14`, `0x15`, `0x16`. */
+export const KIT_BD9F_EXPLOSION_TONE_CODES = [0x33, 0x31] as const;
 
-/** Durees des trois salves d'explosion synchronisees avec les tuiles `0x14`, `0x15`, `0x16`. */
-export const EXPLOSION_PULSE_DURATIONS = [0.28, 0.29, 0.28] as const;
+/** Table de delais `KIT.BIN:$BE5A`; seuls les index bas de `33` et `31` sont utilises ici. */
+export const KIT_BD9F_EXPLOSION_DELAY_TABLE = [
+  0x00, 0x77, 0x70, 0x69, 0x62, 0x5c, 0x56, 0x50,
+  0x4b, 0x46, 0x41, 0x3c, 0x38, 0x34
+] as const;
 
-/** Frequences centrales tres graves du bruitage explosion original 1-bit, calibrees a l'oreille depuis la capture. */
-export const EXPLOSION_PULSE_FREQUENCIES = [145, 95, 65] as const;
+/** Nombre de salves `BD9F`, une apres chacune des trois frames visibles d'explosion. */
+export const KIT_BD9F_EXPLOSION_FRAME_PASSES = 3;
+
+/** Compteur bas initialise par `KIT.BIN:$CCD7` dans `$BDC5/$BDC6` avant l'explosion. */
+export const KIT_BD9F_EXPLOSION_INITIAL_PULSE_COUNT = 0x0d;
