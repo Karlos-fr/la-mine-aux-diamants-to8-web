@@ -10,6 +10,11 @@ export const RUNTIME_GRID_BASE_ADDRESS = 0xdbb7;
 /** Largeur memoire historique de la grille TO8, incluant les zones non visibles. */
 export const RUNTIME_GRID_STRIDE = 40;
 
+/** Retourne un stride runtime compatible TO8 mais adapte aux niveaux modernes plus larges. */
+export function getRuntimeGridStrideForLevel(levelWidth: number): number {
+  return Math.max(RUNTIME_GRID_STRIDE, levelWidth);
+}
+
 /** Identifiants de tuiles runtime prouves ou stabilises par extraction/provenance. */
 export const RUNTIME_TILE = {
   /** Rocher statique, objet physique. */

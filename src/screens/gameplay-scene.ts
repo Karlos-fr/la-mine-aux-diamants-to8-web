@@ -34,8 +34,8 @@ import {
 import {
   RUNTIME_GRID_BASE_ADDRESS,
   RUNTIME_GRID_FILL_TILE_ID,
-  RUNTIME_GRID_STRIDE,
-  RUNTIME_TILE
+  RUNTIME_TILE,
+  getRuntimeGridStrideForLevel
 } from "../game/runtime-tiles";
 import {
   advanceCameraAfterPlayerStep as advanceCameraAfterPlayerStepSystem,
@@ -317,6 +317,8 @@ export class GameplayScene implements Scene {
   private readonly levelWidth: number;
   /** Hauteur totale du niveau courant en cellules. */
   private readonly levelHeight: number;
+  /** Stride runtime compatible TO8, etendu pour les niveaux modernes larges. */
+  private readonly runtimeGridStride: number;
   /** Frames d'idle joueur issues des metadata; fallback conserve si l'extraction est incomplete. */
   private readonly playerAnimationFrames = extractFrameIdsFromMetadata("player", "idleCycle", [8, 8, 7, 8, 9]);
   /** Frames de marche vers la droite; fallback conserve si l'extraction est incomplete. */
@@ -429,11 +431,12 @@ export class GameplayScene implements Scene {
       this.state.level.width,
       this.state.level.height
     );
+    this.runtimeGridStride = getRuntimeGridStrideForLevel(this.state.level.width);
     this.runtimeGrid = new LevelRuntimeGrid(
       this.state.level.tiles,
       this.state.level.width,
       this.state.level.height,
-      RUNTIME_GRID_STRIDE,
+      this.runtimeGridStride,
       RUNTIME_GRID_FILL_TILE_ID
     );
     this.runtimeMutations = new RuntimeMutations({
@@ -2018,7 +2021,7 @@ export class GameplayScene implements Scene {
         : this.runtimeGrid.getTile(x, y),
       setTile: (x, y, tileId) => this.runtimeMutations.setMonsterTile(x, y, tileId),
       runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
-      runtimeStride: RUNTIME_GRID_STRIDE,
+      runtimeStride: this.runtimeGridStride,
       activeTileId: monster.kind === "specialCreature" ? RUNTIME_TILE.specialCreature : MONSTER_RUNTIME_ACTIVE_TILE_ID,
       trailTileId: MONSTER_RUNTIME_TRAIL_TILE_ID,
       moveDuration: getMonsterMoveDuration()

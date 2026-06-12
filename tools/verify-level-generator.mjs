@@ -31,6 +31,12 @@ const vite = await createServer({
 try {
   const { generateBaseLevel } = await vite.ssrLoadModule("/src/level-generator/level-generator.ts");
   const { getModernLevelSource, loadLevelDefinition } = await vite.ssrLoadModule("/src/game/level-loader.ts");
+  const { LevelRuntimeGrid } = await vite.ssrLoadModule("/src/game/runtime-grid.ts");
+  const {
+    RUNTIME_GRID_FILL_TILE_ID,
+    RUNTIME_TILE,
+    getRuntimeGridStrideForLevel
+  } = await vite.ssrLoadModule("/src/game/runtime-tiles.ts");
   const { validateGeneratedLevel } = await vite.ssrLoadModule("/src/level-generator/level-validator.ts");
   const {
     compareGeneratedLevelWithOriginalReferences,
@@ -40,6 +46,7 @@ try {
   const { analyzeModernLevelStructure } = await vite.ssrLoadModule("/src/level-generator/level-structure-analysis.ts");
 
   verifyAttractLevelLoading(getModernLevelSource, loadLevelDefinition);
+  verifyLargeRuntimeGrid(LevelRuntimeGrid, RUNTIME_TILE, RUNTIME_GRID_FILL_TILE_ID, getRuntimeGridStrideForLevel);
   verifyReproducibility(generateBaseLevel);
   verifySeedsAndFamilies(generateBaseLevel, validateGeneratedLevel, analyzeModernLevelStructure, compareGeneratedLevelWithOriginalReferences);
   verifySizes(generateBaseLevel, validateGeneratedLevel);
@@ -50,6 +57,30 @@ try {
   console.log("Level generator verification passed.");
 } finally {
   await vite.close();
+}
+
+function verifyLargeRuntimeGrid(LevelRuntimeGrid, RUNTIME_TILE, RUNTIME_GRID_FILL_TILE_ID, getRuntimeGridStrideForLevel) {
+  const width = 64;
+  const height = 8;
+  const tiles = Array.from({ length: width * height }, () => RUNTIME_TILE.empty);
+  tiles[2 * width + 50] = RUNTIME_TILE.earth;
+  const grid = new LevelRuntimeGrid(
+    tiles,
+    width,
+    height,
+    getRuntimeGridStrideForLevel(width),
+    RUNTIME_GRID_FILL_TILE_ID
+  );
+
+  if (grid.stride < width) {
+    throw new Error(`Runtime grid stride ${grid.stride} is smaller than level width ${width}.`);
+  }
+  if (grid.getTile(50, 2) !== RUNTIME_TILE.earth) {
+    throw new Error("Runtime grid treats in-bounds cells beyond the original TO8 width as border.");
+  }
+  if (grid.getTile(width, 2) !== RUNTIME_GRID_FILL_TILE_ID) {
+    throw new Error("Runtime grid does not return the fill tile outside the useful level width.");
+  }
 }
 
 function verifyAttractLevelLoading(getModernLevelSource, loadLevelDefinition) {

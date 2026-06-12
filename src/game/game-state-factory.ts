@@ -1,13 +1,13 @@
 /**
  * Role: Cree l'etat runtime initial d'une partie ou d'un niveau.
  * Scope: Assemble LevelDefinition, entites, HUD, monstres et files runtime.
- * ISO: Les pointeurs monstres utilisent la base/stride runtime TO8 centralises.
+ * ISO: Les pointeurs monstres utilisent une base TO8 et un stride compatible avec les niveaux modernes.
  * Notes: `createGameLevelState` reste la facade stable pour les scenes.
  */
 
 import type { EntityState, GameState, LevelDefinition, MonsterRuntimeState } from "./types";
 import { loadLevelDefinition } from "./level-loader";
-import { RUNTIME_GRID_BASE_ADDRESS, RUNTIME_GRID_STRIDE } from "./runtime-tiles";
+import { RUNTIME_GRID_BASE_ADDRESS, getRuntimeGridStrideForLevel } from "./runtime-tiles";
 
 /** Definition du premier niveau, exposee pour compatibilite et inspection. */
 export const LEVEL1_DEFINITION = loadLevelDefinition(1);
@@ -22,7 +22,7 @@ export function createGameLevelState(levelNumber = 1): GameState {
 export function createGameStateFromLevelDefinition(levelDefinition: LevelDefinition, levelNumber = 1): GameState {
   const entities: EntityState[] = levelDefinition.initialEntities.map((entity) => ({ ...entity }));
   const player = entities.find((entity) => entity.kind === "player");
-  const monsters = createMonsterRuntimeStates(entities);
+  const monsters = createMonsterRuntimeStates(entities, getRuntimeGridStrideForLevel(levelDefinition.width));
   if (!player) {
     throw new Error(`Le niveau ${levelNumber} doit contenir une entite joueur.`);
   }
@@ -51,7 +51,7 @@ export function createGameStateFromLevelDefinition(levelDefinition: LevelDefinit
 }
 
 /** Cree les etats runtime mobiles des monstres et creatures speciales a partir des entites de niveau. */
-function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRuntimeState[] {
+function createMonsterRuntimeStates(entities: readonly EntityState[], runtimeStride: number): MonsterRuntimeState[] {
   /** Direction initiale moderne conservee pour tous les monstres au chargement. */
   const initialDirection: MonsterRuntimeState["direction"] = 2;
   return entities
@@ -60,7 +60,7 @@ function createMonsterRuntimeStates(entities: readonly EntityState[]): MonsterRu
       kind: entity.kind,
       id: `runtime-${entity.id}`,
       entityId: entity.id,
-      runtimePointer: RUNTIME_GRID_BASE_ADDRESS + entity.gridY * RUNTIME_GRID_STRIDE + entity.gridX,
+      runtimePointer: RUNTIME_GRID_BASE_ADDRESS + entity.gridY * runtimeStride + entity.gridX,
       direction: initialDirection,
       gridX: entity.gridX,
       gridY: entity.gridY,

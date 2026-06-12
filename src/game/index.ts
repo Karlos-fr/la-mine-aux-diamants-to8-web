@@ -42,5 +42,6 @@ export {
   RUNTIME_GRID_FILL_TILE_ID,
   RUNTIME_GRID_STRIDE,
   RUNTIME_TILE,
+  getRuntimeGridStrideForLevel,
   isMonsterWalkableRuntimeTile
 } from "./runtime-tiles";

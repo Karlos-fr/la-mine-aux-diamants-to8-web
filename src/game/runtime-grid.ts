@@ -1,7 +1,7 @@
 /**
  * Role: Encapsule la grille runtime mutable d'un niveau.
  * Scope: Fournit lectures/ecritures bornees et compatibilite avec les anciens noms d'API.
- * ISO: Les lectures hors grille retournent la tuile de remplissage, comme une bordure logique.
+ * ISO: Les lectures hors grille utile retournent la tuile de remplissage, comme une bordure logique.
  * Notes: La grille reste la source d'autorite du gameplay discret.
  */
 
@@ -17,7 +17,7 @@ export class LevelRuntimeGrid {
     private readonly usefulWidth: number,
     /** Hauteur utile en cellules. */
     private readonly usefulHeight: number,
-    /** Largeur memoire historique utilisee pour les tests hors borne horizontale. */
+    /** Largeur memoire runtime conservee pour compatibilite avec les pointeurs historiques. */
     readonly stride: number,
     /** Tuile renvoyee quand une lecture sort de la grille utile. */
     private readonly fillTileId: number
@@ -32,11 +32,7 @@ export class LevelRuntimeGrid {
 
   /** Lit une tuile runtime, avec remplissage de bordure hors grille utile. */
   getTile(x: number, y: number): number {
-    if (x < 0 || y < 0 || y >= this.usefulHeight || x >= this.stride) {
-      return this.fillTileId;
-    }
-
-    if (x >= this.usefulWidth) {
+    if (!this.isInside(x, y)) {
       return this.fillTileId;
     }
 
