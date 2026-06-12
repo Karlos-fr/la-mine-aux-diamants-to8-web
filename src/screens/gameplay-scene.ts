@@ -197,6 +197,10 @@ const DIORAMA_EXPLOSION_SHAKE_DURATION = 0.22;
 const DIORAMA_EXPLOSION_SHAKE_AMPLITUDE = 0.18;
 /** Frequence du tremblement Diorama, volontairement breve et arcade. */
 const DIORAMA_EXPLOSION_SHAKE_FREQUENCY = 38;
+/** Duree d'affichage du hint des controles souris du Diorama, hors interaction. */
+const DIORAMA_INTERACTION_HINT_DURATION = 7;
+/** Duree de fondu d'apparition et disparition du hint Diorama. */
+const DIORAMA_INTERACTION_HINT_FADE_DURATION = 1.2;
 /** Tile id vide. */
 const RUNTIME_EMPTY_TILE_ID = RUNTIME_TILE.empty;
 /** Tile id plateforme solide. */
@@ -403,6 +407,12 @@ export class GameplayScene implements Scene {
   private dioramaExplosionShakeElapsed = 0;
   /** Graine stable du tremblement Diorama courant. */
   private dioramaExplosionShakeSeed = 0;
+  /** Temps ecoule depuis l'affichage du hint souris Diorama. */
+  private dioramaInteractionHintElapsed = 0;
+  /** Indique si l'utilisateur a deja manipule la camera Diorama. */
+  private dioramaInteractionHintDismissed = false;
+  /** Dernier mode de rendu vu, pour detecter l'entree dans le Diorama. */
+  private previousRenderMode = getDisplayRenderMode();
   /** Initialise l'etat runtime, la grille et les horloges d'animation du niveau. */
   constructor(
     levelNumber: number,
@@ -508,6 +518,7 @@ export class GameplayScene implements Scene {
     }
 
     this.updateDioramaCameraInput(input);
+    this.updateDioramaInteractionHint(dt, input);
     if (this.isRuntimeBlockedByExplosion()) {
       this.advanceRenderAnimations(dt);
       return;
@@ -525,6 +536,39 @@ export class GameplayScene implements Scene {
   private updateDioramaCameraInput(input: InputState): void {
     const playfieldHeight = getGameplayRenderSize().height - GAMEPLAY_HUD_HEIGHT;
     this.dioramaCamera.update(input, getDisplayRenderMode() === "dioramaTo8" && !this.optionsOpen, playfieldHeight);
+  }
+
+  /** Gere l'affichage discret du hint souris propre au mode Diorama. */
+  private updateDioramaInteractionHint(dt: number, input: InputState): void {
+    const renderMode = getDisplayRenderMode();
+    if (renderMode !== this.previousRenderMode) {
+      this.previousRenderMode = renderMode;
+      if (renderMode === "dioramaTo8") {
+        this.dioramaInteractionHintElapsed = 0;
+        this.dioramaInteractionHintDismissed = false;
+      }
+    }
+
+    if (renderMode !== "dioramaTo8" || this.optionsOpen) {
+      return;
+    }
+
+    const playfieldHeight = getGameplayRenderSize().height - GAMEPLAY_HUD_HEIGHT;
+    const pointerInteracted =
+      input.pointer.inside &&
+      input.pointer.y < playfieldHeight &&
+      (input.pointer.justPressed || input.pointer.rightJustPressed || input.pointer.wheelDeltaY !== 0);
+    if (pointerInteracted) {
+      this.dioramaInteractionHintDismissed = true;
+      return;
+    }
+
+    if (!this.dioramaInteractionHintDismissed) {
+      this.dioramaInteractionHintElapsed = Math.min(
+        DIORAMA_INTERACTION_HINT_DURATION,
+        this.dioramaInteractionHintElapsed + dt
+      );
+    }
   }
 
   /** Gere l'ouverture et la navigation de la pop-in d'options. */
@@ -681,6 +725,7 @@ export class GameplayScene implements Scene {
       dioramaRenderOptions: getDioramaRenderOptions(),
       dioramaShakeOffset: this.getDioramaExplosionShakeOffset(),
       renderSurfaceSize: displayRenderLayout.renderSurfaceSize,
+      dioramaInteractionHintOpacity: this.getDioramaInteractionHintOpacity(),
       boardOffsetX: this.getBoardOffsetX(),
       boardOffsetY: this.getBoardOffsetY(),
       tileIds: {
@@ -729,6 +774,25 @@ export class GameplayScene implements Scene {
         }
       });
     }
+  }
+
+  /** Retourne l'opacite du hint souris Diorama, avec un fondu court en fin de vie. */
+  private getDioramaInteractionHintOpacity(): number {
+    if (getDisplayRenderMode() !== "dioramaTo8" || this.optionsOpen) {
+      return 0;
+    }
+
+    if (this.dioramaInteractionHintDismissed || this.dioramaInteractionHintElapsed >= DIORAMA_INTERACTION_HINT_DURATION) {
+      return 0;
+    }
+
+    const fadeIn = clamp(this.dioramaInteractionHintElapsed / DIORAMA_INTERACTION_HINT_FADE_DURATION, 0, 1);
+    const fadeOut = clamp(
+      (DIORAMA_INTERACTION_HINT_DURATION - this.dioramaInteractionHintElapsed) / DIORAMA_INTERACTION_HINT_FADE_DURATION,
+      0,
+      1
+    );
+    return Math.min(fadeIn, fadeOut);
   }
 
   /** Avance le tremblement visuel Diorama sans toucher a la camera gameplay. */

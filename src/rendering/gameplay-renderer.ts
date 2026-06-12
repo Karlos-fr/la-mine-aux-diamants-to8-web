@@ -22,6 +22,16 @@ const HUD_HEIGHT = 40;
 const OBJECTIVE_FLASH_RED = "#ff4040";
 /** Couleur jaune observee lors du flash objectif atteint. */
 const OBJECTIVE_FLASH_YELLOW = "#fff040";
+/** Message discret expliquant les controles souris du mode Diorama. */
+const DIORAMA_INTERACTION_HINT_TEXT = "Souris: rotation  Molette: zoom";
+/** Opacite cyan TO8 du hint Diorama en filigrane. */
+const DIORAMA_INTERACTION_HINT_TEXT_ALPHA = 0.48;
+/** Opacite du fond noir transparent derriere le hint. */
+const DIORAMA_INTERACTION_HINT_BACKGROUND_ALPHA = 0.32;
+/** Marge du hint dans le playfield logique. */
+const DIORAMA_INTERACTION_HINT_MARGIN = 5;
+/** Position verticale du hint, volontairement sous la toolbar debug overlay. */
+const DIORAMA_INTERACTION_HINT_Y = 18;
 /** Epaisseur du cadre de flash objectif. */
 const OBJECTIVE_FLASH_BORDER_SIZE = 4;
 /** Couleur orange du panneau HUD extraite/reproduite. */
@@ -213,6 +223,9 @@ export interface GameplayRenderContext {
   /** Surface bitmap moderne reservee au Diorama TO8, distincte de la resolution logique. */
   readonly renderSurfaceSize: RenderSurfaceSize;
 
+  /** Opacite du hint d'interaction souris affiche uniquement en mode Diorama. */
+  readonly dioramaInteractionHintOpacity: number;
+
   /** Decalage horizontal de la zone de jeu. */
   readonly boardOffsetX: number;
 
@@ -343,8 +356,33 @@ export class GameplayRenderer {
 
   /** Rend les overlays gameplay en coordonnees TO8, au-dessus de la couche Diorama. */
   private drawLogicalOverlayLayer(renderer: Renderer, context: GameplayRenderContext): void {
+    this.drawDioramaInteractionHint(renderer, context);
     this.drawHud(renderer, context);
     this.drawObjectiveReachedFlash(renderer, context);
+  }
+
+  /** Dessine le filigrane des controles souris du Diorama sans impacter le rendu TO8. */
+  private drawDioramaInteractionHint(renderer: Renderer, context: GameplayRenderContext): void {
+    if (!isDioramaRenderMode(context.renderMode) || context.dioramaInteractionHintOpacity <= 0) {
+      return;
+    }
+
+    const textWidth = renderer.measurePixelText(DIORAMA_INTERACTION_HINT_TEXT);
+    const x = DIORAMA_INTERACTION_HINT_MARGIN;
+    const y = DIORAMA_INTERACTION_HINT_Y;
+    renderer.fillRect(
+      x - 2,
+      y - 2,
+      textWidth + 4,
+      11,
+      toRgba(0, 0, 0, DIORAMA_INTERACTION_HINT_BACKGROUND_ALPHA * context.dioramaInteractionHintOpacity)
+    );
+    renderer.drawPixelText(
+      DIORAMA_INTERACTION_HINT_TEXT,
+      x,
+      y,
+      toRgba(0, 255, 255, DIORAMA_INTERACTION_HINT_TEXT_ALPHA * context.dioramaInteractionHintOpacity)
+    );
   }
 
   /** Affiche une erreur de chargement asset directement dans la resolution logique. */
@@ -711,6 +749,11 @@ function to8ColorFromAttribute(attribute: number, shape: boolean): string {
 /** Convertit des canaux RGB en couleur hex CSS. */
 function rgbToHex(red: number, green: number, blue: number): string {
   return `#${hexByte(red)}${hexByte(green)}${hexByte(blue)}`;
+}
+
+/** Formate une couleur RGBA CSS en contraignant son opacite. */
+function toRgba(red: number, green: number, blue: number, alpha: number): string {
+  return `rgba(${red}, ${green}, ${blue}, ${Math.max(0, Math.min(1, alpha)).toFixed(3)})`;
 }
 
 /** Formate un octet couleur sous forme hexadecimale. */
