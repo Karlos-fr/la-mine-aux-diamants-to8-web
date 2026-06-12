@@ -106,6 +106,13 @@ if (mode === "gallery") {
   levelMenu.role = "listbox";
   levelMenu.hidden = true;
 
+  /** Entree d'en-tete non selectionnable pour eviter que le premier niveau soit colle au bouton. */
+  const levelMenuPlaceholder = document.createElement("div");
+  levelMenuPlaceholder.className = "debug-level-menu-option debug-level-menu-option--placeholder";
+  levelMenuPlaceholder.role = "presentation";
+  levelMenuPlaceholder.textContent = "Choix du niveau";
+  levelMenu.append(levelMenuPlaceholder);
+
   /** Options de niveaux exposees par le menu debug. */
   const levelOptions: Array<{ readonly levelNumber: number; readonly label: string; readonly button: HTMLButtonElement }> = [];
   for (let levelNumber = 1; levelNumber <= LEVEL_COUNT; levelNumber += 1) {
