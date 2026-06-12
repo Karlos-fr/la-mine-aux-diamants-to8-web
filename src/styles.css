@@ -653,22 +653,14 @@ body.startup-screen-fixed-aspect #game-screen {
   background: currentColor;
 }
 
-/* Libelle compact du select de niveau debug. */
-.debug-level-label {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  color: #00ffff;
-}
-
 /* Coque pixelisee du selecteur custom pour afficher les niveaux avec la font TO8. */
 .debug-level-select-shell {
   position: relative;
   display: inline-flex;
   align-items: center;
-  flex: 1 1 420px;
-  min-width: 260px;
-  max-width: 760px;
+  flex: 0 1 auto;
+  min-width: 188px;
+  max-width: min(320px, calc(100vw - 24px));
   min-height: 19px;
   color: #00ffff;
 }
@@ -717,8 +709,9 @@ body.startup-screen-fixed-aspect #game-screen {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  width: min(390px, calc(100vw - 24px));
+  width: max-content;
   min-width: 100%;
+  max-width: min(320px, calc(100vw - 24px));
   max-height: min(260px, calc(100vh - 52px));
   overflow-x: hidden;
   overflow-y: auto;

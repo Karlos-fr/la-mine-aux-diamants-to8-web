@@ -4,9 +4,11 @@ import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
+import type { Scene } from "./engine/scene";
 import { getLevelShowcaseEntries, getLevelShowcaseEntry } from "./level-showcase/level-showcase-catalog";
 import { dispatchOpenOptionsPopinRequest } from "./options-popin-events";
 import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene, createLevelShowcaseScene } from "./screens/scene-factory";
+import { GameplayScene } from "./screens/gameplay-scene";
 import { StartupInfogramScene } from "./screens/startup-infogram-scene";
 import { StartupTitleScene } from "./screens/startup-screens";
 import {
@@ -38,6 +40,8 @@ const directLevelNumber = parseDirectLevelNumber(routeParams);
 
 /** Cle de persistance de l'etat d'epinglage de la barre debug. */
 const DEBUG_TOOLBAR_PINNED_STORAGE_KEY = "la-mine-debug-toolbar-pinned";
+/** Libelle neutre du selecteur de niveau quand aucune partie debug n'est choisie. */
+const LEVEL_PICKER_PLACEHOLDER_LABEL = "Choix du niveau";
 
 if (mode === "gallery") {
   mountDevAnimationGallery(root);
@@ -80,12 +84,6 @@ if (mode === "gallery") {
   optionsButton.type = "button";
   optionsButton.textContent = "Options";
 
-  /** Libelle accessible du selecteur de niveau. */
-  const levelSelectLabel = document.createElement("label");
-  levelSelectLabel.className = "debug-level-label";
-  levelSelectLabel.htmlFor = "debug-level-picker";
-  levelSelectLabel.textContent = "Niveau";
-
   /** Liste de selection directe des niveaux modernes disponibles. */
   const levelSelectShell = document.createElement("div");
   levelSelectShell.className = "debug-level-select-shell";
@@ -95,6 +93,7 @@ if (mode === "gallery") {
   levelPickerButton.id = "debug-level-picker";
   levelPickerButton.className = "debug-level-picker";
   levelPickerButton.type = "button";
+  levelPickerButton.setAttribute("aria-label", "Choix du niveau");
   levelPickerButton.setAttribute("aria-haspopup", "listbox");
   levelPickerButton.setAttribute("aria-expanded", "false");
 
@@ -117,7 +116,7 @@ if (mode === "gallery") {
   const levelMenuPlaceholder = document.createElement("div");
   levelMenuPlaceholder.className = "debug-level-menu-option debug-level-menu-option--placeholder";
   levelMenuPlaceholder.role = "presentation";
-  levelMenuPlaceholder.textContent = "Choix du niveau";
+  levelMenuPlaceholder.textContent = LEVEL_PICKER_PLACEHOLDER_LABEL;
   levelMenu.append(levelMenuPlaceholder);
 
   /** Options de niveaux exposees par le menu debug. */
@@ -195,20 +194,13 @@ if (mode === "gallery") {
   });
   levelPickerButton.append(levelPickerDisplay, levelSelectArrow);
   levelSelectShell.append(levelPickerButton, levelMenu);
-  let selectedDebugLevelNumber = directLevelNumber ?? 1;
+  let selectedDebugLevelNumber: number | null = directLevelNumber;
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
-  debugToolbar.append(debugToolbarIcon, optionsButton, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
+  debugToolbar.append(debugToolbarIcon, optionsButton, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
   const playerCustomizationPanel = createPlayerCustomizationPanel();
   root.append(playerCustomizationPanel);
 
-  /** Instance applicative assemblee autour de la premiere scene historique. */
-  const app = createGameApp({
-    canvas,
-    initialScene: () => {
-      return createInitialSceneFromRoute(mode, directLevelNumber);
-    }
-  });
   const closeLevelMenu = (): void => {
     levelMenu.hidden = true;
     levelPickerButton.setAttribute("aria-expanded", "false");
@@ -218,6 +210,25 @@ if (mode === "gallery") {
     levelMenu.hidden = !nextOpen;
     levelPickerButton.setAttribute("aria-expanded", String(nextOpen));
   };
+  const resetLevelPicker = (): void => {
+    selectedDebugLevelNumber = null;
+    syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
+    syncLevelMenuSelection(levelOptions, selectedDebugLevelNumber);
+    closeLevelMenu();
+  };
+
+  /** Instance applicative assemblee autour de la premiere scene historique. */
+  const app = createGameApp({
+    canvas,
+    initialScene: () => {
+      return createInitialSceneFromRoute(mode, directLevelNumber);
+    },
+    onSceneChange: (scene) => {
+      if (!isGameplayScene(scene)) {
+        resetLevelPicker();
+      }
+    }
+  });
   const selectDebugLevel = (levelNumber: number): void => {
     selectedDebugLevelNumber = levelNumber;
     syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
@@ -237,7 +248,8 @@ if (mode === "gallery") {
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      levelOptions.find((item) => item.levelNumber === selectedDebugLevelNumber)?.button.focus();
+      const focusedOption = levelOptions.find((item) => item.levelNumber === selectedDebugLevelNumber) ?? levelOptions[0];
+      focusedOption?.button.focus();
       levelMenu.hidden = false;
       levelPickerButton.setAttribute("aria-expanded", "true");
     }
@@ -257,7 +269,7 @@ if (mode === "gallery") {
     dispatchOpenOptionsPopinRequest();
   });
   attractButton.addEventListener("click", () => {
-    closeLevelMenu();
+    resetLevelPicker();
     app.setScene(createAttractGameplayScene(() => new StartupTitleScene()));
     canvas.focus();
   });
@@ -322,20 +334,25 @@ function parseDirectLevelNumber(params: URLSearchParams): number | null {
 function syncLevelPickerDisplay(
   options: ReadonlyArray<{ readonly levelNumber: number; readonly label: string }>,
   display: HTMLElement,
-  selectedLevelNumber: number
+  selectedLevelNumber: number | null
 ): void {
   const selectedOption = options.find((option) => option.levelNumber === selectedLevelNumber);
-  display.textContent = selectedOption?.label ?? "";
+  display.textContent = selectedOption?.label ?? LEVEL_PICKER_PLACEHOLDER_LABEL;
 }
 
 /** Met a jour l'etat aria/visuel des options du menu custom. */
 function syncLevelMenuSelection(
   options: ReadonlyArray<{ readonly levelNumber: number; readonly button: HTMLButtonElement }>,
-  selectedLevelNumber: number
+  selectedLevelNumber: number | null
 ): void {
   options.forEach((option) => {
     option.button.setAttribute("aria-selected", String(option.levelNumber === selectedLevelNumber));
   });
+}
+
+/** Indique si une scene correspond a une partie jouable active. */
+function isGameplayScene(scene: Scene): boolean {
+  return scene instanceof GameplayScene;
 }
 
 /** Charge l'etat d'epinglage de la barre debug. */

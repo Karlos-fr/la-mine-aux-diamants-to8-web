@@ -390,11 +390,8 @@ export class GameplayScene implements Scene {
   private optionsOpen = false;
   /** Categorie d'options selectionnee. */
   private selectedOptionsCategoryIndex = 0;
-  /** Ouvre la pop-in depuis la toolbar overlay quand le gameplay normal est actif. */
+  /** Ouvre la pop-in depuis la toolbar overlay quand une scene gameplay est active. */
   private readonly handleOpenOptionsPopinRequest = (): void => {
-    if (this.gameplayMode !== "normal") {
-      return;
-    }
     this.optionsOpen = true;
   };
   /** Controleur visuel de la camera Diorama TO8. */
@@ -573,10 +570,6 @@ export class GameplayScene implements Scene {
 
   /** Gere l'ouverture et la navigation de la pop-in d'options. */
   private updateOptionsPopin(input: InputState): boolean {
-    if (this.gameplayMode !== "normal") {
-      return false;
-    }
-
     const result = updateOptionsPopinInput(input, {
       isOpen: this.optionsOpen,
       selectedCategoryIndex: this.selectedOptionsCategoryIndex
@@ -765,7 +758,7 @@ export class GameplayScene implements Scene {
     if (this.optionsOpen) {
       renderOptionsPopin({
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Jeu en pause",
+        contextLabel: this.getOptionsPopinContextLabel(),
         onSelectedCategoryIndexChange: (selectedCategoryIndex) => {
           this.selectedOptionsCategoryIndex = selectedCategoryIndex;
         },
@@ -774,6 +767,11 @@ export class GameplayScene implements Scene {
         }
       });
     }
+  }
+
+  /** Retourne le libelle de contexte affiche dans la pop-in d'options. */
+  private getOptionsPopinContextLabel(): string {
+    return this.gameplayMode === "attract" ? "Attract en pause" : "Jeu en pause";
   }
 
   /** Retourne l'opacite du hint souris Diorama, avec un fondu court en fin de vie. */
