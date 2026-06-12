@@ -19,9 +19,12 @@ Fonctionnalites principales :
 - options accessibles avec `Echap`;
 - option de mouvements fluides activable/desactivable;
 - options d'affichage: zoom, etirage navigateur sans deformation, densite de cellules;
+- mode de rendu `Diorama TO8` en vraie 3D avec Three.js, purement visuel;
 - vitrine des niveaux avec apercus dynamiques;
 - editeur de niveaux JSON integre;
-- barre debug avec selection de niveau, attract mode, vitrine, editeur et mode ghost.
+- editeur de personnage avec couleurs libres et profil sauvegarde en local;
+- generateur de niveaux seedes experimental integre a l'editeur;
+- barre debug avec options, selection de niveau, attract mode, vitrine, editeur, personnage et mode ghost.
 
 Limites connues :
 
@@ -29,6 +32,7 @@ Limites connues :
 - le son reste une approximation WebAudio moderne;
 - certains comportements restent documentes comme hypotheses tant que l'ASM n'est pas totalement tranche;
 - la progression/deblocage des niveaux est preparee mais pas encore branchee au gameplay final.
+- le generateur de niveaux reste experimental: il produit des niveaux jouables, mais sa "patte" humaine est encore en cours de calibration.
 
 ## Apercu
 
@@ -40,9 +44,29 @@ Limites connues :
 
 ![Niveau en jeu](docs/screenshots/level-01.png)
 
+### Mode Diorama TO8
+
+![Mode Diorama TO8](docs/screenshots/diorama-3d.png)
+
+### Options d'affichage
+
+![Options d'affichage](docs/screenshots/options-display.png)
+
+### Vitrine des niveaux
+
+![Vitrine des niveaux](docs/screenshots/showcase.png)
+
 ### Editeur de niveaux
 
 ![Editeur de niveaux](docs/screenshots/editor.png)
+
+### Editeur de personnage
+
+![Editeur de personnage](docs/screenshots/character-editor.png)
+
+### Generateur de niveaux experimental
+
+![Generateur de niveaux](docs/screenshots/level-generator.png)
 
 ## Lancer le projet
 
@@ -83,6 +107,7 @@ npm run preview
 - `Echap` : ouvrir la pop-in d'options en jeu.
 
 La logique gameplay reste discrete en cellules de grille. La fluidification ne modifie que le rendu visuel des mouvements.
+Le mode Diorama TO8 ne change pas non plus la simulation: il remplace seulement la representation graphique du niveau par une scene Three.js.
 
 ## Modes et outils
 
@@ -134,7 +159,30 @@ L'editeur permet notamment :
 - zoomer/dezoomer et deplacer la vue;
 - afficher une vraie grille;
 - conserver une bordure non supprimable autour du niveau;
-- redimensionner un niveau en deplacant la bordure et en supprimant les objets hors limites.
+- redimensionner un niveau en deplacant la bordure et en supprimant les objets hors limites;
+- ouvrir un generateur de niveaux seede experimental.
+
+### Personnalisation du personnage
+
+Accessible depuis la barre debug avec le bouton `Personnage`, ou directement avec `?mode=character`.
+
+Le panneau permet de modifier librement les couleurs du joueur par zones:
+
+- cheveux;
+- peau;
+- corps;
+- bras;
+- jambes;
+- pieds;
+- details.
+
+Les changements sont appliques immediatement au jeu en cours et sauvegardes dans le stockage local du navigateur.
+
+### Generateur de niveaux experimental
+
+Accessible depuis l'editeur avec le bouton `Generer`.
+
+Il produit un niveau JSON a partir d'une seed, avec choix de dimensions, difficulte, densite et profil. Le but est de fournir une base jouable et reproductible pour prototyper des niveaux, pas encore de remplacer un design manuel.
 
 ### Viewer d'animations
 
@@ -163,9 +211,13 @@ src/
   editor/          Editeur de niveaux
   engine/          Boucle, input, renderer canvas et scenes
   game/            Runtime gameplay, grille, timing, systemes
+  level-generator/ Generation de niveaux seedes
   level-showcase/  Vitrine, progression et previews de niveaux
+  player-customization/
+                   Personnalisation et recoloration du joueur
   rendering/       Rendu gameplay, HUD, entites, tuiles
   screens/         Scenes principales
+  ui/              Pop-ins HTML modernes
 ```
 
 Principes :
@@ -176,6 +228,7 @@ Principes :
 - les options de fluidification ne changent pas le cadencement logique;
 - les niveaux modernes sont des JSON dans `src/assets/levels/`;
 - les outils d'edition et de vitrine reutilisent les assets du runtime.
+- les modes de rendu modernes restent separes du moteur physique et du cadencement.
 
 ## Niveaux
 

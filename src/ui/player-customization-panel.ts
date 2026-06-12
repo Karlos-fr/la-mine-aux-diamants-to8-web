@@ -18,8 +18,7 @@ import {
 } from "../player-customization/player-customization-model";
 import {
   createPlayerCustomizationSeed,
-  generateRandomPlayerCustomization,
-  type PlayerCustomizationRandomFamily
+  generateRandomPlayerCustomization
 } from "../player-customization/player-customization-generator";
 import {
   getActivePlayerCustomization,
@@ -44,10 +43,6 @@ interface PlayerCustomizationPanelState {
   readonly root: HTMLElement;
   /** Canvas de preview pixelisee. */
   readonly preview: HTMLCanvasElement;
-  /** Champ seed pour la generation aleatoire. */
-  readonly seedInput: HTMLInputElement;
-  /** Selecteur de famille de generation. */
-  readonly familySelect: HTMLSelectElement;
   /** Inputs couleur par partie du corps. */
   readonly colorInputs: ReadonlyMap<PlayerBodyPart, HTMLInputElement>;
   /** Inputs hex par partie du corps. */
@@ -79,7 +74,7 @@ export function createPlayerCustomizationPanel(): HTMLElement {
 /** Affiche la pop-in de personnalisation. */
 export function openPlayerCustomizationPanel(panel: HTMLElement): void {
   panel.hidden = false;
-  panel.querySelector<HTMLInputElement>("[data-player-customization-seed]")?.focus();
+  panel.querySelector<HTMLInputElement>("[data-player-customization-part]")?.focus();
 }
 
 /** Masque la pop-in de personnalisation. */
@@ -113,19 +108,6 @@ function createPanelState(): PlayerCustomizationPanelState {
   preview.width = PLAYER_PREVIEW_FRAME_SIZE * PLAYER_PREVIEW_SCALE;
   preview.height = PLAYER_PREVIEW_FRAME_SIZE * PLAYER_PREVIEW_SCALE;
 
-  const seedInput = createTextInput("Seed", "data-player-customization-seed");
-  seedInput.value = createPlayerCustomizationSeed();
-
-  const familySelect = document.createElement("select");
-  familySelect.dataset.playerCustomizationFamily = "true";
-  for (const family of ["balanced", "arcade", "contrast", "soft"] as const) {
-    const option = document.createElement("option");
-    option.value = family;
-    option.textContent = family;
-    familySelect.append(option);
-  }
-
-  const familyField = wrapField("Famille", familySelect);
   const colorsRoot = document.createElement("div");
   colorsRoot.className = "player-customization-colors";
   const colorInputs = new Map<PlayerBodyPart, HTMLInputElement>();
@@ -155,14 +137,12 @@ function createPanelState(): PlayerCustomizationPanelState {
     createActionButton("Original", "reset")
   );
 
-  card.append(header, preview, wrapField("Seed", seedInput), familyField, colorsRoot, actions);
+  card.append(header, preview, colorsRoot, actions);
   root.append(card);
 
   const state: PlayerCustomizationPanelState = {
     root,
     preview,
-    seedInput,
-    familySelect,
     colorInputs,
     hexInputs,
     playerAtlas: null,
@@ -283,10 +263,8 @@ function updateDraftColor(state: PlayerCustomizationPanelState, part: PlayerBody
 
 /** Applique un profil aleatoire depuis la seed et la famille choisies. */
 function applyRandomDraft(state: PlayerCustomizationPanelState): void {
-  state.seedInput.value = createPlayerCustomizationSeed();
   state.draft = generateRandomPlayerCustomization({
-    seed: state.seedInput.value,
-    family: state.familySelect.value as PlayerCustomizationRandomFamily
+    seed: createPlayerCustomizationSeed()
   });
   setActivePlayerCustomization(state.draft);
 }
@@ -298,23 +276,4 @@ function createActionButton(label: string, action: string): HTMLButtonElement {
   button.textContent = label;
   button.dataset.playerCustomizationAction = action;
   return button;
-}
-
-/** Cree un input texte avec attribut data stable. */
-function createTextInput(label: string, dataAttribute: string): HTMLInputElement {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.setAttribute("aria-label", label);
-  input.setAttribute(dataAttribute, "true");
-  return input;
-}
-
-/** Enveloppe un controle dans un label TO8 compact. */
-function wrapField(labelText: string, control: HTMLElement): HTMLLabelElement {
-  const label = document.createElement("label");
-  label.className = "player-customization-field";
-  const span = document.createElement("span");
-  span.textContent = labelText;
-  label.append(span, control);
-  return label;
 }
