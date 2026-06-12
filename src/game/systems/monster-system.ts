@@ -14,6 +14,8 @@ export interface MonsterSystemContext {
   readonly getTile: (gridX: number, gridY: number) => number;
   /** Ecrit une tuile runtime. */
   readonly setTile: (gridX: number, gridY: number, tileId: number) => void;
+  /** Indique si la cellule courante du monstre est couverte par un objet physique actif. */
+  readonly isMonsterCellBlockedByPhysicalObject?: (gridX: number, gridY: number) => boolean;
   /** Adresse de base runtime TO8 pour recalculer le pointeur. */
   readonly runtimeBaseAddress: number;
   /** Stride runtime TO8 pour recalculer le pointeur. */
@@ -31,6 +33,10 @@ export function advanceSingleMonsterRuntime(
   monster: MonsterRuntimeState,
   context: MonsterSystemContext
 ): void {
+  if (context.isMonsterCellBlockedByPhysicalObject?.(monster.gridX, monster.gridY)) {
+    return;
+  }
+
   let direction = monster.direction;
 
   for (let attempt = 0; attempt < 4; attempt += 1) {

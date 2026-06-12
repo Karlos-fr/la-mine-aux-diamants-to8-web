@@ -347,8 +347,8 @@ export class GameplayScene implements Scene {
   private standardMonsterMoveElapsed = 0;
   /** Accumulateur du pas runtime des creatures speciales `0x17`. */
   private specialCreatureMoveElapsed = 0;
-  /** Accumulateur de scan des objets physiques. */
-  private fallingObjectScanElapsed = 0;
+  /** Accumulateur de scan des objets physiques, amorce pour scanner des le premier tick jouable. */
+  private fallingObjectScanElapsed = FALLING_OBJECT_SCAN_INTERVAL;
   /** Accumulateur du decrement de temps HUD. */
   private hudTimeAccumulator = 0;
   /** Indique si la conversion temps restant vers score est en cours. */
@@ -494,7 +494,17 @@ export class GameplayScene implements Scene {
     }
 
     this.updateDioramaCameraInput(input);
+    if (this.isRuntimeBlockedByExplosion()) {
+      this.advanceRenderAnimations(dt);
+      return;
+    }
+
     this.runtime.update(dt, input);
+  }
+
+  /** Indique si une explosion ASM-style bloque la simulation discrete jusqu'a la fin de ses frames. */
+  private isRuntimeBlockedByExplosion(): boolean {
+    return this.state.explosions.length > 0;
   }
 
   /** Ajuste la camera Diorama TO8 au clic gauche sans modifier la simulation. */
@@ -1608,6 +1618,7 @@ export class GameplayScene implements Scene {
     }
 
     let createdDiamonds = 0;
+    const createdDiamondCells: Array<{ readonly x: number; readonly y: number }> = [];
     for (const cell of explosion.cells) {
       if (this.isOpenExitCell(cell.x, cell.y)) {
         continue;
@@ -1615,12 +1626,26 @@ export class GameplayScene implements Scene {
 
       this.runtimeMutations.setTile(cell.x, cell.y, DIAMOND_TILE_ID);
       this.createRuntimeDiamondEntity(cell.x, cell.y);
+      createdDiamondCells.push(cell);
       createdDiamonds += 1;
     }
 
     this.state.hud.diamonds += createdDiamonds;
     if (createdDiamonds > 0) {
       this.state.exitOpen = false;
+      this.startReadyDiamondBurstObjects(createdDiamondCells);
+    }
+  }
+
+  /** Lance immediatement la physique des diamants crees par l'explosion d'une creature speciale. */
+  private startReadyDiamondBurstObjects(cells: RuntimeExplosionState["cells"]): void {
+    const sortedCells = [...cells].sort((left, right) => right.y - left.y || left.x - right.x);
+    for (const cell of sortedCells) {
+      if (this.runtimeGrid.getTile(cell.x, cell.y) !== DIAMOND_TILE_ID) {
+        continue;
+      }
+
+      this.continueFallingObjectFromGrid(cell.x, cell.y, DIAMOND_TILE_ID);
     }
   }
 
@@ -2020,6 +2045,7 @@ export class GameplayScene implements Scene {
         ? RUNTIME_GRID_FILL_TILE_ID
         : this.runtimeGrid.getTile(x, y),
       setTile: (x, y, tileId) => this.runtimeMutations.setMonsterTile(x, y, tileId),
+      isMonsterCellBlockedByPhysicalObject: (x, y) => this.hasPhysicalObjectAtGrid(x, y),
       runtimeBaseAddress: RUNTIME_GRID_BASE_ADDRESS,
       runtimeStride: this.runtimeGridStride,
       activeTileId: monster.kind === "specialCreature" ? RUNTIME_TILE.specialCreature : MONSTER_RUNTIME_ACTIVE_TILE_ID,
