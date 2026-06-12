@@ -36,6 +36,10 @@ Limites connues :
 
 ## Apercu
 
+### Video de demonstration
+
+[Voir la video de demonstration](docs/videos/2026-06-12%2016-53-44.mp4)
+
 ### Ecran titre
 
 ![Ecran titre TO8](docs/screenshots/screen-title.png)
