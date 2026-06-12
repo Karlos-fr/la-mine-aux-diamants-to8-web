@@ -45,6 +45,10 @@ const EXPLOSION_VOXEL_SIZE = 0.055;
 const EXPLOSION_BASE_HEIGHT = 0.18;
 /** Marge orthographique autour de la grille visible. */
 const CAMERA_MARGIN = 1.2;
+/** Cellules supplementaires cadrees pour couvrir les objets en bord de viewport. */
+const CAMERA_FRAME_EXTRA_CELLS = 1.5;
+/** Hauteur maximale cadree par la camera stable, incluant billboards, rochers et explosions. */
+const CAMERA_FRAME_MAX_HEIGHT = 2.2;
 /** Marge de profondeur pour eviter les coupes near/far quand la scene pivote. */
 const CAMERA_DEPTH_MARGIN = 2;
 /** Hauteur fixe de la camera pour que le drag X/Z ne cree pas d'effet zoom vertical. */
@@ -227,11 +231,7 @@ export class GameplayDioramaRenderer {
     const aspect = width / height;
     this.contentGroup.updateMatrixWorld(true);
 
-    this.contentBounds.setFromObject(this.contentGroup);
-    if (this.contentBounds.isEmpty()) {
-      this.configureFallbackCamera(context, aspect);
-      return;
-    }
+    this.updateStableViewportContentBounds(context);
 
     this.configureCameraPose(this.getCameraDistanceForContentBounds());
     const bounds = this.getCameraSpaceContentBounds();
@@ -263,19 +263,34 @@ export class GameplayDioramaRenderer {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Cadre de secours utilise si le groupe Diorama ne contient encore aucune primitive. */
-  private configureFallbackCamera(context: GameplayRenderContext, aspect: number): void {
-    this.configureCameraPose(CAMERA_BASE_DISTANCE);
-    const compensatedRows = context.viewport.rows * getGroundDepthScale(CAMERA_FRAME_REFERENCE_PITCH_DEG);
-    const viewHeight = Math.max(compensatedRows + CAMERA_MARGIN, (context.viewport.columns + CAMERA_MARGIN) / aspect);
-    const viewWidth = viewHeight * aspect;
-    this.camera.left = -viewWidth / 2;
-    this.camera.right = viewWidth / 2;
-    this.camera.top = viewHeight / 2;
-    this.camera.bottom = -viewHeight / 2;
-    this.camera.near = 0.1;
-    this.camera.far = 100;
-    this.camera.updateProjectionMatrix();
+  /** Cadre une boite stable du viewport plutot que les meshes visibles de la frame courante. */
+  private updateStableViewportContentBounds(context: GameplayRenderContext): void {
+    const depthScale = getCellDepthScale();
+    const halfWidth = context.viewport.columns / 2;
+    const halfDepth = context.viewport.rows * depthScale / 2;
+    const extraX = CAMERA_FRAME_EXTRA_CELLS;
+    const extraZ = CAMERA_FRAME_EXTRA_CELLS * depthScale;
+    const minX = -halfWidth - extraX;
+    const maxX = halfWidth + extraX;
+    const minY = 0;
+    const maxY = Math.max(CAMERA_FRAME_MAX_HEIGHT, context.dioramaRenderOptions.billboardScale + 0.4);
+    const minZ = -halfDepth - extraZ;
+    const maxZ = halfDepth + extraZ;
+    const corners = this.contentBoundsCorners;
+
+    corners[0].set(minX, minY, minZ);
+    corners[1].set(maxX, minY, minZ);
+    corners[2].set(minX, maxY, minZ);
+    corners[3].set(maxX, maxY, minZ);
+    corners[4].set(minX, minY, maxZ);
+    corners[5].set(maxX, minY, maxZ);
+    corners[6].set(minX, maxY, maxZ);
+    corners[7].set(maxX, maxY, maxZ);
+
+    this.contentBounds.makeEmpty();
+    for (const corner of corners) {
+      this.contentBounds.expandByPoint(corner.applyMatrix4(this.contentGroup.matrixWorld));
+    }
   }
 
   /** Place la camera sur son axe de reference sans changer le grossissement orthographique. */
