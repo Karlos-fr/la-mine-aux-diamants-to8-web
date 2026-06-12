@@ -167,23 +167,6 @@ class WebAudioAdapter {
     scheduleCycle();
   }
 
-  /** Lance une boucle de niveaux DAC 6 bits echantillonnee comme Theodore. */
-  startLoopedDacSequence(values: readonly number[], holdSeconds: number): void {
-    const samplesPerValue = Math.max(1, Math.round(holdSeconds * THEODORE_AUDIO_SAMPLE_RATE));
-    const levels: number[] = [];
-    values.forEach((value) => {
-      const level = value & THEODORE_MAX_SOUND_LEVEL;
-      for (let repeat = 0; repeat < samplesPerValue; repeat += 1) {
-        levels.push(level);
-      }
-    });
-
-    const buffer = this.createThomsonLevelBuffer(levels);
-    if (buffer) {
-      this.startLoopedBuffer(buffer);
-    }
-  }
-
   /** Stoppe la musique titre si elle tourne. */
   stopTitleMusic(): void {
     this.titleMusicSource?.stop();
@@ -202,47 +185,6 @@ class WebAudioAdapter {
     this.titleMusicGains.forEach((gain) => gain.disconnect());
     this.titleMusicOscillators = [];
     this.titleMusicGains = [];
-  }
-
-  /** Joue un oscillateur carre avec enveloppe simple. */
-  playSquarePulse(frequency: number, startTime: number, duration: number, gainValue: number): void {
-    const context = this.getContext();
-    const destination = this.getMasterGain();
-    if (!context || !destination) {
-      return;
-    }
-
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "square";
-    oscillator.frequency.setValueAtTime(frequency, startTime);
-    gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(gainValue, startTime + 0.006);
-    gain.gain.linearRampToValueAtTime(0, startTime + duration);
-    oscillator.connect(gain);
-    gain.connect(destination);
-    oscillator.start(startTime);
-    oscillator.stop(startTime + duration + 0.01);
-  }
-
-  /** Cree un buffer mono depuis une table DAC 6 bits. */
-  createDacBuffer(samples: readonly number[], sampleRate: number, sampleHold = 1): AudioBuffer | null {
-    const context = this.getContext();
-    if (!context || samples.length === 0) {
-      return null;
-    }
-
-    const hold = Math.max(1, Math.floor(sampleHold));
-    const buffer = context.createBuffer(1, samples.length * hold, sampleRate);
-    const channel = buffer.getChannelData(0);
-    for (let index = 0; index < samples.length; index += 1) {
-      const value = ((samples[index] & 0x3f) / 31.5) - 1;
-      for (let repeat = 0; repeat < hold; repeat += 1) {
-        channel[index * hold + repeat] = value;
-      }
-    }
-
-    return buffer;
   }
 
   /** Cree un buffer depuis des niveaux materiels 6 bits, avec la conversion Theodore. */
@@ -274,11 +216,6 @@ class WebAudioAdapter {
     source.buffer = buffer;
     source.connect(destination);
     source.start();
-  }
-
-  /** Retourne le temps courant du contexte audio, ou zero si indisponible. */
-  currentTime(): number {
-    return this.getContext()?.currentTime ?? 0;
   }
 
 }
