@@ -687,6 +687,7 @@ body.startup-screen-fixed-aspect #game-screen {
 /* Bouton debug pour activer le mode fantome pendant les tests de niveaux. */
 .debug-attract-button,
 .debug-showcase-button,
+.debug-character-button,
 .debug-ghost-button,
 .debug-editor-button {
   min-height: 19px;
@@ -821,6 +822,142 @@ body.startup-screen-fixed-aspect #game-screen {
 .diorama-render-panel__reset:hover,
 .diorama-render-panel__reset:focus-visible {
   background: rgba(0, 255, 255, 0.18);
+}
+
+/* Pop-in moderne de personnalisation du personnage joueur. */
+.player-customization-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.player-customization-panel[hidden] {
+  display: none;
+}
+
+.player-customization-card {
+  width: min(560px, calc(100vw - 28px));
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border: 3px solid #00ffff;
+  box-shadow: 0 0 0 3px #0001fe, 0 18px 44px rgba(0, 0, 0, 0.58);
+  padding: 16px;
+  color: #f4f4f4;
+  background:
+    linear-gradient(rgba(0, 1, 254, 0.12), rgba(0, 1, 254, 0.12)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 255, 255, 0.08) 0,
+      rgba(0, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    #10111c;
+  font-family: "Thomson 8 Bit", monospace;
+}
+
+.player-customization-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 2px solid #0001fe;
+  padding-bottom: 10px;
+}
+
+.player-customization-header h2 {
+  margin: 0;
+  color: #ffe060;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.player-customization-card button {
+  min-height: 30px;
+  border: 2px solid #0001fe;
+  padding: 4px 10px;
+  color: #00ffff;
+  background: rgba(0, 0, 0, 0.64);
+  font: inherit;
+  font-size: 14px;
+}
+
+.player-customization-card button:hover,
+.player-customization-card button:focus-visible {
+  border-color: #00ffff;
+  color: #ffffff;
+  outline: none;
+}
+
+.player-customization-preview {
+  display: block;
+  width: 80px;
+  height: 80px;
+  margin: 14px auto;
+  image-rendering: pixelated;
+  background: #000000;
+}
+
+.player-customization-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  color: #00ffff;
+  font-size: 14px;
+}
+
+.player-customization-field input,
+.player-customization-field select,
+.player-customization-color-row input[type="text"] {
+  min-width: 0;
+  border: 2px solid #0001fe;
+  padding: 5px 7px;
+  color: #f4f4f4;
+  background: rgba(0, 0, 0, 0.7);
+  font: inherit;
+  font-size: 14px;
+}
+
+.player-customization-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.player-customization-color-row {
+  display: grid;
+  grid-template-columns: 72px 42px 1fr;
+  align-items: center;
+  gap: 8px;
+  color: #f4f4f4;
+  font-size: 13px;
+}
+
+.player-customization-color-row input[type="color"] {
+  width: 42px;
+  height: 30px;
+  border: 2px solid #0001fe;
+  padding: 0;
+  background: #000000;
+}
+
+.player-customization-presets,
+.player-customization-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.player-customization-actions {
+  justify-content: flex-end;
+  border-top: 2px solid #0001fe;
+  padding-top: 12px;
 }
 
 /* Ajustements mobiles du viewer. */

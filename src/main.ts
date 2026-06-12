@@ -10,6 +10,11 @@ import { GameplayScene } from "./screens/gameplay-scene";
 import { StartupInfogramScene } from "./screens/startup-infogram-scene";
 import { StartupTitleScene } from "./screens/startup-screens";
 import { createDioramaRenderPanel, syncDioramaRenderPanelVisibility } from "./ui/diorama-render-panel";
+import {
+  closePlayerCustomizationPanel,
+  createPlayerCustomizationPanel,
+  openPlayerCustomizationPanel
+} from "./ui/player-customization-panel";
 
 /**
  * Point d'entree navigateur.
@@ -139,6 +144,12 @@ if (mode === "gallery") {
   editorButton.type = "button";
   editorButton.textContent = "Editeur";
 
+  /** Bouton debug ouvrant la personnalisation moderne du personnage. */
+  const characterButton = document.createElement("button");
+  characterButton.className = "debug-character-button";
+  characterButton.type = "button";
+  characterButton.textContent = "Personnage";
+
   /** Bouton de debug permettant de traverser les tuiles pendant les tests. */
   const ghostButton = document.createElement("button");
   ghostButton.className = "debug-ghost-button";
@@ -176,10 +187,12 @@ if (mode === "gallery") {
   levelSelectShell.append(levelPickerButton, levelMenu);
   let selectedDebugLevelNumber = directLevelNumber ?? 1;
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
-  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, ghostButton, debugToolbarPinButton);
+  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
   const dioramaPanel = createDioramaRenderPanel();
   root.append(dioramaPanel);
+  const playerCustomizationPanel = createPlayerCustomizationPanel();
+  root.append(playerCustomizationPanel);
   let isGameplaySceneActive = false;
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
@@ -247,9 +260,17 @@ if (mode === "gallery") {
   });
   editorButton.addEventListener("click", () => {
     closeLevelMenu();
+    closePlayerCustomizationPanel(playerCustomizationPanel);
     app.setScene(createLevelEditorScene());
     canvas.focus();
   });
+  characterButton.addEventListener("click", () => {
+    closeLevelMenu();
+    openPlayerCustomizationPanel(playerCustomizationPanel);
+  });
+  if (mode === "character") {
+    window.requestAnimationFrame(() => openPlayerCustomizationPanel(playerCustomizationPanel));
+  }
   const syncDioramaPanelTimer = window.setInterval(() => {
     syncDioramaRenderPanelVisibility(dioramaPanel, isGameplaySceneActive);
   }, 250);

@@ -71,6 +71,8 @@ import {
 import { getDisplayRenderLayout, getDisplayRenderMode, getGameplayRenderSize } from "../display-options";
 import { getDioramaRenderOptions } from "../diorama-render-options";
 import { updateOptionsPopinInput } from "../options-popin-controller";
+import { getActivePlayerCustomization } from "../player-customization/player-customization-storage";
+import { getPlayerCustomizationTileFrame } from "../player-customization/player-sprite-recolor";
 import { DioramaCameraController } from "../rendering/diorama-camera-controller";
 import { DioramaParticleSystem } from "../rendering/diorama-particles";
 import { GameplayRenderer } from "../rendering/gameplay-renderer";
@@ -674,6 +676,7 @@ export class GameplayScene implements Scene {
       getRuntimeTile: (gridX, gridY) => this.runtimeGrid.getTile(gridX, gridY),
       getTileFrame: (tileId) => this.getTileFrame(tileId),
       getDiamondTileFrame: () => this.getDiamondTileFrame(),
+      getPlayerTileFrame: () => this.getPlayerTileFrame(),
       getMonsterTileFrame: (entity) => this.getMonsterTileFrame(entity),
       getSpecialCreatureTileFrame: () => this.getSpecialCreatureTileFrame(),
       getEntityTileFrameId: (kind) => this.getEntityTileFrameId(kind),
@@ -2241,6 +2244,20 @@ export class GameplayScene implements Scene {
     return this.tileFrameCache.getAtlasFrame(this.runtimeAssets.diamondAtlas, `diamond-${frameIndex}`, frameIndex);
   }
 
+  /** Recupere la frame joueur courante, recoloree selon la personnalisation active. */
+  private getPlayerTileFrame(): TileFrame {
+    const tileId = this.getEntityTileFrameId("player");
+    if (!this.runtimeAssets.playerAtlas) {
+      return this.getTileFrame(tileId);
+    }
+
+    return getPlayerCustomizationTileFrame(
+      this.runtimeAssets.playerAtlas,
+      getPlayerAtlasFrameIndex(tileId),
+      getActivePlayerCustomization()
+    );
+  }
+
   /** Recupere la frame d'atlas animee courante du monstre. */
   private getMonsterTileFrame(entity?: EntityState): TileFrame {
     const monsterAnimation = this.animationState.get("monster");
@@ -2308,6 +2325,11 @@ function extractFrameIdsFromMetadata(
 /** Contraint une valeur numerique entre deux bornes inclusives. */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+/** Convertit un tile id joueur historique `0x07..0x11` en index d'atlas extrait. */
+function getPlayerAtlasFrameIndex(tileId: number): number {
+  return clamp(tileId - 7, 0, 10);
 }
 
 /** Interpole lineairement entre deux valeurs numeriques. */

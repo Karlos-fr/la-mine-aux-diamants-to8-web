@@ -241,6 +241,9 @@ export interface GameplayRenderContext {
   /** Retourne la frame animee du diamant. */
   readonly getDiamondTileFrame: () => TileFrame;
 
+  /** Retourne la frame animee et personnalisee du joueur. */
+  readonly getPlayerTileFrame: () => TileFrame;
+
   /** Retourne la frame animee du monstre, standard ou custom selon l'entite. */
   readonly getMonsterTileFrame: (entity?: EntityState) => TileFrame;
 
@@ -514,9 +517,11 @@ export class GameplayRenderer {
 
       const frame = entity.kind === "diamond"
         ? context.getDiamondTileFrame()
-        : entity.kind === "monster"
-          ? context.getMonsterTileFrame(entity)
-          : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+        : entity.kind === "player"
+          ? context.getPlayerTileFrame()
+          : entity.kind === "monster"
+            ? context.getMonsterTileFrame(entity)
+            : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
       const screenPosition = getGameplayCellScreenPosition(context, entityGridX, entityGridY);
       const screenX = screenPosition.x;
       const screenY = screenPosition.y;

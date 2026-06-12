@@ -510,7 +510,9 @@ export class GameplayDioramaRenderer {
       return;
     }
 
-    const frame = context.getTileFrame(context.getEntityTileFrameId(entity.kind));
+    const frame = entity.kind === "player"
+      ? context.getPlayerTileFrame()
+      : context.getTileFrame(context.getEntityTileFrameId(entity.kind));
     const mesh = new THREE.Sprite(this.getEntityBillboardMaterial(context, frame));
     const position = getWorldPosition(context, entity.gridX, entity.gridY);
     mesh.scale.set(context.dioramaRenderOptions.billboardScale, context.dioramaRenderOptions.billboardScale, 1);
