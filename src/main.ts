@@ -6,10 +6,8 @@ import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
 import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
 import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene, createLevelShowcaseScene } from "./screens/scene-factory";
-import { GameplayScene } from "./screens/gameplay-scene";
 import { StartupInfogramScene } from "./screens/startup-infogram-scene";
 import { StartupTitleScene } from "./screens/startup-screens";
-import { createDioramaRenderPanel, syncDioramaRenderPanelVisibility } from "./ui/diorama-render-panel";
 import {
   closePlayerCustomizationPanel,
   createPlayerCustomizationPanel,
@@ -189,21 +187,14 @@ if (mode === "gallery") {
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
   debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
-  const dioramaPanel = createDioramaRenderPanel();
-  root.append(dioramaPanel);
   const playerCustomizationPanel = createPlayerCustomizationPanel();
   root.append(playerCustomizationPanel);
-  let isGameplaySceneActive = false;
 
   /** Instance applicative assemblee autour de la premiere scene historique. */
   const app = createGameApp({
     canvas,
     initialScene: () => {
       return createInitialSceneFromRoute(mode, directLevelNumber);
-    },
-    onSceneChange(scene) {
-      isGameplaySceneActive = scene instanceof GameplayScene;
-      syncDioramaRenderPanelVisibility(dioramaPanel, isGameplaySceneActive);
     }
   });
   const closeLevelMenu = (): void => {
@@ -271,13 +262,6 @@ if (mode === "gallery") {
   if (mode === "character") {
     window.requestAnimationFrame(() => openPlayerCustomizationPanel(playerCustomizationPanel));
   }
-  const syncDioramaPanelTimer = window.setInterval(() => {
-    syncDioramaRenderPanelVisibility(dioramaPanel, isGameplaySceneActive);
-  }, 250);
-  window.addEventListener("beforeunload", () => {
-    window.clearInterval(syncDioramaPanelTimer);
-  });
-  syncDioramaRenderPanelVisibility(dioramaPanel, isGameplaySceneActive);
   app.start();
   canvas.focus();
 }

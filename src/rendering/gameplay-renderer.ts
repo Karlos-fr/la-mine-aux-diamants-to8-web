@@ -66,10 +66,6 @@ const HUD_LABEL_VALUE_GAP = 1;
 const HUD_GALLERY_DIAMOND_WIDTH = 24;
 /** Hauteur du diamant anime du panneau galerie. */
 const HUD_GALLERY_DIAMOND_HEIGHT = 16;
-/** Fond du label de reglage camera diorama. */
-const DIORAMA_LABEL_BACKGROUND = "rgba(0, 0, 0, 0.72)";
-/** Couleur du label de reglage camera diorama. */
-const DIORAMA_LABEL_COLOR = "#00ffff";
 
 /** Conversion des intensites 4 bits TO8 vers RGB 8 bits. */
 const TO8_INTENSITIES = [
@@ -339,7 +335,6 @@ export class GameplayRenderer {
   private drawGameplayLayer(renderer: Renderer, context: GameplayRenderContext, usesDiorama: boolean): void {
     if (usesDiorama) {
       this.dioramaRenderer.render(renderer, context, getPlayfieldHeight(renderer), getDioramaPlayfieldSurfaceSize(renderer, context));
-      this.drawDioramaCameraLabel(renderer, context);
     } else {
       this.drawPlayfield(renderer, context);
       this.drawEntitiesAndObjects(renderer, context);
@@ -356,19 +351,6 @@ export class GameplayRenderer {
   private drawAssetError(renderer: Renderer, message: string): void {
     renderer.drawPixelText("ERREUR ASSETS", 76, 82, TO8_PALETTE.yellow, 2);
     renderer.drawPixelText(message.toUpperCase(), 24, 108, TO8_PALETTE.white, 1);
-  }
-
-  /** Affiche les angles camera modifiables a la souris dans le mode Diorama TO8. */
-  private drawDioramaCameraLabel(renderer: Renderer, context: GameplayRenderContext): void {
-    const rotationX = normalizeAngleDegrees(context.dioramaCamera.rotationXDeg).toFixed(0);
-    const rotationY = normalizeAngleDegrees(context.dioramaCamera.rotationYDeg).toFixed(0);
-    const rotationZ = normalizeAngleDegrees(context.dioramaCamera.rotationZDeg).toFixed(0);
-    const zoom = context.dioramaCamera.zoom.toFixed(2);
-    const label = `Drag: scene X ${rotationX} Y ${rotationY} Z ${rotationZ} zoom ${zoom}`;
-    const x = 6;
-    const y = 6;
-    renderer.fillRect(x - 3, y - 3, renderer.measurePixelText(label, 1) + 6, 13, DIORAMA_LABEL_BACKGROUND);
-    renderer.drawPixelText(label, x, y, DIORAMA_LABEL_COLOR, 1);
   }
 
   /** Rend la grille visible du niveau courant. */
@@ -671,11 +653,6 @@ export class GameplayRenderer {
       OBJECTIVE_FLASH_YELLOW
     );
   }
-}
-
-/** Normalise un angle en degres pour un affichage 0..359. */
-function normalizeAngleDegrees(degrees: number): number {
-  return ((degrees % 360) + 360) % 360;
 }
 
 /** Calcule la zone de jeu disponible au-dessus du HUD. */
