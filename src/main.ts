@@ -4,7 +4,8 @@ import { debugOptions } from "./debug-options";
 import { mountDevAnimationGallery } from "./dev-animation-gallery";
 import { applyDisplayCanvasLayout } from "./display-options";
 import { createGameApp } from "./engine/game-app";
-import { getModernLevelSource, LEVEL_COUNT } from "./game/level-loader";
+import { getLevelShowcaseEntries, getLevelShowcaseEntry } from "./level-showcase/level-showcase-catalog";
+import { dispatchOpenOptionsPopinRequest } from "./options-popin-events";
 import { createAttractGameplayScene, createGameplayScene, createLevelEditorScene, createLevelShowcaseScene } from "./screens/scene-factory";
 import { StartupInfogramScene } from "./screens/startup-infogram-scene";
 import { StartupTitleScene } from "./screens/startup-screens";
@@ -73,6 +74,12 @@ if (mode === "gallery") {
     </svg>
   `;
 
+  /** Bouton ouvrant la pop-in d'options de la scene active. */
+  const optionsButton = document.createElement("button");
+  optionsButton.className = "debug-options-button";
+  optionsButton.type = "button";
+  optionsButton.textContent = "Options";
+
   /** Libelle accessible du selecteur de niveau. */
   const levelSelectLabel = document.createElement("label");
   levelSelectLabel.className = "debug-level-label";
@@ -115,19 +122,17 @@ if (mode === "gallery") {
 
   /** Options de niveaux exposees par le menu debug. */
   const levelOptions: Array<{ readonly levelNumber: number; readonly label: string; readonly button: HTMLButtonElement }> = [];
-  for (let levelNumber = 1; levelNumber <= LEVEL_COUNT; levelNumber += 1) {
-    const levelSource = getModernLevelSource(levelNumber);
-    const sourceSuffix = levelSource?.source?.kind === "attract" ? " (debug niveau cache)" : "";
-    const label = levelSource ? `${levelNumber} - ${levelSource.label}${sourceSuffix}` : `Niveau ${levelNumber}`;
+  for (const levelEntry of getLevelShowcaseEntries()) {
+    const label = `${levelEntry.levelNumber} - ${levelEntry.name}`;
     const optionButton = document.createElement("button");
     optionButton.className = "debug-level-menu-option";
     optionButton.type = "button";
     optionButton.role = "option";
-    optionButton.dataset.levelNumber = String(levelNumber);
+    optionButton.dataset.levelNumber = String(levelEntry.levelNumber);
     optionButton.textContent = label;
     optionButton.setAttribute("aria-label", label);
     levelMenu.append(optionButton);
-    levelOptions.push({ levelNumber, label, button: optionButton });
+    levelOptions.push({ levelNumber: levelEntry.levelNumber, label, button: optionButton });
   }
 
   /** Bouton debug dedie au mode attract scriptable original. */
@@ -192,7 +197,7 @@ if (mode === "gallery") {
   levelSelectShell.append(levelPickerButton, levelMenu);
   let selectedDebugLevelNumber = directLevelNumber ?? 1;
   syncLevelPickerDisplay(levelOptions, levelPickerDisplay, selectedDebugLevelNumber);
-  debugToolbar.append(debugToolbarIcon, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
+  debugToolbar.append(debugToolbarIcon, optionsButton, levelSelectLabel, levelSelectShell, attractButton, showcaseButton, editorButton, characterButton, ghostButton, debugToolbarPinButton);
   root.append(debugToolbar);
   const playerCustomizationPanel = createPlayerCustomizationPanel();
   root.append(playerCustomizationPanel);
@@ -246,6 +251,10 @@ if (mode === "gallery") {
     if (!debugToolbar.contains(event.target as Node)) {
       closeLevelMenu();
     }
+  });
+  optionsButton.addEventListener("click", () => {
+    closeLevelMenu();
+    dispatchOpenOptionsPopinRequest();
   });
   attractButton.addEventListener("click", () => {
     closeLevelMenu();
@@ -302,7 +311,7 @@ function parseDirectLevelNumber(params: URLSearchParams): number | null {
   }
 
   const levelNumber = Number(rawLevel);
-  if (!Number.isInteger(levelNumber) || levelNumber < 1 || levelNumber > LEVEL_COUNT) {
+  if (!Number.isInteger(levelNumber) || !getLevelShowcaseEntry(levelNumber)) {
     return null;
   }
 

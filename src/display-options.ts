@@ -83,11 +83,6 @@ export function getDisplayOptions(): DisplayOptions {
   return displayOptions;
 }
 
-/** Retourne le libelle court du mode courant pour la pop-in TO8. */
-export function getDisplayModeLabel(): string {
-  return displayOptions.stretchToViewport ? "Espace navigation" : "Taille fixe";
-}
-
 /** Retourne le libelle court du zoom courant pour la pop-in TO8. */
 export function getDisplayZoomLabel(): string {
   return `x${displayOptions.zoom}`;
@@ -113,37 +108,29 @@ export function getDisplayRenderModeLabel(): string {
   return DISPLAY_RENDER_MODE_LABELS[displayOptions.renderMode];
 }
 
-/** Fait defiler les modes de rendu visuel, sans toucher a la resolution logique. */
-export function cycleDisplayRenderMode(direction: -1 | 1): void {
-  const index = DISPLAY_RENDER_MODES.indexOf(displayOptions.renderMode);
-  const safeIndex = index >= 0 ? index : 0;
-  displayOptions.renderMode = DISPLAY_RENDER_MODES[(safeIndex + direction + DISPLAY_RENDER_MODES.length) % DISPLAY_RENDER_MODES.length];
+/** Definit le mode de rendu visuel courant. */
+export function setDisplayRenderMode(renderMode: DisplayRenderMode): void {
+  displayOptions.renderMode = renderMode;
   saveDisplayOptions();
 }
 
-/** Active ou desactive l'etirage du canvas dans l'espace navigateur. */
-export function toggleDisplayStretchToViewport(): void {
-  displayOptions.stretchToViewport = !displayOptions.stretchToViewport;
+/** Definit si le canvas doit occuper l'espace navigateur sans deformation. */
+export function setDisplayStretchToViewport(stretchToViewport: boolean): void {
+  displayOptions.stretchToViewport = stretchToViewport;
   saveDisplayOptions();
   applyDisplayCanvasLayout();
 }
 
-/** Fait defiler les zooms CSS autorises. */
-export function cycleDisplayZoom(direction: -1 | 1): void {
-  const zooms = [1, 2, 3] as const;
-  const index = zooms.indexOf(displayOptions.zoom);
-  const safeIndex = index >= 0 ? index : 0;
-  displayOptions.zoom = zooms[(safeIndex + direction + zooms.length) % zooms.length];
+/** Definit le zoom CSS courant. */
+export function setDisplayZoom(zoom: DisplayZoom): void {
+  displayOptions.zoom = zoom;
   saveDisplayOptions();
   applyDisplayCanvasLayout();
 }
 
-/** Fait defiler les densites de cellules visibles autorisees. */
-export function cycleDisplayDensity(direction: -1 | 1): void {
-  const densities = [1, 2, 3] as const;
-  const index = densities.indexOf(displayOptions.density);
-  const safeIndex = index >= 0 ? index : 0;
-  displayOptions.density = densities[(safeIndex + direction + densities.length) % densities.length];
+/** Definit la densite de cellules visibles courante. */
+export function setDisplayDensity(density: DisplayDensity): void {
+  displayOptions.density = density;
   saveDisplayOptions();
   applyDisplayCanvasLayout();
 }
@@ -346,9 +333,3 @@ const DISPLAY_RENDER_MODE_LABELS: Record<DisplayRenderMode, string> = {
   to8: "TO8 original",
   dioramaTo8: "Diorama TO8"
 };
-
-/** Ordre de cycle des modes de rendu visuel. */
-const DISPLAY_RENDER_MODES: readonly DisplayRenderMode[] = [
-  "to8",
-  "dioramaTo8"
-];

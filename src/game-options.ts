@@ -32,9 +32,9 @@ export function getSmoothMovementLabel(): string {
   return gameOptions.smoothMovement ? "Oui" : "Non";
 }
 
-/** Active ou desactive les mouvements fluides modernes. */
-export function toggleSmoothMovement(): void {
-  gameOptions.smoothMovement = !gameOptions.smoothMovement;
+/** Definit l'etat des mouvements fluides modernes. */
+export function setSmoothMovement(smoothMovement: boolean): void {
+  gameOptions.smoothMovement = smoothMovement;
   saveGameOptions();
 }
 

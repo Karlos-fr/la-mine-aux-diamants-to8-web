@@ -281,8 +281,10 @@ body.startup-screen-fixed-aspect #game-screen {
 
 /* Panneau options au style TO8, mais compose en HTML. */
 .options-popin {
+  position: relative;
   width: min(880px, calc(100vw - 32px));
-  height: min(610px, calc(100vh - 32px));
+  height: auto;
+  max-height: calc(100vh - 32px);
   border: 3px solid #00ffff;
   padding: 20px 24px 16px;
   background: #101018;
@@ -309,12 +311,39 @@ body.startup-screen-fixed-aspect #game-screen {
   text-align: center;
 }
 
+/* Croix de fermeture souris, sans changer l'alignement du titre. */
+.options-popin__close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  min-height: 30px;
+  border: 2px solid #0001fe;
+  border-radius: 0;
+  padding: 0;
+  background: #080810;
+  color: #42d7ff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.options-popin__close:hover,
+.options-popin__close:focus-visible {
+  border-color: #42c9ff;
+  color: #fff;
+  outline: none;
+}
+
 /* Zone centrale categories + contenu. */
 .options-popin__body {
   display: grid;
   grid-template-columns: 306px minmax(0, 1fr);
   gap: 22px;
-  padding: 20px 0 18px;
+  padding: 20px 0 0;
 }
 
 /* Liste des categories. */
@@ -331,6 +360,7 @@ body.startup-screen-fixed-aspect #game-screen {
   overflow: visible;
   padding: 4px 12px;
   color: #9b9ba3;
+  cursor: pointer;
   font-size: 21px;
   line-height: 1.15;
   white-space: nowrap;
@@ -343,6 +373,11 @@ body.startup-screen-fixed-aspect #game-screen {
   padding-right: 9px;
   background: #2b5ed8;
   color: #fff;
+}
+
+.options-popin__category:focus-visible {
+  outline: 2px solid #f3d44d;
+  outline-offset: 2px;
 }
 
 /* Panneau de contenu de la categorie. */
@@ -367,7 +402,7 @@ body.startup-screen-fixed-aspect #game-screen {
 .options-popin__content-body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
   color: #fff;
   font-size: 13px;
   line-height: 1.1;
@@ -397,6 +432,55 @@ body.startup-screen-fixed-aspect #game-screen {
   min-height: 14px;
 }
 
+/* Ligne de controle interactive de la pop-in options. */
+.options-popin__option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, max-content);
+  align-items: center;
+  gap: 10px;
+  min-height: 26px;
+}
+
+/* Libelle d'option compact, separe du controle pour eviter les raccourcis inline. */
+.options-popin__option-label {
+  min-width: 0;
+  overflow: hidden;
+  color: #9b9ba3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Select retro natif, stylise pour rester coherent avec la pop-in TO8. */
+.options-popin__select,
+.options-popin__checkbox {
+  min-height: 24px;
+  border: 2px solid #0001fe;
+  border-radius: 0;
+  padding: 2px 8px;
+  background: #080810;
+  color: #42d7ff;
+  font-family: "Thomson 8 Bit", monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.options-popin__select:hover,
+.options-popin__checkbox:hover,
+.options-popin__select:focus-visible,
+.options-popin__checkbox:focus-visible {
+  border-color: #42c9ff;
+  outline: none;
+}
+
+/* Case a cocher textuelle dans l'esprit TO8. */
+.options-popin__checkbox {
+  min-width: 54px;
+  color: #6fff5f;
+}
+
 /* Lien dans la pop-in, conserve la couleur TO8 au lieu du bleu navigateur. */
 .options-popin__link {
   color: inherit;
@@ -408,17 +492,6 @@ body.startup-screen-fixed-aspect #game-screen {
 .options-popin__link:focus-visible {
   outline: 2px solid #f3d44d;
   outline-offset: 3px;
-}
-
-/* Aide clavier en bas de panneau. */
-.options-popin__footer {
-  border-top: 3px solid #0001fe;
-  padding-top: 13px;
-  color: #6fff5f;
-  font-size: 16px;
-  line-height: 1.25;
-  text-align: center;
-  white-space: normal;
 }
 
 /* Sur une largeur reduite, on privilegie la lisibilite sans couper les mots. */
@@ -730,6 +803,7 @@ body.startup-screen-fixed-aspect #game-screen {
 .debug-attract-button,
 .debug-showcase-button,
 .debug-character-button,
+.debug-options-button,
 .debug-ghost-button,
 .debug-editor-button {
   min-height: 19px;

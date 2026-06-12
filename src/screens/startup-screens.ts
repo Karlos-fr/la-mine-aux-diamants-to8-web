@@ -14,6 +14,7 @@ import { RUNTIME_ASSET_URLS, docsExtractionAssetUrl } from "../assets/runtime-as
 import { gameAudio } from "../audio/audio-engine";
 import { secondsFromTo8Ticks, TO8_RUNTIME_TIMING } from "../game/runtime-timing";
 import { updateOptionsPopinInput } from "../options-popin-controller";
+import { OPEN_OPTIONS_POPIN_EVENT } from "../options-popin-events";
 import { renderOptionsPopin } from "../rendering/options-popin-renderer";
 import { renderStartupTitle, type StartupTitleFrame } from "../rendering/startup-renderer";
 import { createAttractGameplayScene, createGameplayScene } from "./scene-factory";
@@ -60,6 +61,12 @@ export class StartupTitleScene implements Scene {
   private readonly feetFrames: StartupTitleFrame[];
   /** URL runtime centralisee de l'image de base du titre. */
   private readonly baseImagePath = RUNTIME_ASSET_URLS.startupTitleBase;
+  /** Ouvre la pop-in depuis la toolbar overlay. */
+  private readonly handleOpenOptionsPopinRequest = (): void => {
+    this.optionsOpen = true;
+    this.attractIdleTicks = 0;
+    this.attractIdleElapsed = 0;
+  };
 
   /** Cache des images de visage chargees. */
   private readonly faceImageCache = new Map<string, HTMLImageElement>();
@@ -111,11 +118,13 @@ export class StartupTitleScene implements Scene {
   enter(context: SceneContext): void {
     this.context = context;
     document.body.classList.add(STARTUP_FIXED_ASPECT_CLASS);
+    window.addEventListener(OPEN_OPTIONS_POPIN_EVENT, this.handleOpenOptionsPopinRequest);
     gameAudio.startTitleMusic();
   }
 
   /** Arrete la musique quand le joueur quitte le second ecran. */
   exit(): void {
+    window.removeEventListener(OPEN_OPTIONS_POPIN_EVENT, this.handleOpenOptionsPopinRequest);
     document.body.classList.remove(STARTUP_FIXED_ASPECT_CLASS);
     gameAudio.stopTitleMusic();
   }
@@ -189,7 +198,13 @@ export class StartupTitleScene implements Scene {
     if (this.optionsOpen) {
       renderOptionsPopin({
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Ecran titre"
+        contextLabel: "Ecran titre",
+        onSelectedCategoryIndexChange: (selectedCategoryIndex) => {
+          this.selectedOptionsCategoryIndex = selectedCategoryIndex;
+        },
+        onClose: () => {
+          this.optionsOpen = false;
+        }
       });
     }
   }

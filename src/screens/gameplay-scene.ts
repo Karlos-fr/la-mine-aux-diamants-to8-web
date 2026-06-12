@@ -71,6 +71,7 @@ import {
 import { getDisplayRenderLayout, getDisplayRenderMode, getGameplayRenderSize } from "../display-options";
 import { getDioramaRenderOptions } from "../diorama-render-options";
 import { updateOptionsPopinInput } from "../options-popin-controller";
+import { OPEN_OPTIONS_POPIN_EVENT } from "../options-popin-events";
 import { getActivePlayerCustomization } from "../player-customization/player-customization-storage";
 import { getPlayerCustomizationTileFrame } from "../player-customization/player-sprite-recolor";
 import { DioramaCameraController } from "../rendering/diorama-camera-controller";
@@ -385,6 +386,13 @@ export class GameplayScene implements Scene {
   private optionsOpen = false;
   /** Categorie d'options selectionnee. */
   private selectedOptionsCategoryIndex = 0;
+  /** Ouvre la pop-in depuis la toolbar overlay quand le gameplay normal est actif. */
+  private readonly handleOpenOptionsPopinRequest = (): void => {
+    if (this.gameplayMode !== "normal") {
+      return;
+    }
+    this.optionsOpen = true;
+  };
   /** Controleur visuel de la camera Diorama TO8. */
   private readonly dioramaCamera = new DioramaCameraController();
   /** Systeme de particules modernes du mode Diorama. */
@@ -473,6 +481,12 @@ export class GameplayScene implements Scene {
   /** Recupere le contexte de navigation de scene. */
   enter(context: SceneContext): void {
     this.context = context;
+    window.addEventListener(OPEN_OPTIONS_POPIN_EVENT, this.handleOpenOptionsPopinRequest);
+  }
+
+  /** Retire les ecouteurs de scene quand elle n'est plus active. */
+  exit(): void {
+    window.removeEventListener(OPEN_OPTIONS_POPIN_EVENT, this.handleOpenOptionsPopinRequest);
   }
 
   /** Orchestre un tick gameplay complet sans effectuer de rendu. */
@@ -706,7 +720,13 @@ export class GameplayScene implements Scene {
     if (this.optionsOpen) {
       renderOptionsPopin({
         selectedCategoryIndex: this.selectedOptionsCategoryIndex,
-        contextLabel: "Jeu en pause"
+        contextLabel: "Jeu en pause",
+        onSelectedCategoryIndexChange: (selectedCategoryIndex) => {
+          this.selectedOptionsCategoryIndex = selectedCategoryIndex;
+        },
+        onClose: () => {
+          this.optionsOpen = false;
+        }
       });
     }
   }

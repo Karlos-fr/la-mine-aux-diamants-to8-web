@@ -125,7 +125,7 @@ function createLevelShowcaseEntry(levelNumber: number, source: ModernLevelJson):
 /** Retourne un libelle clair pour les niveaux hors progression normale. */
 function getSpecialLevelLabel(kind: LevelShowcaseKind): string | null {
   if (kind === "attract") {
-    return "Mode attract cache";
+    return "Attract Mode";
   }
 
   if (kind === "debug") {

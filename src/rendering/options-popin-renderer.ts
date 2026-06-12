@@ -6,17 +6,24 @@
 
 import { APP_VERSION } from "../app-version";
 import {
+  type DisplayDensity,
+  type DisplayRenderMode,
+  type DisplayZoom,
+  getDisplayOptions,
   getDisplayDensityLabel,
-  getDisplayModeLabel,
   getDisplayRenderModeLabel,
   getDisplayStretchLabel,
-  getDisplayZoomLabel
+  getDisplayZoomLabel,
+  setDisplayDensity,
+  setDisplayRenderMode,
+  setDisplayStretchToViewport,
+  setDisplayZoom
 } from "../display-options";
-import { getSmoothMovementLabel } from "../game-options";
+import { getSmoothMovementLabel, setSmoothMovement } from "../game-options";
 
 /** Categories prevues pour la future configuration. */
 export const OPTIONS_MENU_CATEGORIES = [
-  "General",
+  "Général",
   "Affichage",
   "Audio",
   "Jeu",
@@ -33,6 +40,10 @@ export interface OptionsPopinRenderOptions {
   readonly selectedCategoryIndex: number;
   /** Libelle contextuel affiche dans la zone de contenu. */
   readonly contextLabel: string;
+  /** Callback appele quand une categorie est selectionnee a la souris. */
+  readonly onSelectedCategoryIndexChange: (selectedCategoryIndex: number) => void;
+  /** Callback appele quand l'utilisateur ferme la pop-in a la souris. */
+  readonly onClose: () => void;
 }
 
 /** References DOM internes pour mettre a jour la pop-in sans recreer l'arbre. */
@@ -41,7 +52,9 @@ interface OptionsPopinDom {
   readonly root: HTMLDivElement;
   /** Titre de categorie dans la zone de contenu. */
   readonly contentTitle: HTMLHeadingElement;
-  /** Contenu textuel de la categorie courante. */
+  /** Bouton de fermeture souris de la pop-in. */
+  readonly closeButton: HTMLButtonElement;
+  /** Contenu interactif de la categorie courante. */
   readonly contentBody: HTMLDivElement;
   /** Boutons visuels des categories. */
   readonly categoryItems: readonly HTMLDivElement[];
@@ -64,7 +77,6 @@ export function renderOptionsPopin(options: OptionsPopinRenderOptions): void {
     options.selectedCategoryIndex,
     selectedCategory,
     options.contextLabel,
-    getDisplayModeLabel(),
     getDisplayZoomLabel(),
     getDisplayStretchLabel(),
     getDisplayDensityLabel(),
@@ -74,9 +86,13 @@ export function renderOptionsPopin(options: OptionsPopinRenderOptions): void {
 
   dom.root.hidden = false;
   dom.root.setAttribute("aria-hidden", "false");
+  dom.closeButton.onclick = () => {
+    options.onClose();
+    renderedSignature = "";
+  };
   if (signature !== renderedSignature) {
     dom.contentTitle.textContent = selectedCategory;
-    renderCategoryItems(dom.categoryItems, options.selectedCategoryIndex);
+    renderCategoryItems(dom.categoryItems, options.selectedCategoryIndex, options.onSelectedCategoryIndexChange);
     renderCategoryContent(dom.contentBody, selectedCategory, options.contextLabel);
     renderedSignature = signature;
   }
@@ -109,12 +125,18 @@ function ensureOptionsPopinDom(): OptionsPopinDom {
   title.className = "options-popin__title";
   title.textContent = "Options";
 
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "options-popin__close";
+  closeButton.setAttribute("aria-label", "Fermer");
+  closeButton.textContent = "x";
+
   const body = document.createElement("div");
   body.className = "options-popin__body";
 
   const categories = document.createElement("nav");
   categories.className = "options-popin__categories";
-  categories.setAttribute("aria-label", "Categories");
+  categories.setAttribute("aria-label", "Catégories");
   const categoryItems = OPTIONS_MENU_CATEGORIES.map((category) => {
     const item = document.createElement("div");
     item.className = "options-popin__category";
@@ -132,26 +154,33 @@ function ensureOptionsPopinDom(): OptionsPopinDom {
   const contentBody = document.createElement("div");
   contentBody.className = "options-popin__content-body";
 
-  const footer = document.createElement("footer");
-  footer.className = "options-popin__footer";
-  footer.textContent = "Echap: retour    Haut/bas: categorie";
-
   content.append(contentTitle, contentBody);
   body.append(categories, content);
-  panel.append(title, body, footer);
+  panel.append(title, closeButton, body);
   root.append(panel);
   document.body.append(root);
 
-  popinDom = { root, contentTitle, contentBody, categoryItems };
+  popinDom = { root, contentTitle, closeButton, contentBody, categoryItems };
   return popinDom;
 }
 
-/** Met a jour l'etat visuel de la liste des categories. */
-function renderCategoryItems(categoryItems: readonly HTMLDivElement[], selectedIndex: number): void {
+/** Met a jour l'etat visuel et les actions souris de la liste des categories. */
+function renderCategoryItems(
+  categoryItems: readonly HTMLDivElement[],
+  selectedIndex: number,
+  onSelectedCategoryIndexChange: (selectedCategoryIndex: number) => void
+): void {
   categoryItems.forEach((item, index) => {
     const selected = index === selectedIndex;
     item.classList.toggle("options-popin__category--selected", selected);
     item.textContent = selected ? `> ${OPTIONS_MENU_CATEGORIES[index]}` : OPTIONS_MENU_CATEGORIES[index];
+    item.setAttribute("role", "button");
+    item.setAttribute("tabindex", "0");
+    item.setAttribute("aria-current", selected ? "true" : "false");
+    item.onclick = () => {
+      onSelectedCategoryIndexChange(index);
+      renderedSignature = "";
+    };
   });
 }
 
@@ -191,39 +220,35 @@ function renderAboutContent(container: HTMLDivElement): void {
   ]);
 }
 
-/** Rend les preferences d'affichage actives et leurs raccourcis clavier. */
+/** Rend les preferences d'affichage actives avec controles retro cliquables. */
 function renderDisplayContent(container: HTMLDivElement): void {
-  appendLines(container, [
-    { text: "Mode", colorClass: "options-popin__line--muted" },
-    { text: getDisplayModeLabel(), colorClass: "options-popin__line--cyan" },
-    { text: "Zoom", colorClass: "options-popin__line--muted" },
-    { text: getDisplayZoomLabel(), colorClass: "options-popin__line--green" },
-    { text: "Etirage navigateur", colorClass: "options-popin__line--muted" },
-    { text: getDisplayStretchLabel(), colorClass: "options-popin__line--cyan" },
-    { text: "Densite", colorClass: "options-popin__line--muted" },
-    { text: getDisplayDensityLabel(), colorClass: "options-popin__line--green" },
-    { text: "Rendu", colorClass: "options-popin__line--muted" },
-    { text: getDisplayRenderModeLabel(), colorClass: "options-popin__line--cyan" },
-    { text: "< >: zoom" },
-    { text: "Entree: etirage" },
-    { text: "Ctrl: densite" },
-    { text: "Maj: rendu" }
-  ]);
+  const options = getDisplayOptions();
+  appendSelectControl(container, "Zoom", String(options.zoom), [
+    { value: "1", label: "x1" },
+    { value: "2", label: "x2" },
+    { value: "3", label: "x3" }
+  ], (value) => setDisplayZoom(Number(value) as DisplayZoom));
+  appendCheckboxControl(container, "Etirage navigateur", options.stretchToViewport, (checked) => setDisplayStretchToViewport(checked));
+  appendSelectControl(container, "Densité", String(options.density), [
+    { value: "1", label: "x1" },
+    { value: "2", label: "x2" },
+    { value: "3", label: "x3" }
+  ], (value) => setDisplayDensity(Number(value) as DisplayDensity));
+  appendSelectControl(container, "Rendu", options.renderMode, [
+    { value: "to8", label: "TO8 original" },
+    { value: "dioramaTo8", label: "Diorama TO8" }
+  ], (value) => setDisplayRenderMode(value as DisplayRenderMode));
 }
 
 /** Rend les preferences qui modifient le ressenti gameplay moderne. */
 function renderGameContent(container: HTMLDivElement): void {
-  appendLines(container, [
-    { text: "Mouvements fluides", colorClass: "options-popin__line--muted" },
-    { text: getSmoothMovementLabel(), colorClass: "options-popin__line--green" },
-    { text: "Entree: changer" }
-  ]);
+  appendCheckboxControl(container, "Mouvements fluides", getSmoothMovementLabel() === "Oui", (checked) => setSmoothMovement(checked));
 }
 
 /** Rend le contenu temporaire des categories sans options actives pour l'instant. */
 function renderPlaceholderContent(container: HTMLDivElement, contextLabel: string): void {
   appendLines(container, [
-    { text: "Options a venir", colorClass: "options-popin__line--muted" },
+    { text: "Options à venir", colorClass: "options-popin__line--muted" },
     { text: contextLabel, colorClass: "options-popin__line--cyan" }
   ]);
 }
@@ -246,4 +271,58 @@ function appendLines(container: HTMLDivElement, lines: ReadonlyArray<{ readonly 
     }
     container.append(element);
   });
+}
+
+/** Ajoute une vraie liste de selection stylisee dans l'esprit TO8. */
+function appendSelectControl(
+  container: HTMLDivElement,
+  label: string,
+  value: string,
+  values: ReadonlyArray<{ readonly value: string; readonly label: string }>,
+  onChange: (value: string) => void
+): void {
+  const row = createControlRow(label);
+  const select = document.createElement("select");
+  select.className = "options-popin__select";
+  values.forEach((selectValue) => {
+    const option = document.createElement("option");
+    option.value = selectValue.value;
+    option.textContent = selectValue.label;
+    select.append(option);
+  });
+  select.value = value;
+  select.addEventListener("change", () => {
+    onChange(select.value);
+    renderedSignature = "";
+  });
+  row.append(select);
+  container.append(row);
+}
+
+/** Ajoute une case a cocher retro au format [x]. */
+function appendCheckboxControl(container: HTMLDivElement, label: string, checked: boolean, onChange: (checked: boolean) => void): void {
+  const row = createControlRow(label);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "options-popin__checkbox";
+  button.textContent = checked ? "[x]" : "[ ]";
+  button.setAttribute("aria-pressed", String(checked));
+  button.addEventListener("click", () => {
+    onChange(!checked);
+    renderedSignature = "";
+  });
+  row.append(button);
+  container.append(row);
+}
+
+/** Cree la structure commune label + controle d'une option. */
+function createControlRow(label: string): HTMLDivElement {
+  const row = document.createElement("div");
+  row.className = "options-popin__option-row";
+
+  const labelElement = document.createElement("span");
+  labelElement.className = "options-popin__option-label";
+  labelElement.textContent = label;
+  row.append(labelElement);
+  return row;
 }
