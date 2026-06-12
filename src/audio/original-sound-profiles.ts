@@ -68,3 +68,12 @@ export const KIT_BD9F_EXPLOSION_FRAME_PASSES = 3;
 
 /** Compteur bas initialise par `KIT.BIN:$CCD7` dans `$BDC5/$BDC6` avant l'explosion. */
 export const KIT_BD9F_EXPLOSION_INITIAL_PULSE_COUNT = 0x0d;
+
+/**
+ * Facteur de calibration grave applique a la boucle `BD9F`.
+ *
+ * La capture originale `explosion.wav` dure environ 0,85 s en zone active, contre
+ * 0,40 s avec l'estimation CPU brute. Etirer les demi-pulses preserve la forme
+ * 1 bit tout en retrouvant une explosion nettement plus grave.
+ */
+export const KIT_BD9F_EXPLOSION_HALF_PULSE_SCALE = 2.1;

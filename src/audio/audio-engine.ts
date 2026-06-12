@@ -8,6 +8,7 @@
 import {
   KIT_BD9F_EXPLOSION_DELAY_TABLE,
   KIT_BD9F_EXPLOSION_FRAME_PASSES,
+  KIT_BD9F_EXPLOSION_HALF_PULSE_SCALE,
   KIT_BD9F_EXPLOSION_INITIAL_PULSE_COUNT,
   KIT_BD9F_EXPLOSION_TONE_CODES,
   KIT_C255_SCORE_TICK_SEGMENTS,
@@ -414,6 +415,7 @@ function createKitBd9fExplosionLevels(): number[] {
       const delayLoopCount = KIT_BD9F_EXPLOSION_DELAY_TABLE[toneCode & 0x0f] ?? 0x50;
       const samplesPerHalfPulse = (
         estimateKitBd9fExplosionCyclesPerHalfPulse(delayLoopCount)
+        * KIT_BD9F_EXPLOSION_HALF_PULSE_SCALE
         * THEODORE_AUDIO_SAMPLE_RATE
         / TO8_SOUND_CPU_CYCLES_PER_SECOND
       );
